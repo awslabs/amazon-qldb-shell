@@ -1,0 +1,18 @@
+version: 0.2
+ 
+phases:
+    install:
+      runtime-versions: 
+        python: 3.7 
+    pre_build:
+      commands:
+        - echo Build started on `date`
+        - pip install -r requirements.txt
+    build:
+      commands:
+        - branch=$CODEBUILD_SOURCE_VERSION 
+        - echo Using branch $branch of target repositories
+        - pip install -e .
+    post_build:
+      commands:
+        - echo Build completed on `date`

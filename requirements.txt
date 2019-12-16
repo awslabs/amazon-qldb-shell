@@ -1,0 +1,5 @@
+pyqldb
+argparse
+amazon.ion
+boto3
+

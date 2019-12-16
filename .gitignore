@@ -18,3 +18,5 @@ __pycache__/
 /docs/build/*
 /build
 /dist
+/venv
+/.vscode
