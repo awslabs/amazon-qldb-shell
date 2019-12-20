@@ -14,17 +14,20 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import logging
-import boto3
 import cmd
-import pdb
+import logging
 from textwrap import dedent
-from . import __version__
-from botocore.exceptions import ClientError, EndpointConnectionError
+
+import boto3
 from amazon.ion.simpleion import dumps
-from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
+from botocore.exceptions import ClientError, EndpointConnectionError
 from pyqldb.cursor.buffered_cursor import BufferedCursor
-from pyqldbcli.decorators import time_this, single_noun_command, zero_noun_command
+from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
+
+from pyqldbcli.decorators import (single_noun_command, time_this,
+                                  zero_noun_command)
+
+from . import __version__
 
 
 def print_result(cursor: BufferedCursor):
@@ -69,6 +72,16 @@ class QldbCli(cmd.Cmd):
 
         For more information, type 'help'.
     """)
+
+    def onecmd(self, line):
+        try:
+            return super().onecmd(line)
+        except EndpointConnectionError as e:
+            logging.fatal(f'Unable to connect to an endpoint. Please check CLI configuration. {e}')
+            self.quit_cli()
+        except ClientError as e:
+            logging.error(f'Error encountered: {e}')
+            return False # don't stop
 
     def do_EOF(self, line):
         'Exits the CLI; equivalent to calling quit: EOF'
