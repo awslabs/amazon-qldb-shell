@@ -16,10 +16,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import sys
 import argparse
 import logging
+import sys
+
 from botocore.exceptions import ClientError, EndpointConnectionError
+
 from .qldb_cli import QldbCli
 
 
@@ -75,14 +77,7 @@ def main():
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
     cli = QldbCli(args.profile, args.qldb_endpoint,
                   qldb_session_endpoint=args.qldb_session_endpoint, region=args.region, ledger=args.ledger)
-    try:
-        cli.cmdloop()
-    except EndpointConnectionError as e:
-        logging.fatal(f'Unable to connect to an endpoint. Please check CLI configuration. {e}')
-        cli.quit_cli()
-    except ClientError as e:
-        logging.error(f'Error encountered: {e}')
-        cli.cmdloop()
+    cli.cmdloop()
 
 
 # Standard boilerplate to call the main() function to begin
