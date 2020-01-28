@@ -15,17 +15,22 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
-from pyqldb import __version__
+from pyqldbcli import version
+
+requires = ['pyqldb>=1.0.0rc2',
+            'boto3>=1.9.237',
+            'amazon.ion>=0.5.0']
 
 setup(
     name='pyqldbcli',
-    version=__version__,
+    version=version,
     packages=['pyqldbcli'],
     description='A basic CLI for interacting with Amazon QLDB',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Amazon Web Services',
-    license="MIT-0",
+    install_requires=requires,
+    license="Apache License 2.0",
     entry_points={
         'console_scripts': [
             'pyqldbcli = pyqldbcli.__main__:main'
