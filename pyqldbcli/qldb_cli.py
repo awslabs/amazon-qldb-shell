@@ -27,7 +27,7 @@ from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldbcli.decorators import (single_noun_command, time_this,
                                   zero_noun_command)
 
-from . import __version__
+from . import version
 
 
 def print_result(cursor: BufferedCursor):
@@ -54,16 +54,7 @@ class QldbCli(cmd.Cmd):
     prompt = 'pyqldbcli > '
 
     intro = dedent(f"""\
-        
-           #                                           #####  #       ######  ######  
-          # #   #    #   ##   ######  ####  #    #    #     # #       #     # #     # 
-         #   #  ##  ##  #  #      #  #    # ##   #    #     # #       #     # #     # 
-        #     # # ## # #    #    #   #    # # #  #    #     # #       #     # ######  
-        ####### #    # ######   #    #    # #  # #    #   # # #       #     # #     # 
-        #     # #    # #    #  #     #    # #   ##    #    #  #       #     # #     # 
-        #     # #    # #    # ######  ####  #    #     #### # ####### ######  ######
-
-        Welcome to the Amazon QLDB Python CLI version {__version__}
+        Welcome to the Amazon QLDB Python CLI version {version}
 
         Basic Amazon QLDB control plane operations are supported via commands like 'create' or 'delete'.
 
