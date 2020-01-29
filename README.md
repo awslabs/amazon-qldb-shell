@@ -50,4 +50,4 @@ The following tasks should be completed, in roughly the written order:
 
 ## License
 
-This project is licensed under the MIT-0 license.
+This project is licensed under the Apache 2.0 License.
