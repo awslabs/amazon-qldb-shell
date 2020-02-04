@@ -52,8 +52,6 @@ class QldbCli(cmd.Cmd):
     intro = dedent(f"""\
         Welcome to the Amazon QLDB Python CLI version {version}
 
-        Basic Amazon QLDB control plane operations are supported via commands like 'create' or 'delete'.
-
         To transact with a ledger via PartiQL, use the 'connect' command. Once connected, all future commands
         will be interpreted as PartiQL statements until the 'disconnect' command is issued.
 
@@ -91,23 +89,6 @@ class QldbCli(cmd.Cmd):
     def do_list(self, line):
         'List all available ledgers: list'
         logging.info(f'Ledgers: {self.list_ledgers()}')
-
-    @time_this
-    @single_noun_command
-    def do_delete(self, line):
-        'Delete the specified ledger. delete LEDGER'
-        logging.info(f'Deleting ledger {line}.')
-        self._qldb.delete_ledger(Name=line)
-        logging.info(f'Deleted ledger {line}.')
-
-    @time_this
-    @single_noun_command
-    def do_create(self, line):
-        'Create the specified ledger: create LEDGER'
-        logging.info(f'Creating ledger {line}.')
-        self._qldb.create_ledger(
-            Name=line, PermissionsMode='ALLOW_ALL', DeletionProtection=False)
-        logging.info(f'Created ledger {line}.')
 
     @time_this
     @single_noun_command
