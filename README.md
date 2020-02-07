@@ -1,53 +1,72 @@
 # Amazon QLDB Python CLI
 
-This project provides a basic CLI to abstract over the more tedious aspects of
- experimenting with Amazon QLDB. This project is not intended to be incorporated
- into an application or adopted for production purposes. My intent is to provide
- a window into rapid experimentation with QLDB, allowing you to:
+This tool provides a Command Line Interface (CLI) to send PartiQL statements to [Amazon Quantum Ledger Database (QLDB)](https://aws.amazon.com/qldb/). 
+ This tool is not intended to be incorporated into an application or adopted for production purposes. 
+ The objective of the tool is to give developers, devops, database administrators, and anyone else interested the opportunity for rapid experimentation with QLDB and [PartiQL](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.html). 
+## Prerequisites
 
- 1. Interact with the customer control plane in a more fluid manner than offered by the AWS SDK.
- 2. Execute arbitrary, basic PartiQL statements without directly interacting with database drivers or logging in to the AWS Console.
+### Basic Configuration
 
-## Using the Amazon QLDB Python CLI
+See [Accessing Amazon QLDB](https://docs.aws.amazon.com/qldb/latest/developerguide/accessing.html) for information on connecting to AWS.
 
-After cloning this repository, install the package:
+### Python 3.x
 
-```shell
-pip install -e .
-```
+The driver requires Python 3.x. Please see the link below for more detail to install Python 3.x:
 
-The CLI can then be invoked as follows:
+* [Python 3.x Installation](https://www.python.org/downloads/)
 
-```shell
-python pyqldbcli
-```
 
-By default, the CLI will use the default and credentials specified in `~/.aws.config/` and `~/.aws/credentials`. Various optional arguments can be added to override the profile, endpoints, and region used. To view the arguments, execute the following:
+### Getting Started
+Install the CLI using pip:
 
-```shell
-pyqldbcli --help
-```
+```pip install pyqldbcli```
 
-### Example Execution
+### Invoking the CLI
+The CLI can then be invoked by using the following command:
 
 ```shell
-pyqldbcli
-create test-ledger
-connect test-ledger
-CREATE TABLE TestTable
-INSERT INTO TestTable `{"Name": "Bob Smith"}`
-SELECT * FROM TestTable
-disconnect
-quit
+$ pyqldbcli --region <region_code>
+```
+An example region code that can be used is us-east-1.
+The currently avaiable regions are addressed in the [QLDB General Reference](https://docs.aws.amazon.com/general/latest/gr/qldb.html) page.
+By default, the CLI will use the default credentials specified in `~/.aws.config/` and `~/.aws/credentials`. Various optional arguments can be added to override the profile, endpoints, and region used. To view the arguments, execute the following:
+
+```shell
+$ pyqldbcli --help
 ```
 
-## TODO
+### Example Usage
+Assuming that the ledger, "test-ledger" has already been created:
+```shell
+$ pyqldbcli
+pyqldbcli> connect test-ledger
+pyqldbcli> CREATE TABLE TestTable
+pyqldbcli> INSERT INTO TestTable `{"Name": "John Doe"}` 
+pyqldbcli> SELECT * FROM TestTable
+pyqldbcli> disconnect
+pyqldbcli> quit
+```
+We use backticks in the example above since we use are using Ion literals. For more on querying Ion literals, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
+Each statement between connect and disconnect is considered as a transaction.
 
-The following tasks should be completed, in roughly the written order:
+### See also
 
-1. Add some basic tests to prevent changes from breaking the package.
-2. Add an 'explicit' mode that allows the user to consciously start the transaction, execute statements, and either commit or abort it.
+1. Amazon QLDB accepts and stores [Amazon ION](http://amzn.github.io/ion-docs/) Documents. Amazon Ion is a richly-typed, self-describing, hierarchical data serialization format offering interchangeable binary and text representations. For more information read the [ION docs](https://readthedocs.org/projects/ion-python/).
+2. Amazon QLDB supports the [PartiQL](https://partiql.org/) query language. PartiQL provides SQL-compatible query access across multiple data stores containing structured data, semistructured data, and nested data. For more information read the [PartiQL docs](https://partiql.org/docs.html).
+3. We use backticks in our example since we use are using Ion literals. For more on querying Ion with PartiQL, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
+
+## Development
+### Setting up the CLI
+
+After cloning this repository, activate a virtual environment and install the package by running:
+```shell
+$ virtualenv venv
+...
+$ . venv/bin/activate
+$ pip install -r requirements.txt
+$ pip install -e .
+```
 
 ## License
 
-This project is licensed under the Apache 2.0 License.
+This tool is licensed under the Apache 2.0 License.
