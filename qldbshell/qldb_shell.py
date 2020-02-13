@@ -14,14 +14,11 @@ import cmd
 import logging
 from textwrap import dedent
 
-import boto3
 from amazon.ion.simpleion import dumps
 from botocore.exceptions import ClientError, EndpointConnectionError
 from pyqldb.cursor.buffered_cursor import BufferedCursor
-from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldb.errors import SessionPoolEmptyError
 
-from qldbshell.errors import IllegalStateError
 from qldbshell.decorators import (time_this, zero_noun_command)
 
 from . import version
@@ -35,21 +32,12 @@ def print_result(cursor: BufferedCursor):
 
 class QldbShell(cmd.Cmd):
 
-    def __init__(self, profile="default",  qldb_session_endpoint=None, region=None, ledger=None):
+    def __init__(self, profile="default", pooled_driver=None):
         super(QldbShell, self).__init__()
         print(profile)
         print()
-        self._boto3_session = boto3.Session(
-            region_name=region, profile_name=profile)
-        self._qldb = self._boto3_session.client(
-            'qldb', endpoint_url=None)
-        self._qldb_session_endpoint = qldb_session_endpoint
-        self._in_session = False
-        if ledger is None:
-            raise IllegalStateError("Ledger must be specified")
         self._in_session = True
-        self._driver = PooledQldbDriver(
-            ledger, endpoint_url=self._qldb_session_endpoint, boto3_session=self._boto3_session)
+        self._driver = pooled_driver
 
 
     prompt = 'qldbshell > '
@@ -64,16 +52,16 @@ class QldbShell(cmd.Cmd):
         try:
             return super().onecmd(line)
         except EndpointConnectionError as e:
-            logging.fatal(f'Unable to connect to an endpoint. Please check CLI configuration. {e}')
+            logging.fatal(f'Unable to connect to an endpoint. Please check Shell configuration. {e}')
             self.quit_shell()
         except SessionPoolEmptyError as e:
-                logging.info(f'Query failed, please try again')
+            logging.info(f'Query failed, please try again')
         except ClientError as e:
             logging.error(f'Error encountered: {e}')
-            return False # don't stop
+        return False # don't stop
 
     def do_EOF(self, line):
-        'Exits the CLI; equivalent to calling quit: EOF'
+        'Exits the Shell; equivalent to calling quit: EOF'
         self.quit_shell()
 
     def quit_shell(self):
