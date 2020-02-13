@@ -16,9 +16,12 @@
 import argparse
 import logging
 import sys
+import boto3
 
 from botocore.exceptions import ClientError, EndpointConnectionError
+from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 
+from qldbshell.errors import IllegalStateError
 from .qldb_shell import QldbShell
 
 
@@ -67,8 +70,14 @@ def main():
     else:
         loglevel = logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-    cli = QldbShell(args.profile,
-                    qldb_session_endpoint=args.qldb_session_endpoint, region=args.region, ledger=args.ledger)
+    botoSession = boto3.Session(
+        region_name=args.region, profile_name=args.profile)
+
+    if args.ledger is None:
+        raise IllegalStateError("Ledger must be specified")
+    pooled_driver = PooledQldbDriver(
+        args.ledger, endpoint_url=args.qldb_session_endpoint, boto3_session=botoSession)
+    cli = QldbShell(args.profile, pooled_driver=pooled_driver)
     cli.cmdloop()
 
 
