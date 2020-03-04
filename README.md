@@ -25,7 +25,7 @@ Install the CLI using pip:
 The CLI can then be invoked by using the following command:
 
 ```shell
-$ pyqldbcli --region <region_code>
+$ pyqldbcli --region <region_code> --ledger <ledger_name>
 ```
 An example region code that can be used is us-east-1.
 The currently avaiable regions are addressed in the [QLDB General Reference](https://docs.aws.amazon.com/general/latest/gr/qldb.html) page.
@@ -38,12 +38,10 @@ $ pyqldbcli --help
 ### Example Usage
 Assuming that the ledger, "test-ledger" has already been created:
 ```shell
-$ pyqldbcli
-pyqldbcli> connect test-ledger
+$ pyqldbcli --region us-east-1 --ledger test-ledger
 pyqldbcli> CREATE TABLE TestTable
 pyqldbcli> INSERT INTO TestTable `{"Name": "John Doe"}` 
 pyqldbcli> SELECT * FROM TestTable
-pyqldbcli> disconnect
 pyqldbcli> quit
 ```
 We use backticks in the example above since we use are using Ion literals. For more on querying Ion literals, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).

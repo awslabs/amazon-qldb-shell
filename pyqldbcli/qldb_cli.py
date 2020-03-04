@@ -20,6 +20,7 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 from pyqldb.cursor.buffered_cursor import BufferedCursor
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 
+from errors import IllegalStateError
 from pyqldbcli.decorators import (single_noun_command, time_this,
                                   zero_noun_command)
 
@@ -38,24 +39,23 @@ class QldbCli(cmd.Cmd):
         super(QldbCli, self).__init__()
         self._boto3_session = boto3.Session(
             region_name=region, profile_name=profile)
-        self._qldb = self._boto3_session.client(
-            'qldb', endpoint_url=qldb_endpoint)
         self._qldb_session_endpoint = qldb_session_endpoint
         self._in_session = False
-        if ledger:
-            self._in_session = True
-            self._driver = PooledQldbDriver(
-                ledger, endpoint_url=self._qldb_session_endpoint, boto3_session=self._boto3_session)
+        if region is None:
+            raise IllegalStateError("Region must be specified. Example: us-east-1")
+        if ledger is None:
+            raise IllegalStateError("Ledger must be specified")
+        self._in_session = True
+        self._driver = PooledQldbDriver(
+            ledger, endpoint_url=self._qldb_session_endpoint, boto3_session=self._boto3_session)
+
 
     prompt = 'pyqldbcli > '
 
     intro = dedent(f"""\
         Welcome to the Amazon QLDB Python CLI version {version}
 
-        To transact with a ledger via PartiQL, use the 'connect' command. Once connected, all future commands
-        will be interpreted as PartiQL statements until the 'disconnect' command is issued.
-
-        For more information, type 'help'.
+        All future commands will be interpreted as PartiQL statements until the 'quit' command is issued.
     """)
 
     def onecmd(self, line):
@@ -72,9 +72,6 @@ class QldbCli(cmd.Cmd):
         'Exits the CLI; equivalent to calling quit: EOF'
         self.quit_cli()
 
-    def list_ledgers(self):
-        return list(map(lambda x: x['Name'], self._qldb.list_ledgers()['Ledgers']))
-
     def quit_cli(self):
         logging.info("Exiting pyqldb CLI.")
         exit(0)
@@ -83,49 +80,6 @@ class QldbCli(cmd.Cmd):
     def do_quit(self, line):
         'Exit the pyqldb CLI: quit'
         self.quit_cli()
-
-    @time_this
-    @zero_noun_command
-    def do_list(self, line):
-        'List all available ledgers: list'
-        logging.info(f'Ledgers: {self.list_ledgers()}')
-
-    @time_this
-    @single_noun_command
-    def do_describe(self, line):
-        'Describe the specified ledger: describe LEDGER'
-        logging.info(f'Describing ledger {line}.')
-        response = self._qldb.describe_ledger(Name=line)
-        del response['ResponseMetadata']
-        logging.info(response)
-
-    @time_this
-    @single_noun_command
-    def do_connect(self, line):
-        'Establish a connection with the specified ledger, enabling PartiQL execution: connect LEDGER'
-        if self._in_session:
-            self.do_disconnect('')
-        logging.info(f'Starting session with ledger {line}.')
-        ledgers = self.list_ledgers()
-        if line in ledgers:
-            logging.info(f'Ledger {line} exists.')
-            logging.info(f'Attempting to connect to ledger {line}')
-            self._driver = PooledQldbDriver(
-                line, endpoint_url=self._qldb_session_endpoint, boto3_session=self._boto3_session)
-            self._driver.get_session()
-            self._in_session = True
-            logging.info(
-                f'Ready to transact with ledger {line}. Any subsequent unrecognized commands will be treated as PartiQL queries.')
-        else:
-            logging.error(f'No ledger found with name {line}')
-
-    @time_this
-    @zero_noun_command
-    def do_disconnect(self, line):
-        'Exit the current database session: disconnect'
-        logging.info("Closing current session.")
-        self._in_session = False
-        self._session = None
 
     @time_this
     def default(self, line):
