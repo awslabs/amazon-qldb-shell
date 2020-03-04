@@ -55,7 +55,7 @@ def main():
     parser.add_argument(
         "-l",
         "--ledger",
-        help="Name of a ledger to initially connec to",
+        help="Name of a ledger to connect to",
         action="store",
     )
     parser.add_argument(
