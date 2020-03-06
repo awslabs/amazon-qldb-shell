@@ -12,16 +12,16 @@
 # permissions and limitations under the License.
 
 from setuptools import setup
-from pyqldbcli import version
+from qldbshell import version
 
 requires = ['pyqldb>=1.0.0rc2',
             'boto3>=1.9.237',
             'amazon.ion>=0.5.0']
 
 setup(
-    name='pyqldbcli',
+    name='qldbshell',
     version=version,
-    packages=['pyqldbcli'],
+    packages=['qldbshell'],
     description='A basic CLI for interacting with Amazon QLDB',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -30,6 +30,6 @@ setup(
     license="Apache License 2.0",
     entry_points={
         'console_scripts': [
-            'pyqldbcli = pyqldbcli.__main__:main'
+            'qldbshell = qldbshell.__main__:main'
         ]
     })

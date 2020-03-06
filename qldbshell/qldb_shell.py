@@ -21,8 +21,7 @@ from pyqldb.cursor.buffered_cursor import BufferedCursor
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 
 from errors import IllegalStateError
-from pyqldbcli.decorators import (single_noun_command, time_this,
-                                  zero_noun_command)
+from qldbshell.decorators import (time_this, zero_noun_command)
 
 from . import version
 
@@ -33,12 +32,14 @@ def print_result(cursor: BufferedCursor):
     logging.info("\n" + results)
 
 
-class QldbCli(cmd.Cmd):
+class QldbShell(cmd.Cmd):
 
     def __init__(self, profile=None, qldb_endpoint=None, qldb_session_endpoint=None, region=None, ledger=None):
-        super(QldbCli, self).__init__()
+        super(QldbShell, self).__init__()
         self._boto3_session = boto3.Session(
             region_name=region, profile_name=profile)
+        self._qldb = self._boto3_session.client(
+            'qldb', endpoint_url=qldb_endpoint)
         self._qldb_session_endpoint = qldb_session_endpoint
         self._in_session = False
         if region is None:
@@ -50,10 +51,10 @@ class QldbCli(cmd.Cmd):
             ledger, endpoint_url=self._qldb_session_endpoint, boto3_session=self._boto3_session)
 
 
-    prompt = 'pyqldbcli > '
+    prompt = 'qldbshell > '
 
     intro = dedent(f"""\
-        Welcome to the Amazon QLDB Python CLI version {version}
+        Welcome to the Amazon QLDB Shell version {version}
 
         All future commands will be interpreted as PartiQL statements until the 'quit' command is issued.
     """)
@@ -63,23 +64,23 @@ class QldbCli(cmd.Cmd):
             return super().onecmd(line)
         except EndpointConnectionError as e:
             logging.fatal(f'Unable to connect to an endpoint. Please check CLI configuration. {e}')
-            self.quit_cli()
+            self.quit_shell()
         except ClientError as e:
             logging.error(f'Error encountered: {e}')
             return False # don't stop
 
     def do_EOF(self, line):
         'Exits the CLI; equivalent to calling quit: EOF'
-        self.quit_cli()
+        self.quit_shell()
 
-    def quit_cli(self):
-        logging.info("Exiting pyqldb CLI.")
+    def quit_shell(self):
+        logging.info("Exiting qldb shell.")
         exit(0)
 
     @zero_noun_command
     def do_quit(self, line):
-        'Exit the pyqldb CLI: quit'
-        self.quit_cli()
+        'Exit the qldb shell: quit'
+        self.quit_shell()
 
     @time_this
     def default(self, line):

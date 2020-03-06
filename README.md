@@ -1,6 +1,6 @@
-# Amazon QLDB Python CLI
+# Amazon QLDB Shell
 
-This tool provides a Command Line Interface (CLI) to send PartiQL statements to [Amazon Quantum Ledger Database (QLDB)](https://aws.amazon.com/qldb/). 
+This tool provides an interface to send PartiQL statements to [Amazon Quantum Ledger Database (QLDB)](https://aws.amazon.com/qldb/). 
  This tool is not intended to be incorporated into an application or adopted for production purposes. 
  The objective of the tool is to give developers, devops, database administrators, and anyone else interested the opportunity for rapid experimentation with QLDB and [PartiQL](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.html). 
 ## Prerequisites
@@ -17,32 +17,32 @@ The driver requires Python 3.x. Please see the link below for more detail to ins
 
 
 ### Getting Started
-Install the CLI using pip:
+Install the QLDB Shell using pip:
 
-```pip install pyqldbcli```
+```pip install qldbshell```
 
-### Invoking the CLI
-The CLI can then be invoked by using the following command:
+### Invocation
+The shell can then be invoked by using the following command:
 
 ```shell
-$ pyqldbcli --region <region_code> --ledger <ledger_name>
+$ qldbshell --region <region_code> --ledger <ledger_name>
 ```
 An example region code that can be used is us-east-1.
 The currently avaiable regions are addressed in the [QLDB General Reference](https://docs.aws.amazon.com/general/latest/gr/qldb.html) page.
-By default, the CLI will use the default credentials specified in `~/.aws.config/` and `~/.aws/credentials`. Various optional arguments can be added to override the profile, endpoints, and region used. To view the arguments, execute the following:
+By default, the shell will use the default credentials specified in `~/.aws.config/` and `~/.aws/credentials`. Various optional arguments can be added to override the profile, endpoints, and region used. To view the arguments, execute the following:
 
 ```shell
-$ pyqldbcli --help
+$ qldbshell --help
 ```
 
 ### Example Usage
 Assuming that the ledger, "test-ledger" has already been created:
 ```shell
-$ pyqldbcli --region us-east-1 --ledger test-ledger
-pyqldbcli> CREATE TABLE TestTable
-pyqldbcli> INSERT INTO TestTable `{"Name": "John Doe"}` 
-pyqldbcli> SELECT * FROM TestTable
-pyqldbcli> quit
+$ qldbshell --region us-east-1 --ledger test-ledger
+qldbshell> CREATE TABLE TestTable
+qldbshell> INSERT INTO TestTable `{"Name": "John Doe"}` 
+qldbshell> SELECT * FROM TestTable
+qldbshell> quit
 ```
 We use backticks in the example above since we use are using Ion literals. For more on querying Ion literals, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
 Each statement between connect and disconnect is considered as a transaction.
@@ -54,7 +54,7 @@ Each statement between connect and disconnect is considered as a transaction.
 3. We use backticks in our example since we use are using Ion literals. For more on querying Ion with PartiQL, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
 
 ## Development
-### Setting up the CLI
+### Setting up the Shell
 
 After cloning this repository, activate a virtual environment and install the package by running:
 ```shell
