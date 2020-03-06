@@ -19,7 +19,7 @@ import sys
 
 from botocore.exceptions import ClientError, EndpointConnectionError
 
-from .qldb_cli import QldbCli
+from .qldb_shell import QldbShell
 
 
 def main():
@@ -72,8 +72,8 @@ def main():
     else:
         loglevel = logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-    cli = QldbCli(args.profile, args.qldb_endpoint,
-                  qldb_session_endpoint=args.qldb_session_endpoint, region=args.region, ledger=args.ledger)
+    cli = QldbShell(args.profile, args.qldb_endpoint,
+                    qldb_session_endpoint=args.qldb_session_endpoint, region=args.region, ledger=args.ledger)
     cli.cmdloop()
 
 
