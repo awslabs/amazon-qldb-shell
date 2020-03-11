@@ -24,27 +24,15 @@ from .qldb_shell import QldbShell
 
 def main():
     parser = argparse.ArgumentParser(
-        description="A CLI wrapper around the AWS SDK for QLDB and `pyqldb`, the Amazon QLDB Driver for Python.",
+        description="A shell wrapper around `pyqldb`, the Amazon QLDB Driver for Python.",
         epilog="As an alternative to the commandline, params can be placed in a file, one per line, and specified on the commandline like '%(prog)s @params.conf'.",
         fromfile_prefix_chars='@')
+    required_named = parser.add_argument_group('required named arguments')
     parser.add_argument(
         "-v",
         "--verbose",
         help="increase output verbosity",
         action="store_true")
-    parser.add_argument(
-        "-r",
-        "--region",
-        help="AWS Region to use for credentials and/or endpoint formation, e.g. us-east-1",
-        action="store",
-    )
-    parser.add_argument(
-        "-c",
-        "--qldb-endpoint",
-        help="Endpoint to use for the qldb API",
-        action="store",
-        dest="qldb_endpoint"
-    )
     parser.add_argument(
         "-s",
         "--qldb-session-endpoint",
@@ -53,16 +41,23 @@ def main():
         dest="qldb_session_endpoint"
     )
     parser.add_argument(
-        "-l",
-        "--ledger",
-        help="Name of a ledger to connect to",
-        action="store",
+        "-r",
+        "--region",
+        help="AWS Region to use for credentials and/or endpoint formation, e.g. us-east-1",
+        action="store"
     )
     parser.add_argument(
         "-p",
         "--profile",
-        help="Name of a profile whose credentials we should use",
+        help="Name of a profile speficified in aws credentials setup whose credentials we should use",
         action="store",
+    )
+    required_named.add_argument(
+        "-l",
+        "--ledger",
+        help="Name of a ledger to connect to",
+        action="store",
+        required=True
     )
     args = parser.parse_args()
 
@@ -72,7 +67,7 @@ def main():
     else:
         loglevel = logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-    cli = QldbShell(args.profile, args.qldb_endpoint,
+    cli = QldbShell(args.profile,
                     qldb_session_endpoint=args.qldb_session_endpoint, region=args.region, ledger=args.ledger)
     cli.cmdloop()
 

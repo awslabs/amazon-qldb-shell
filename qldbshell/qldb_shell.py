@@ -27,23 +27,23 @@ from . import version
 
 
 def print_result(cursor: BufferedCursor):
-    results = str().join(list(map(lambda x: dumps(x, binary=False,
-                                                  indent=' ', omit_version_marker=True) + ",\n", cursor)))
-    logging.info("\n" + results)
+    results = list(map(lambda x: dumps(x, binary=False,
+                                                  indent=' ', omit_version_marker=True), cursor))
+    logging.info("\n" + str(',\n').join(results))
 
 
 class QldbShell(cmd.Cmd):
 
-    def __init__(self, profile=None, qldb_endpoint=None, qldb_session_endpoint=None, region=None, ledger=None):
+    def __init__(self, profile="default",  qldb_session_endpoint=None, region=None, ledger=None):
         super(QldbShell, self).__init__()
+        print(profile)
+        print()
         self._boto3_session = boto3.Session(
             region_name=region, profile_name=profile)
         self._qldb = self._boto3_session.client(
-            'qldb', endpoint_url=qldb_endpoint)
+            'qldb', endpoint_url=None)
         self._qldb_session_endpoint = qldb_session_endpoint
         self._in_session = False
-        if region is None:
-            raise IllegalStateError("Region must be specified. Example: us-east-1")
         if ledger is None:
             raise IllegalStateError("Ledger must be specified")
         self._in_session = True
@@ -56,7 +56,7 @@ class QldbShell(cmd.Cmd):
     intro = dedent(f"""\
         Welcome to the Amazon QLDB Shell version {version}
 
-        All future commands will be interpreted as PartiQL statements until the 'quit' command is issued.
+        All future commands will be interpreted as PartiQL statements until the 'exit' command is issued.
     """)
 
     def onecmd(self, line):
@@ -78,18 +78,18 @@ class QldbShell(cmd.Cmd):
         exit(0)
 
     @zero_noun_command
-    def do_quit(self, line):
+    def do_exit(self, line):
         'Exit the qldb shell: quit'
         self.quit_shell()
 
     @time_this
     def default(self, line):
-        'If currently in a session, treat unrecognized input as PartiQL. Else, do nothing.'
+        # If currently in a session, treat unrecognized input as PartiQL. Else, do nothing.
         if self._in_session:
             session = self._driver.get_session()
             try:
-                logging.info(print_result(session.execute_lambda(
-                    lambda x: x.execute_statement(line))))
+                print_result(session.execute_lambda(
+                    lambda x: x.execute_statement(line)))
             except ClientError as e:
                 logging.warning(f'Error while executing query: {e}')
         else:
