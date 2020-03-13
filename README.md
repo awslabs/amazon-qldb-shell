@@ -13,7 +13,7 @@ See [Accessing Amazon QLDB](https://docs.aws.amazon.com/qldb/latest/developergui
 
 The driver requires Python 3.4 or later. Please see the link below for more detail to install Python:
 
-* [Python 3 Installation](https://www.python.org/downloads/)
+* [Python Installation](https://www.python.org/downloads/)
 
 
 ### Getting Started
