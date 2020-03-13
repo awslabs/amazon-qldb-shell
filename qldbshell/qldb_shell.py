@@ -19,6 +19,7 @@ from amazon.ion.simpleion import dumps
 from botocore.exceptions import ClientError, EndpointConnectionError
 from pyqldb.cursor.buffered_cursor import BufferedCursor
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
+from pyqldb.errors import SessionPoolEmptyError
 
 from errors import IllegalStateError
 from qldbshell.decorators import (time_this, zero_noun_command)
@@ -65,6 +66,8 @@ class QldbShell(cmd.Cmd):
         except EndpointConnectionError as e:
             logging.fatal(f'Unable to connect to an endpoint. Please check CLI configuration. {e}')
             self.quit_shell()
+        except SessionPoolEmptyError as e:
+                logging.info(f'Query failed, please try again')
         except ClientError as e:
             logging.error(f'Error encountered: {e}')
             return False # don't stop
@@ -92,5 +95,7 @@ class QldbShell(cmd.Cmd):
                     lambda x: x.execute_statement(line)))
             except ClientError as e:
                 logging.warning(f'Error while executing query: {e}')
+            finally:
+                session.close()
         else:
             self.do_help('')
