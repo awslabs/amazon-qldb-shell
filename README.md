@@ -64,6 +64,10 @@ $ . venv/bin/activate
 $ pip install -r requirements.txt
 $ pip install -e .
 ```
+## Release Notes
+
+Preview release of the shell.
+The release supports single line statements and couple of experiences may change in future with the addition of new features
 
 ## License
 
