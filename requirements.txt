@@ -1,5 +1,5 @@
-pyqldb
-argparse
-amazon.ion
-boto3
+pyqldb~=1.0.0rc2
+argparse~=1.4.0
+amazon.ion~=0.5.0
+boto3~=1.9.237
 
