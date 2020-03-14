@@ -11,7 +11,7 @@
 # express or implied. See the License for the specific language governing 
 # permissions and limitations under the License.
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from qldbshell import version
 
 requires = ['pyqldb>=1.0.0rc2',
@@ -21,7 +21,7 @@ requires = ['pyqldb>=1.0.0rc2',
 setup(
     name='qldbshell',
     version=version,
-    packages=['qldbshell'],
+    packages=find_packages(),
     description='A basic CLI for interacting with Amazon QLDB',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
