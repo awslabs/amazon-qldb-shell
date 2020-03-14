@@ -21,7 +21,7 @@ from pyqldb.cursor.buffered_cursor import BufferedCursor
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldb.errors import SessionPoolEmptyError
 
-from errors import IllegalStateError
+from qldbshell.errors import IllegalStateError
 from qldbshell.decorators import (time_this, zero_noun_command)
 
 from . import version
