@@ -43,7 +43,7 @@ $ qldbshell --region us-east-1 --ledger test-ledger
 qldbshell> CREATE TABLE TestTable
 qldbshell> INSERT INTO TestTable `{"Name": "John Doe"}` 
 qldbshell> SELECT * FROM TestTable
-qldbshell> quit
+qldbshell> exit
 ```
 We use backticks in the example above since we use are using Ion literals. For more on querying Ion literals, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
 Each statement between connect and disconnect is considered as a transaction.
