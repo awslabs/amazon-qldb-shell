@@ -19,7 +19,7 @@ The driver requires Python 3.4 or later. Please see the link below for more deta
 ### Getting Started
 Install the QLDB Shell using pip:
 
-```pip install qldbshell```
+```pip3 install qldbshell```
 
 ### Invocation
 The shell can then be invoked by using the following command:
@@ -65,10 +65,6 @@ $ . venv/bin/activate
 $ pip install -r requirements.txt
 $ pip install -e .
 ```
-## Release Notes
-
-Preview release of the shell.
-The release supports single line statements and couple of experiences may change in future with the addition of new features
 
 ## License
 
