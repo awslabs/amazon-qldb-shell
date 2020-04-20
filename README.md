@@ -29,7 +29,7 @@ $ qldbshell --region <region_code> --ledger <ledger_name>
 ```
 An example region code that can be used is us-east-1.
 The currently avaiable regions are addressed in the [QLDB General Reference](https://docs.aws.amazon.com/general/latest/gr/qldb.html) page.
-By default, the shell will use the credentials specified as environment variables and then in the default profile mentioned in `~/.aws.credentials/` and then in `~/.aws/credentials`. 
+By default, the shell will use the credentials specified as environment variables and then in the default profile mentioned in `~/.aws/credentials/` (default location set in the AWS_SHARED_CREDENTIALS_FILE environment variable) and then the default profile in `~/.aws/config` (default location set in AWS_CONFIG_FILE environment variable). 
 Various optional arguments can be added to override the profile, endpoints, and region used. To view the arguments, execute the following:
 
 ```shell
