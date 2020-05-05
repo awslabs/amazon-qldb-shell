@@ -1,3 +1,10 @@
+# 1.0.1
+
+## :tada: Enhancements
+
+* Error out of shell immediately when no credentials are present as reported in [issue#14](https://github.com/awslabs/amazon-qldb-shell/issues/14)
+
+
 # 1.0.0 
 
 ## :tada: Enhancements

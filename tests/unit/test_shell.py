@@ -10,10 +10,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
-from botocore.exceptions import EndpointConnectionError, ClientError
+from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldb.errors import SessionPoolEmptyError
 
+from qldbshell.errors import NoCredentialError
 from qldbshell.qldb_shell import QldbShell
 from unittest import TestCase
 from unittest.mock import patch
@@ -29,6 +30,13 @@ class TestQldbShell(TestCase):
         mock_shell = QldbShell(None, mockdriver)
 
         assert mock_shell is not None
+
+    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    def test_constructor_no_credentials_throws_exception(self, mockdriver):
+        mockdriver.get_session.side_effect = NoCredentialsError()
+
+        with self.assertRaises(NoCredentialError):
+            QldbShell(None, mockdriver)
 
     @patch('pyqldb.session.pooled_qldb_session.PooledQldbSession')
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
