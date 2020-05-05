@@ -15,13 +15,14 @@ import logging
 from textwrap import dedent
 
 from amazon.ion.simpleion import dumps
-from botocore.exceptions import ClientError, EndpointConnectionError
+from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 from pyqldb.cursor.buffered_cursor import BufferedCursor
 from pyqldb.errors import SessionPoolEmptyError
 
 from qldbshell.decorators import (time_this, zero_noun_command)
 
 from . import version
+from .errors import NoCredentialError
 
 
 def print_result(cursor: BufferedCursor):
@@ -34,10 +35,17 @@ class QldbShell(cmd.Cmd):
 
     def __init__(self, profile="default", pooled_driver=None):
         super(QldbShell, self).__init__()
-        print(profile)
+        if profile:
+            print(profile)
         print()
-        self._in_session = True
+
         self._driver = pooled_driver
+        try:
+            session = self._driver.get_session()
+            session.close()
+        except NoCredentialsError:
+            raise NoCredentialError("No credentials present") from None
+        self._in_session = True
 
 
     prompt = 'qldbshell > '

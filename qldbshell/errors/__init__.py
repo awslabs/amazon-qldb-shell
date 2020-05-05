@@ -13,3 +13,6 @@
 
 class IllegalStateError(Exception):
     pass
+
+class NoCredentialError(Exception):
+    pass
