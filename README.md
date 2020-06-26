@@ -46,7 +46,7 @@ qldbshell> SELECT * FROM TestTable
 qldbshell> exit
 ```
 We use backticks in the example above since we use are using Ion literals. For more on querying Ion literals, go [here](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
-Each statement between connect and disconnect is considered as a transaction.
+Each statement except exit is considered as a transaction.
 
 ### See also
 

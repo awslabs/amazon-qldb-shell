@@ -1,9 +1,9 @@
 # 1.0.1
 
-## :tada: Enhancements
+## :bug: Fixes
 
 * Error out of shell immediately when no credentials are present as reported in [issue#14](https://github.com/awslabs/amazon-qldb-shell/issues/14)
-
+* Lock driver and amazon ion versions during shell installation
 
 # 1.0.0 
 
