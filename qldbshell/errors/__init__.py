@@ -10,9 +10,31 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
+import re
 
 class IllegalStateError(Exception):
     pass
 
 class NoCredentialError(Exception):
     pass
+
+class QuerySyntaxError(Exception):
+    pass
+
+def is_transaction_expired_exception(e):
+    """
+    Checks if exception occurred for an expired transaction
+
+    :type e: :py:class:`botocore.exceptions.ClientError`
+    :param e: The ClientError caught.
+
+    :rtype: bool
+    :return: True if the exception denote that a transaction has expired. False otherwise.
+    """
+    is_invalid_session = e.response['Error']['Code'] == 'InvalidSessionException'
+
+    if "Message" in e.response["Error"]:
+        return is_invalid_session and re.search("Transaction .* has expired", e.response["Error"]["Message"])
+
+    return False
+
