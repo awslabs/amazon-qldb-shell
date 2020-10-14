@@ -11,7 +11,7 @@ See [Accessing Amazon QLDB](https://docs.aws.amazon.com/qldb/latest/developergui
 
 ### Python 3.4 or later
 
-The driver requires Python 3.4 or later. Please see the link below for more detail to install Python:
+The shell requires Python 3.4 or later. Please see the link below for more detail to install Python:
 
 * [Python Installation](https://www.python.org/downloads/)
 

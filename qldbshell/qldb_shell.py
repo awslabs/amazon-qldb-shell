@@ -30,6 +30,15 @@ from qldbshell.shell_utils import print_result
 
 
 class QldbShell(cmd.Cmd):
+    """
+    A class representing the shell that the user interacts with.
+    It controls the main flow of the shell.
+
+    :type profile: str
+
+    :type pooled_driver: PooledQldbDriver
+
+    """
 
     def __init__(self, profile="default", pooled_driver=None):
         super(QldbShell, self).__init__()
@@ -46,20 +55,18 @@ class QldbShell(cmd.Cmd):
         self._is_interactive_transaction = False
         self._driver_transaction = None
         self._transaction_session = None
-
-
-    prompt = 'qldbshell > '
-
-    intro = dedent(f"""\
+        self.prompt = 'qldbshell > '
+        self.intro = dedent(f"""\
         Welcome to the Amazon QLDB Shell version {version}
         Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit or abort a transaction.
         Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create transactions non-interactively.
-        All other commands will be interpreted as PartiQL statements until the 'exit' command is issued.
-        
-    """)
+        All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.
+        """)
 
     def onecmd(self, line):
         try:
+            if (line.lower().strip().strip(";") == "quit") or (line.lower().strip().strip(";") == "exit"):
+                line = line.lower().strip().strip(";")
             return super().onecmd(line)
         except EndpointConnectionError as e:
             logging.fatal(f'Unable to connect to an endpoint. Please check Shell configuration. {e}')
@@ -82,6 +89,8 @@ class QldbShell(cmd.Cmd):
     def do_exit(self, line):
         'Exit the qldb shell: quit'
         self.quit_shell()
+
+    do_quit = do_exit
 
     @time_this
     def default(self, line):
@@ -106,7 +115,7 @@ class QldbShell(cmd.Cmd):
             shell_transactions = self.process_input(line)
             self.run_transactions(shell_transactions)
         except QuerySyntaxError as qse:
-            logging.warning(f'Error in query: {qse}')
+            self.stdout.write(f'Error in query: {qse}\n')
 
         except ClientError as ce:
             if is_transaction_expired_exception(ce):
@@ -130,12 +139,12 @@ class QldbShell(cmd.Cmd):
                 if openTx:
                     raise QuerySyntaxError("Transaction needs to be committed or aborted before starting new one")
                 openTx = True
-                shell_transaction = ShellTransaction([], None)
+                shell_transaction = ShellTransaction(None)
             elif statement.lower() == "commit":
                 if openTx is False:
                     raise QuerySyntaxError("Commit used before transaction was started")
                 if shell_transaction is None:
-                    shell_transaction = ShellTransaction([], None)
+                    shell_transaction = ShellTransaction(None)
                 shell_transaction.set_outcome(Outcome.COMMIT)
                 openTx = False
                 shell_transactions.append(shell_transaction)
@@ -144,7 +153,7 @@ class QldbShell(cmd.Cmd):
                 if openTx is False:
                     raise QuerySyntaxError("Abort used before transaction was started")
                 if shell_transaction is None:
-                    shell_transaction = ShellTransaction([], None)
+                    shell_transaction = ShellTransaction(Outcome.ABORT)
                 shell_transaction.set_outcome(Outcome.ABORT)
                 openTx = False
                 shell_transactions.append(shell_transaction)
@@ -155,7 +164,7 @@ class QldbShell(cmd.Cmd):
                 if openTx is False:
                     raise QuerySyntaxError("A PartiQL statement was used before a transaction was started")
                 if shell_transaction is None:
-                    shell_transaction = ShellTransaction([], None)
+                    shell_transaction = ShellTransaction(None)
                 shell_transaction.add_query(statement)
         if shell_transaction is not None:
             shell_transactions.append(shell_transaction)
@@ -167,7 +176,6 @@ class QldbShell(cmd.Cmd):
 
         if self._driver_transaction is None:
             self._driver_transaction = self._transaction_session.start_transaction()
-        transaction_id = self._driver_transaction.transaction_id
 
         if shell_transaction.is_start():
             self.open_interactive_transaction(self._driver_transaction)
@@ -181,16 +189,10 @@ class QldbShell(cmd.Cmd):
             shell_transaction.run_transaction(self._driver_transaction)
         except ClientError as ce:
             shell_transaction.set_outcome(Outcome.ABORT)
-            logging.info("Transaction with transaction_id {} aborted".format(transaction_id))
             shell_transaction.execute_outcome(self._driver_transaction)
             raise ce
-        shell_transaction.execute_outcome(self._driver_transaction)
 
-        if shell_transaction.get_outcome() is not None:
-            if shell_transaction.get_outcome() == Outcome.ABORT:
-                logging.info("Transaction with transaction_id {} aborted".format(transaction_id))
-            elif shell_transaction.get_outcome() == Outcome.COMMIT:
-                logging.info("Transaction with transaction_id {} committed".format(transaction_id))
+        shell_transaction.execute_outcome(self._driver_transaction)
 
         if shell_transaction.get_outcome() is not None:
             self.close_interactive_transaction()
@@ -206,3 +208,19 @@ class QldbShell(cmd.Cmd):
         self._driver_transaction = driver_transaction
         self.prompt = 'qldbshell(tx: {}) > '.format(self._driver_transaction.transaction_id)
         self._is_interactive_transaction = True
+
+    @zero_noun_command
+    def do_help(self, arg):
+        'Help command with instructions on how to use them'
+        super().do_help(arg)
+        self.stdout.write("Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit\
+         or abort a transaction.\n")
+        self.stdout.write("Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create\
+         transactions non-interactively.\n")
+        self.stdout.write("All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command\
+         is issued.")
+        self.stdout.write("\n")
+        self.stdout.write("\n")
+
+    def emptyline(self):
+        return

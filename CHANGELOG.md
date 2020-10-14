@@ -1,11 +1,22 @@
-# 1.0.1
+# 1.1.0 (2020-10-22)
+
+## :bug: Fixes
+
+* Fixed empty line repeating the last command used in the shell. Now, an empty line does not repeat the last command.
+
+## :tada: Enhancements
+
+* Added `quit` and `Ctrl + D` as ways to exit the shell along with existing `exit` command.
+* Added interactive and non-interactive transactions to the shell. More details can be found in the [release notes](http://github.com/awslabs/amazon-qldb-shell/releases/tag/v1.1.0).
+
+# 1.0.1 (2020-07-01)
 
 ## :bug: Fixes
 
 * Error out of shell immediately when no credentials are present as reported in [issue#14](https://github.com/awslabs/amazon-qldb-shell/issues/14)
 * Lock driver and amazon ion versions during shell installation
 
-# 1.0.0 
+# 1.0.0 (2020-04-20)
 
 ## :tada: Enhancements
 
