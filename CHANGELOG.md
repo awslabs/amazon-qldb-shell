@@ -8,6 +8,9 @@
 
 * Added `quit` and `Ctrl + D` as ways to exit the shell along with existing `exit` command.
 * Added interactive and non-interactive transactions to the shell. More details can be found in the [release notes](http://github.com/awslabs/amazon-qldb-shell/releases/tag/v1.1.0).
+* Changed shell depedency from Cmd to prompt-toolkit to pasting multiple lines and entering multiple lines. More details can be found in the [release notes](http://github.com/awslabs/amazon-qldb-shell/releases/tag/v1.1.0).
+* Added support for recommendation on keywords and active Table names on pressing the `Tab` key.
+* `Ctrl + C` cancels the current command.
 
 # 1.0.1 (2020-07-01)
 

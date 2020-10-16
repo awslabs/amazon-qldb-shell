@@ -10,13 +10,20 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
 # express or implied. See the License for the specific language governing 
 # permissions and limitations under the License.
-import cmd
 import logging
 from textwrap import dedent
 
-
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.styles import Style
+
 from pyqldb.errors import SessionPoolEmptyError
+
 
 from qldbshell.decorators import (time_this, zero_noun_command)
 
@@ -26,10 +33,12 @@ from .errors import NoCredentialError, QuerySyntaxError
 from .errors import is_transaction_expired_exception
 from .shell_transaction import ShellTransaction
 
-from qldbshell.shell_utils import print_result
+from qldbshell.shell_utils import print_result, reserved_words
+
+TABLE_QUERY = "SELECT VALUE name FROM information_schema.user_tables WHERE status = 'ACTIVE'"
 
 
-class QldbShell(cmd.Cmd):
+class QldbShell:
     """
     A class representing the shell that the user interacts with.
     It controls the main flow of the shell.
@@ -49,6 +58,8 @@ class QldbShell(cmd.Cmd):
         self._driver = pooled_driver
         try:
             session = self._driver.get_session()
+            tables_result = session.execute_lambda(lambda txn: txn.execute_statement(TABLE_QUERY))
+            self._tables = list(tables_result)
             session.close()
         except NoCredentialsError:
             raise NoCredentialError("No credentials present") from None
@@ -63,11 +74,59 @@ class QldbShell(cmd.Cmd):
         All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.
         """)
 
+        print(self.intro)
+
+    kb = KeyBindings()
+
+    @kb.add('escape', 'enter')
+    def _(event):
+        event.current_buffer.insert_text('\n')
+
+    @kb.add('enter')
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
+    def _strip_text(self, text):
+        return text.lower().strip().strip(";")
+
+    def cmdloop(self, ledger):
+        example_style = Style.from_dict({
+            'rprompt': 'bg:#ff0066 #ffffff',
+        })
+        right_prompt = '<Ledger:' + ledger + '>'
+        complete_words = reserved_words
+        complete_words.extend(self._tables)
+        qldb_completer = WordCompleter(complete_words, ignore_case=True)
+        shell_session = PromptSession(complete_while_typing=True, completer=qldb_completer,
+                                      auto_suggest=AutoSuggestFromHistory(), vi_mode=True, complete_style = CompleteStyle.READLINE_LIKE,
+                                      rprompt=right_prompt, style=example_style, multiline=True, key_bindings=self.kb)
+
+        text = ""
+        while self._strip_text(text) != 'exit' and self._strip_text(text) != 'quit':
+            try:
+                text = shell_session.prompt(self.prompt)
+                text = text.strip()
+                if text:
+                    self.onecmd(text)
+            except KeyboardInterrupt:
+                print("CTRL-C\n")
+                text = ""
+                continue
+            except EOFError:
+                print("CTRL-D\n")
+                self.do_exit("")
+                return
+        self.do_exit("")
+
     def onecmd(self, line):
         try:
-            if (line.lower().strip().strip(";") == "quit") or (line.lower().strip().strip(";") == "exit"):
-                line = line.lower().strip().strip(";")
-            return super().onecmd(line)
+            if (self._strip_text(line) == "quit") or (self._strip_text(line) == "exit"):
+                line = self._strip_text(line)
+                self.do_exit("")
+            elif self._strip_text(line) == "help":
+                self.do_help(self._strip_text(line))
+                return
+            return self.default(line)
         except EndpointConnectionError as e:
             logging.fatal(f'Unable to connect to an endpoint. Please check Shell configuration. {e}')
             self.quit_shell()
@@ -79,26 +138,27 @@ class QldbShell(cmd.Cmd):
 
     def do_EOF(self, line):
         'Exits the Shell; equivalent to calling quit: EOF'
-        self.quit_shell()
+        self.quit_shell(line)
 
-    def quit_shell(self):
+    @zero_noun_command
+    def quit_shell(self, line):
         logging.info("Exiting qldb shell.")
         exit(0)
 
     @zero_noun_command
     def do_exit(self, line):
         'Exit the qldb shell: quit'
-        self.quit_shell()
+        self.quit_shell(line)
 
     do_quit = do_exit
 
     @time_this
     def default(self, line):
-        if line.strip().lower().startswith("start") or self._is_interactive_transaction:
+        if self._strip_text(line).startswith("start") or self._is_interactive_transaction:
             self.handle_transaction_flow(line)
-        elif (self._is_interactive_transaction is False) and (line.lower().strip().strip(";") == "abort"):
+        elif (self._is_interactive_transaction is False) and (self._strip_text(line) == "abort"):
             logging.info("'abort' can only be used on an active transaction")
-        elif (self._is_interactive_transaction is False) and (line.lower().strip().strip(";") == "commit"):
+        elif (self._is_interactive_transaction is False) and (self._strip_text(line) == "commit"):
             logging.info("'commit' can only be used on an active transaction")
         else:
             session = self._driver.get_session()
@@ -115,7 +175,7 @@ class QldbShell(cmd.Cmd):
             shell_transactions = self.process_input(line)
             self.run_transactions(shell_transactions)
         except QuerySyntaxError as qse:
-            self.stdout.write(f'Error in query: {qse}\n')
+            print(f'Error in query: {qse}\n')
 
         except ClientError as ce:
             if is_transaction_expired_exception(ce):
@@ -209,18 +269,10 @@ class QldbShell(cmd.Cmd):
         self.prompt = 'qldbshell(tx: {}) > '.format(self._driver_transaction.transaction_id)
         self._is_interactive_transaction = True
 
-    @zero_noun_command
-    def do_help(self, arg):
+    def do_help(self, args):
         'Help command with instructions on how to use them'
-        super().do_help(arg)
-        self.stdout.write("Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit\
-         or abort a transaction.\n")
-        self.stdout.write("Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create\
-         transactions non-interactively.\n")
-        self.stdout.write("All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command\
-         is issued.")
-        self.stdout.write("\n")
-        self.stdout.write("\n")
+        print("Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit or abort a transaction.")
+        print("Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create transactions non-interactively.")
+        print("All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.")
+        print("\n")
 
-    def emptyline(self):
-        return
