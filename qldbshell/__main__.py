@@ -79,8 +79,8 @@ def main():
     SHELL_CONFIG = Config(user_agent_extra=SERVICE_DESCRIPTION)
     pooled_driver = PooledQldbDriver(
         args.ledger, endpoint_url=args.qldb_session_endpoint, boto3_session=botoSession, config=SHELL_CONFIG)
-    cli = QldbShell(args.profile, pooled_driver=pooled_driver)
-    cli.cmdloop()
+    shell = QldbShell(args.profile, pooled_driver=pooled_driver)
+    shell.cmdloop(args.ledger)
 
 
 # Standard boilerplate to call the main() function to begin
