@@ -1,5 +1,4 @@
-#Commit on v2.x-shell branch of pyqldb
--e git+git://github.com/awslabs/amazon-qldb-driver-python.git@dcea856c4c2023f8505db22c977755ccd48d7183#egg=pyqldb
+pyqldb>=2.0.0,<2.0.3
 argparse~=1.4.0
 amazon.ion~=0.5.0
 boto3~=1.9

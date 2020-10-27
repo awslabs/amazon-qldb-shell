@@ -16,8 +16,7 @@ from qldbshell import version
 
 requires = ['boto3>=1.9.237',
             'amazon.ion>=0.5.0,<0.6.0',
-            #commit on v2.x-shell branch of pyqldb
-            'pyqldb @ git+git://github.com/awslabs/amazon-qldb-driver-python.git@dcea856c4c2023f8505db22c977755ccd48d7183',
+            'pyqldb>=2.0.0,<2.0.3',
             'prompt_toolkit>=3.0.5,<3.1.0']
 
 setup(
@@ -29,8 +28,6 @@ setup(
     long_description_content_type='text/markdown',
     author='Amazon Web Services',
     install_requires=requires,
-    #dependency on commit in v2.x-shell branch of pyqldb
-    dependency_links=["git+git://github.com/awslabs/amazon-qldb-driver-python.git@dcea856c4c2023f8505db22c977755ccd48d7183#egg=pyqldb"],
     license="Apache License 2.0",
     entry_points={
         'console_scripts': [
