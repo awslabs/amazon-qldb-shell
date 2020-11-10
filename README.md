@@ -56,14 +56,19 @@ Each statement except exit is considered as a transaction.
 
 ## Development
 ### Setting up the Shell
+Clone the repository using:
+```
+git clone --recursive https://github.com/awslabs/amazon-qldb-shell.git
+```
 
-After cloning this repository, activate a virtual environment and install the package by running:
+After cloning the repository, activate a virtual environment and install the package by running:
+
 ```shell
 $ virtualenv venv
 ...
 $ . venv/bin/activate
-$ pip install -r requirements.txt
-$ pip install -e .
+$ pip3 install -r requirements.txt
+$ pip3 install -e .
 ```
 
 ## License
