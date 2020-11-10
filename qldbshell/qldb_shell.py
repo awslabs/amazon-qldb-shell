@@ -13,6 +13,7 @@
 import logging
 from textwrap import dedent
 
+import prompt_toolkit
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
 
 from prompt_toolkit import PromptSession
@@ -21,6 +22,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.styles import Style
+
 
 from pyqldb.errors import SessionPoolEmptyError
 
@@ -71,6 +73,7 @@ class QldbShell:
         Welcome to the Amazon QLDB Shell version {version}
         Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit or abort a transaction.
         Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create transactions non-interactively.
+        Use 'help' for the help section.
         All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.
         """)
 
@@ -126,7 +129,11 @@ class QldbShell:
             elif self._strip_text(line) == "help":
                 self.do_help(self._strip_text(line))
                 return
+            elif self._strip_text(line) == "clear":
+                prompt_toolkit.shortcuts.clear()
+                return
             return self.default(line)
+
         except EndpointConnectionError as e:
             logging.fatal(f'Unable to connect to an endpoint. Please check Shell configuration. {e}')
             self.quit_shell()
@@ -142,7 +149,7 @@ class QldbShell:
 
     @zero_noun_command
     def quit_shell(self, line):
-        logging.info("Exiting qldb shell.")
+        print("Exiting QLDB Shell")
         exit(0)
 
     @zero_noun_command
@@ -157,9 +164,9 @@ class QldbShell:
         if self._strip_text(line).startswith("start") or self._is_interactive_transaction:
             self.handle_transaction_flow(line)
         elif (self._is_interactive_transaction is False) and (self._strip_text(line) == "abort"):
-            logging.info("'abort' can only be used on an active transaction")
+            print("'abort' can only be used on an active transaction")
         elif (self._is_interactive_transaction is False) and (self._strip_text(line) == "commit"):
-            logging.info("'commit' can only be used on an active transaction")
+            print("'commit' can only be used on an active transaction")
         else:
             session = self._driver.get_session()
             try:
@@ -179,7 +186,7 @@ class QldbShell:
 
         except ClientError as ce:
             if is_transaction_expired_exception(ce):
-                logging.info("Transaction expired.")
+                print("Transaction expired.")
             else:
                 logging.warning(f'Error in query: {ce}')
             self.close_interactive_transaction()
@@ -271,8 +278,13 @@ class QldbShell:
 
     def do_help(self, args):
         'Help command with instructions on how to use them'
-        print("Use 'start' to initiate and interact with a transaction. 'commit' and 'abort' to commit or abort a transaction.")
-        print("Use 'start; statement 1; statement 2; commit; start; statement 3; commit' to create transactions non-interactively.")
+        print("'start' to initiate and interact with a transaction.")
+        print("'start; statement 1; statement 2; commit; start; statement 3; commit' creates transactions non-interactively.")
+        print("'commit' commits a transaction if active.")
+        print("'abort' aborts a transaction if active.")
+        print("'clear' clears the screen.")
+        print("'CTRL+C' cancels a command.")
+        print("'CTRL+D', 'exit' and 'quit' quits the shell.")
         print("All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.")
         print("\n")
 
