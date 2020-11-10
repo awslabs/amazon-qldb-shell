@@ -1,0 +1,4 @@
+[submodule "qldbshell/deps/amazon-qldb-driver-python"]
+	path = qldbshell/deps/amazon-qldb-driver-python
+	url = https://github.com/awslabs/amazon-qldb-driver-python.git
+	branch = v2.x-shell

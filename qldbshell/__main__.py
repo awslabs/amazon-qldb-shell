@@ -18,6 +18,10 @@ import logging
 import boto3
 
 from botocore.config import Config
+import sys
+import os
+curpath = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(curpath, u"deps" ,u"amazon-qldb-driver-python"))
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 
 from qldbshell.errors import IllegalStateError
