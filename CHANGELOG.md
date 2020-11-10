@@ -1,3 +1,8 @@
+#1.2.0 (2020-11-13)
+## :tada: Enhancements
+* Added `clear` to clear the screen.
+* Remove pyqldb as dependency and add driver submodule.
+
 # 1.1.0 (2020-10-22)
 
 ## :bug: Fixes
