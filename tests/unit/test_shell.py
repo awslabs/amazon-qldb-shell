@@ -50,28 +50,28 @@ class TestQldbShell(TestCase):
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called_once_with()
-        assert mock_pooled_session.execute_lambda.call_count == 1
-        mock_pooled_session.close.assert_called_once_with()
+        mock_driver.get_session.assert_called()
+        assert mock_pooled_session.execute_lambda.call_count == 2
+        mock_pooled_session.close.assert_called()
 
     @patch('pyqldb.session.pooled_qldb_session.PooledQldbSession')
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
     def test_default_client_error_session_closed(self, mock_driver, mock_pooled_session):
         mock_driver.get_session.return_value = mock_pooled_session
 
-        mock_invalid_session_error_message = {'Error': {'Code': 'InvalidSessionException',
-                                                        'Message': MOCK_MESSAGE}}
-        mock_pooled_session.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
-
         mock_cli = QldbShell(None, mock_driver)
         mock_cli._in_session = True
         mock_cli._driver = mock_driver
 
+        mock_invalid_session_error_message = {'Error': {'Code': 'InvalidSessionException',
+                                                        'Message': MOCK_MESSAGE}}
+        mock_pooled_session.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
+
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called_once_with()
-        mock_pooled_session.close.assert_called_once_with()
+        mock_driver.get_session.assert_called()
+        mock_pooled_session.close.assert_called()
 
     @patch('builtins.super')
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
