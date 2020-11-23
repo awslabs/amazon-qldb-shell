@@ -100,8 +100,3 @@ class TestQldbShell(TestCase):
             mock.call('\''),
             mock.call('string_with_no_escape_sequences'),
         ])
-
-
-
-
-
