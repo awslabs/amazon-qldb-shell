@@ -84,4 +84,17 @@ class TestQldbShell(TestCase):
 
         self.assertRaises(SystemExit)
 
+    @patch('qldbshell.qldb_shell.QldbShell.do_exit')
+    @patch('qldbshell.qldb_shell.QldbShell._strip_text')
+    @patch('qldbshell.qldb_shell.QldbShell.onecmd')
+    @patch('qldbshell.qldb_shell.PromptSession')
+    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    def test_escape_sequences(self, mock_driver, mock_prompt_session, mock_onecmd, mock_strip_text, mock_do_exit):
+        mock_prompt_session.return_value = mock_prompt_session
+        mock_prompt_session.prompt.return_value = r'\\'
+        mock_strip_text.side_effect = ['', 'quit']
+        shell = QldbShell(None, mock_driver)
+        shell.cmdloop("test-ledger")
+        mock_onecmd.assert_called_with("\\")
+
 

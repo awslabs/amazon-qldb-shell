@@ -12,7 +12,6 @@
 # permissions and limitations under the License.
 from ast import literal_eval
 import logging
-from shlex import quote
 from textwrap import dedent
 
 import prompt_toolkit
@@ -111,7 +110,7 @@ class QldbShell:
             try:
                 text = shell_session.prompt(self.prompt)
                 text = text.strip()
-                text = literal_eval(quote(text))
+                text = bytes(text, "utf-8").decode("unicode_escape")
                 if text:
                     self.onecmd(text)
             except KeyboardInterrupt:
