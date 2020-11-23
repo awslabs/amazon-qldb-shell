@@ -109,6 +109,7 @@ class QldbShell:
             try:
                 text = shell_session.prompt(self.prompt)
                 text = text.strip()
+                # Process escape sequences.
                 text = bytes(text, "utf-8").decode("unicode_escape")
                 if text:
                     self.onecmd(text)

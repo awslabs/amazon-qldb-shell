@@ -16,7 +16,7 @@ from pyqldb.errors import SessionPoolEmptyError
 
 from qldbshell.errors import NoCredentialError
 from qldbshell.qldb_shell import QldbShell
-from unittest import TestCase
+from unittest import mock, TestCase
 from unittest.mock import patch
 import builtins
 
@@ -91,10 +91,17 @@ class TestQldbShell(TestCase):
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
     def test_escape_sequences(self, mock_driver, mock_prompt_session, mock_onecmd, mock_strip_text, mock_do_exit):
         mock_prompt_session.return_value = mock_prompt_session
-        mock_prompt_session.prompt.return_value = r'\\'
-        mock_strip_text.side_effect = ['', 'quit']
+        mock_prompt_session.prompt.side_effect = [r'\\', r'\'', 'string_with_no_escape_sequences']
+        mock_strip_text.side_effect = ['', '', '', '', '', '', 'quit', 'quit']
         shell = QldbShell(None, mock_driver)
         shell.cmdloop("test-ledger")
-        mock_onecmd.assert_called_with("\\")
+        self.assertEquals(mock_onecmd.mock_calls, [
+            mock.call('\\'),
+            mock.call('\''),
+            mock.call('string_with_no_escape_sequences'),
+        ])
+
+
+
 
 
