@@ -10,6 +10,11 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
+import os
+import sys
+driver_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(driver_path, u"..", u"..",u"qldbshell", u"deps" ,u"amazon-qldb-driver-python"))
+
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldb.errors import SessionPoolEmptyError
@@ -91,12 +96,12 @@ class TestQldbShell(TestCase):
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
     def test_escape_sequences(self, mock_driver, mock_prompt_session, mock_onecmd, mock_strip_text, mock_do_exit):
         mock_prompt_session.return_value = mock_prompt_session
-        mock_prompt_session.prompt.side_effect = [r'\\', r'\'', 'string_with_no_escape_sequences']
+        mock_prompt_session.prompt.side_effect = [r'\\', r'\'', 'string with no escape sequences']
         mock_strip_text.side_effect = ['', '', '', '', '', '', 'quit', 'quit']
         shell = QldbShell(None, mock_driver)
         shell.cmdloop("test-ledger")
         self.assertEquals(mock_onecmd.mock_calls, [
             mock.call('\\'),
             mock.call('\''),
-            mock.call('string_with_no_escape_sequences'),
+            mock.call('string with no escape sequences'),
         ])
