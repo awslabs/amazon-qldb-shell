@@ -10,13 +10,18 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
+import os
+import sys
+driver_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(driver_path, u"..", u"..",u"qldbshell", u"deps" ,u"amazon-qldb-driver-python"))
+
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
 from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
 from pyqldb.errors import SessionPoolEmptyError
 
 from qldbshell.errors import NoCredentialError
 from qldbshell.qldb_shell import QldbShell
-from unittest import TestCase
+from unittest import mock, TestCase
 from unittest.mock import patch
 import builtins
 
@@ -50,28 +55,28 @@ class TestQldbShell(TestCase):
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called_once_with()
-        assert mock_pooled_session.execute_lambda.call_count == 1
-        mock_pooled_session.close.assert_called_once_with()
+        mock_driver.get_session.assert_called()
+        assert mock_pooled_session.execute_lambda.call_count == 2
+        mock_pooled_session.close.assert_called()
 
     @patch('pyqldb.session.pooled_qldb_session.PooledQldbSession')
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
     def test_default_client_error_session_closed(self, mock_driver, mock_pooled_session):
         mock_driver.get_session.return_value = mock_pooled_session
 
-        mock_invalid_session_error_message = {'Error': {'Code': 'InvalidSessionException',
-                                                        'Message': MOCK_MESSAGE}}
-        mock_pooled_session.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
-
         mock_cli = QldbShell(None, mock_driver)
         mock_cli._in_session = True
         mock_cli._driver = mock_driver
 
+        mock_invalid_session_error_message = {'Error': {'Code': 'InvalidSessionException',
+                                                        'Message': MOCK_MESSAGE}}
+        mock_pooled_session.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
+
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called_once_with()
-        mock_pooled_session.close.assert_called_once_with()
+        mock_driver.get_session.assert_called()
+        mock_pooled_session.close.assert_called()
 
     @patch('builtins.super')
     @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
@@ -84,4 +89,19 @@ class TestQldbShell(TestCase):
 
         self.assertRaises(SystemExit)
 
-
+    @patch('qldbshell.qldb_shell.QldbShell.do_exit')
+    @patch('qldbshell.qldb_shell.QldbShell._strip_text')
+    @patch('qldbshell.qldb_shell.QldbShell.onecmd')
+    @patch('qldbshell.qldb_shell.PromptSession')
+    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    def test_escape_sequences(self, mock_driver, mock_prompt_session, mock_onecmd, mock_strip_text, mock_do_exit):
+        mock_prompt_session.return_value = mock_prompt_session
+        mock_prompt_session.prompt.side_effect = [r'\\', r'\'', 'string with no escape sequences']
+        mock_strip_text.side_effect = ['', '', '', '', '', '', 'quit', 'quit']
+        shell = QldbShell(None, mock_driver)
+        shell.cmdloop("test-ledger")
+        self.assertEquals(mock_onecmd.mock_calls, [
+            mock.call('\\'),
+            mock.call('\''),
+            mock.call('string with no escape sequences'),
+        ])

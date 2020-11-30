@@ -11,4 +11,4 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-version = '1.2.0'
+version = '1.2.1'
