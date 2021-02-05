@@ -15,8 +15,8 @@ from setuptools import setup, find_packages
 from qldbshell import version
 
 requires = ['boto3>=1.9.237',
-            'amazon.ion>=0.5.0,<0.6.0',
-            'pyqldb>=3.0.0',
+            'amazon.ion>=0.5.0',
+            'pyqldb>=3.1.0',
             'prompt_toolkit>=3.0.5,<3.1.0',
             'ionhash~=1.1.0']
 

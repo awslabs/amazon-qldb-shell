@@ -49,11 +49,12 @@ class QldbShell:
 
     """
 
-    def __init__(self, profile="default", driver=None):
+    def __init__(self, profile="default", driver=None, show_stats=False):
         super(QldbShell, self).__init__()
         if profile:
             print(profile)
         print()
+        self._show_stats = show_stats
 
         self._driver = driver
         try:
@@ -61,6 +62,7 @@ class QldbShell:
             self._tables = list(tables_result)
         except NoCredentialsError:
             raise NoCredentialError("No credentials present") from None
+        self._transaction_thread = None
         self._is_interactive_transaction = False
         self._transaction_id = None
 
@@ -114,6 +116,21 @@ class QldbShell:
                 if text:
                     self.onecmd(text)
             except KeyboardInterrupt:
+                if self._transaction_thread and self._transaction_thread.is_alive():
+                    self._statement_queue.put(CommandContainer(Command.ABORT))
+                    self._transaction_thread.join()
+                    try:
+                        container_command = self._result_queue.get().command
+                        print(container_command)
+                        while not container_command == Command.ABORT:
+                            container_command = self._result_queue.get(timeout=0.5).command
+                            print(container_command)
+                    except Empty:
+                        # Continue after .5s if queue is unexpectedly empty
+                        pass
+                    self.close_interactive_transaction()
+                self._statement_queue = Queue()
+                self._result_queue = Queue()
                 print("CTRL-C\n")
                 text = ""
                 continue
@@ -179,7 +196,7 @@ class QldbShell:
             print("'commit' can only be used on an active transaction")
         else:
             try:
-                print_result(self._driver.execute_lambda(lambda x: x.execute_statement(line)))
+                print_result(self._driver.execute_lambda(lambda x: x.execute_statement(line)), self._show_stats)
             except ClientError as e:
                 logging.warning(f'Error while executing query: {e}')
 
@@ -246,7 +263,7 @@ class QldbShell:
         if not self._is_interactive_transaction:
             self.open_interactive_transaction()
 
-        shell_transaction.run_transaction(self._statement_queue, self._result_queue)
+        shell_transaction.run_transaction(self._statement_queue, self._result_queue, self._show_stats)
 
         shell_transaction.execute_outcome(self._transaction_id, self._statement_queue, self._result_queue)
 
@@ -258,8 +275,8 @@ class QldbShell:
         self._is_interactive_transaction = False
 
     def open_interactive_transaction(self):
-        transaction_thread = Thread(target=self._interactive_transaction, daemon=True)
-        transaction_thread.start()
+        self._transaction_thread = Thread(target=self._interactive_transaction, daemon=True)
+        self._transaction_thread.start()
         command_result = self._result_queue.get()
         self._transaction_id = command_result.output
         if command_result.command != Command.START:
@@ -269,8 +286,7 @@ class QldbShell:
 
     def _interactive_transaction(self):
         def handle_statements(txn):
-            # Todo: Update for pyqldb 3.1.0
-            self._result_queue.put(CommandContainer(Command.START, output=txn._transaction.transaction_id))
+            self._result_queue.put(CommandContainer(Command.START, output=txn.transaction_id))
             while True:
                 try:
                     container = self._statement_queue.get(timeout=0.05)

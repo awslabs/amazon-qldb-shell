@@ -34,7 +34,7 @@ def main():
     parser.add_argument(
         "-v",
         "--verbose",
-        help="increase output verbosity",
+        help="Increase output verbosity",
         action="store_true")
     parser.add_argument(
         "-s",
@@ -54,6 +54,12 @@ def main():
         "--profile",
         help="Name of a profile speficified in aws credentials setup whose credentials we should use",
         action="store",
+    )
+    parser.add_argument(
+        "-q",
+        "--query-stats",
+        help="Enable display of query statistics",
+        action="store_true"
     )
     required_named.add_argument(
         "-l",
@@ -79,7 +85,7 @@ def main():
     shell_config = Config(user_agent_extra=service_description)
     qldb_driver = QldbDriver(
         args.ledger, endpoint_url=args.qldb_session_endpoint, boto3_session=boto_session, config=shell_config)
-    shell = QldbShell(args.profile, driver=qldb_driver)
+    shell = QldbShell(args.profile, driver=qldb_driver, show_stats=args.query_stats)
     shell.cmdloop(args.ledger)
 
 

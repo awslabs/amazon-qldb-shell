@@ -28,7 +28,7 @@ class ShellTransaction:
         self._queries = []
         self.outcome = outcome
 
-    def run_transaction(self, statement_queue, result_queue):
+    def run_transaction(self, statement_queue, result_queue, show_stats):
         for query in self._queries:
             logging.info("Query: {}".format(query))
             statement_queue.put(CommandContainer(Command.EXECUTE, statement=query))
@@ -36,7 +36,7 @@ class ShellTransaction:
             result = container.output
             if container.command != Command.EXECUTE:
                 raise IllegalStateError("Invalid state due to an unexpected command result")
-            print_result(result)
+            print_result(result, show_stats)
 
     def execute_outcome(self, transaction_id, statement_queue, result_queue):
         if self.outcome == Command.ABORT:

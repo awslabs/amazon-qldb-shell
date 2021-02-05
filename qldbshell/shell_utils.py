@@ -16,10 +16,20 @@ from amazon.ion.simpleion import dumps
 from pyqldb.cursor.buffered_cursor import BufferedCursor
 
 
-def print_result(cursor: BufferedCursor):
+def print_result(cursor: BufferedCursor, show_stats):
     results = list(map(lambda x: dumps(x, binary=False,
                                        indent=' ', omit_version_marker=True), cursor))
     logging.info("\n" + str(',\n').join(results))
+    if show_stats:
+        consumed_ios = cursor.get_consumed_ios()
+        timing_info = cursor.get_timing_information()
+        read_ios = 'unavailable'
+        processing_time = 'unavailable'
+        if consumed_ios:
+            read_ios = consumed_ios.get('ReadIOs')
+        if timing_info:
+            processing_time = '{}ms'.format(timing_info.get('ProcessingTimeMilliseconds'))
+        logging.info('Read IOs: {}, Server-side latency: {}'.format(read_ios, processing_time))
 
 
 reserved_words = ['abort',
