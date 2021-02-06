@@ -52,7 +52,7 @@ def main():
     parser.add_argument(
         "-p",
         "--profile",
-        help="Name of a profile speficified in aws credentials setup whose credentials we should use",
+        help="Name of a profile specified in aws credentials setup whose credentials we should use",
         action="store",
     )
     parser.add_argument(
@@ -72,10 +72,10 @@ def main():
 
     # Setup logging
     if args.verbose:
-        loglevel = logging.DEBUG
+        log_level = logging.DEBUG
     else:
-        loglevel = logging.INFO
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
+        log_level = logging.INFO
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
     boto_session = boto3.Session(
         region_name=args.region, profile_name=args.profile)
 

@@ -47,6 +47,8 @@ class QldbShell:
 
     :type driver: QldbDriver
 
+    :type show_stats: bool
+
     """
 
     def __init__(self, profile="default", driver=None, show_stats=False):
