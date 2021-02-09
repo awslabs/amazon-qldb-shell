@@ -1,4 +1,4 @@
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -10,11 +10,15 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
 # express or implied. See the License for the specific language governing 
 # permissions and limitations under the License.
+
 import logging
-from textwrap import dedent
 
 import prompt_toolkit
+
 from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError
+from queue import Empty, Queue
+from textwrap import dedent
+from threading import Thread
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -23,21 +27,15 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit.styles import Style
 
-
-from pyqldb.errors import SessionPoolEmptyError
-
-
-from qldbshell.decorators import (time_this, zero_noun_command)
+from pyqldb.errors import LambdaAbortedError, SessionPoolEmptyError
+from pyqldb.config.retry_config import RetryConfig
 
 from . import version
-from .outcome import Outcome
-from .errors import NoCredentialError, QuerySyntaxError
-from .errors import is_transaction_expired_exception
+from .command_container import Command, CommandContainer
+from .decorators import (time_this, zero_noun_command)
+from .errors import IllegalStateError, NoCredentialError, QuerySyntaxError, is_transaction_expired_exception
 from .shell_transaction import ShellTransaction
-
-from qldbshell.shell_utils import print_result, reserved_words
-
-TABLE_QUERY = "SELECT VALUE name FROM information_schema.user_tables WHERE status = 'ACTIVE'"
+from .shell_utils import print_result, reserved_words
 
 
 class QldbShell:
@@ -47,27 +45,32 @@ class QldbShell:
 
     :type profile: str
 
-    :type pooled_driver: PooledQldbDriver
+    :type driver: QldbDriver
+
+    :type show_stats: bool
 
     """
 
-    def __init__(self, profile="default", pooled_driver=None):
+    def __init__(self, profile="default", driver=None, show_stats=False):
         super(QldbShell, self).__init__()
         if profile:
             print(profile)
         print()
+        self._show_stats = show_stats
 
-        self._driver = pooled_driver
+        self._driver = driver
         try:
-            session = self._driver.get_session()
-            tables_result = session.execute_lambda(lambda txn: txn.execute_statement(TABLE_QUERY))
+            tables_result = self._driver.list_tables()
             self._tables = list(tables_result)
-            session.close()
         except NoCredentialsError:
             raise NoCredentialError("No credentials present") from None
+        self._transaction_thread = None
         self._is_interactive_transaction = False
-        self._driver_transaction = None
-        self._transaction_session = None
+        self._transaction_id = None
+
+        self._statement_queue = Queue()
+        self._result_queue = Queue()
+
         self.prompt = 'qldbshell > '
         self.intro = dedent(f"""\
         Welcome to the Amazon QLDB Shell version {version}
@@ -101,8 +104,9 @@ class QldbShell:
         complete_words.extend(self._tables)
         qldb_completer = WordCompleter(complete_words, ignore_case=True)
         shell_session = PromptSession(complete_while_typing=True, completer=qldb_completer,
-                                      auto_suggest=AutoSuggestFromHistory(), vi_mode=True, complete_style = CompleteStyle.READLINE_LIKE,
-                                      rprompt=right_prompt, style=example_style, multiline=True, key_bindings=self.kb)
+                                      auto_suggest=AutoSuggestFromHistory(), vi_mode=True,
+                                      complete_style=CompleteStyle.READLINE_LIKE, rprompt=right_prompt,
+                                      style=example_style, multiline=True, key_bindings=self.kb)
 
         text = ""
         while self._strip_text(text) != 'exit' and self._strip_text(text) != 'quit':
@@ -114,6 +118,21 @@ class QldbShell:
                 if text:
                     self.onecmd(text)
             except KeyboardInterrupt:
+                if self._transaction_thread and self._transaction_thread.is_alive():
+                    self._statement_queue.put(CommandContainer(Command.ABORT))
+                    self._transaction_thread.join()
+                    try:
+                        container_command = self._result_queue.get().command
+                        print(container_command)
+                        while not container_command == Command.ABORT:
+                            container_command = self._result_queue.get(timeout=0.5).command
+                            print(container_command)
+                    except Empty:
+                        # Continue after .5s if queue is unexpectedly empty
+                        pass
+                    self.close_interactive_transaction()
+                self._statement_queue = Queue()
+                self._result_queue = Queue()
                 print("CTRL-C\n")
                 text = ""
                 continue
@@ -151,7 +170,15 @@ class QldbShell:
 
     @zero_noun_command
     def quit_shell(self, line):
-        print("Exiting QLDB Shell")
+        print("Exiting QLDB Shell.")
+        self._statement_queue.put(Command.ABORT)
+        if self._is_interactive_transaction:
+            try:
+                self._result_queue.get(timeout=0.5)
+            except Empty:
+                # If aborting the transaction takes longer than .5s close anyways
+                pass
+        self._driver.close()
         exit(0)
 
     @zero_noun_command
@@ -170,14 +197,10 @@ class QldbShell:
         elif (self._is_interactive_transaction is False) and (self._strip_text(line) == "commit"):
             print("'commit' can only be used on an active transaction")
         else:
-            session = self._driver.get_session()
             try:
-                print_result(session.execute_lambda(
-                    lambda x: x.execute_statement(line)))
+                print_result(self._driver.execute_lambda(lambda x: x.execute_statement(line)), self._show_stats)
             except ClientError as e:
                 logging.warning(f'Error while executing query: {e}')
-            finally:
-                session.close()
 
     def handle_transaction_flow(self, line):
         try:
@@ -192,45 +215,44 @@ class QldbShell:
             else:
                 logging.warning(f'Error in query: {ce}')
             self.close_interactive_transaction()
-            self._transaction_session = None
 
     def run_transactions(self, shell_transactions):
         for shell_transaction in shell_transactions:
             self.handle_transaction(shell_transaction)
 
     def process_input(self, input_line):
-        openTx = self._is_interactive_transaction
+        open_tx = self._is_interactive_transaction
         statements = [statement.strip() for statement in input_line.strip().strip(";").split(';')]
         shell_transactions = []
         shell_transaction = None
         for statement in statements:
             if statement.lower() == "start":
-                if openTx:
+                if open_tx:
                     raise QuerySyntaxError("Transaction needs to be committed or aborted before starting new one")
-                openTx = True
+                open_tx = True
                 shell_transaction = ShellTransaction(None)
             elif statement.lower() == "commit":
-                if openTx is False:
+                if open_tx is False:
                     raise QuerySyntaxError("Commit used before transaction was started")
                 if shell_transaction is None:
                     shell_transaction = ShellTransaction(None)
-                shell_transaction.set_outcome(Outcome.COMMIT)
-                openTx = False
+                shell_transaction.outcome = Command.COMMIT
+                open_tx = False
                 shell_transactions.append(shell_transaction)
                 shell_transaction = None
             elif statement.lower() == "abort":
-                if openTx is False:
+                if open_tx is False:
                     raise QuerySyntaxError("Abort used before transaction was started")
                 if shell_transaction is None:
-                    shell_transaction = ShellTransaction(Outcome.ABORT)
-                shell_transaction.set_outcome(Outcome.ABORT)
-                openTx = False
+                    shell_transaction = ShellTransaction(Command.ABORT)
+                shell_transaction.outcome = Command.ABORT
+                open_tx = False
                 shell_transactions.append(shell_transaction)
                 shell_transaction = None
             elif statement.lower().strip() == "":
                 continue
             else:
-                if openTx is False:
+                if open_tx is False:
                     raise QuerySyntaxError("A PartiQL statement was used before a transaction was started")
                 if shell_transaction is None:
                     shell_transaction = ShellTransaction(None)
@@ -240,43 +262,53 @@ class QldbShell:
         return shell_transactions
 
     def handle_transaction(self, shell_transaction):
-        if self._transaction_session is None:
-            self._transaction_session = self._driver.get_session()
+        if not self._is_interactive_transaction:
+            self.open_interactive_transaction()
 
-        if self._driver_transaction is None:
-            self._driver_transaction = self._transaction_session.start_transaction()
+        shell_transaction.run_transaction(self._statement_queue, self._result_queue, self._show_stats)
 
-        if shell_transaction.is_start():
-            self.open_interactive_transaction(self._driver_transaction)
-            self._transaction_session = self._transaction_session
-            return
-        elif shell_transaction.is_open():
-            self.open_interactive_transaction(self._driver_transaction)
-            self._transaction_session = self._transaction_session
+        shell_transaction.execute_outcome(self._transaction_id, self._statement_queue, self._result_queue)
 
-        try:
-            shell_transaction.run_transaction(self._driver_transaction)
-        except ClientError as ce:
-            shell_transaction.set_outcome(Outcome.ABORT)
-            shell_transaction.execute_outcome(self._driver_transaction)
-            raise ce
-
-        shell_transaction.execute_outcome(self._driver_transaction)
-
-        if shell_transaction.get_outcome() is not None:
+        if shell_transaction.outcome is not None:
             self.close_interactive_transaction()
-            self._transaction_session.close()
-            self._transaction_session = None
 
     def close_interactive_transaction(self):
-        self._driver_transaction = None
         self.prompt = 'qldbshell > '
         self._is_interactive_transaction = False
 
-    def open_interactive_transaction(self, driver_transaction):
-        self._driver_transaction = driver_transaction
-        self.prompt = 'qldbshell(tx: {}) > '.format(self._driver_transaction.transaction_id)
+    def open_interactive_transaction(self):
+        self._transaction_thread = Thread(target=self._interactive_transaction, daemon=True)
+        self._transaction_thread.start()
+        command_result = self._result_queue.get()
+        self._transaction_id = command_result.output
+        if command_result.command != Command.START:
+            raise IllegalStateError("Invalid state due to an unexpected command result")
+        self.prompt = 'qldbshell(tx: {}) > '.format(self._transaction_id)
         self._is_interactive_transaction = True
+
+    def _interactive_transaction(self):
+        def handle_statements(txn):
+            self._result_queue.put(CommandContainer(Command.START, output=txn.transaction_id))
+            while True:
+                try:
+                    container = self._statement_queue.get(timeout=0.05)
+                    if container.command == Command.ABORT:
+                        txn.abort()
+                    elif container.command == Command.COMMIT:
+                        break
+                    elif container.command == Command.EXECUTE:
+                        cursor = txn.execute_statement(container.statement)
+                        self._result_queue.put(CommandContainer(Command.EXECUTE, output=cursor))
+                except Empty:
+                    continue
+
+        try:
+            self._driver.execute_lambda(handle_statements, RetryConfig(0))
+            self._result_queue.put(CommandContainer(Command.COMMIT))
+        except LambdaAbortedError:
+            self._result_queue.put(CommandContainer(Command.ABORT))
+        except Exception as e:
+            self._result_queue.put(CommandContainer(None, output=e))
 
     def do_help(self, args):
         'Help command with instructions on how to use them'
@@ -289,4 +321,3 @@ class QldbShell:
         print("'CTRL+D', 'exit' and 'quit' quits the shell.")
         print("All other commands will be interpreted as PartiQL statements until the 'exit' or 'quit' command is issued.")
         print("\n")
-

@@ -1,4 +1,4 @@
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ def time_this(func):
         logging.info(f'({run_time:.4f}s)')
     return wrapper
 
+
 def single_noun_command(func):
     @functools.wraps(func)
     def wrapper(self, line):
@@ -34,6 +35,7 @@ def single_noun_command(func):
         else:
             func(self, line)
     return wrapper
+
 
 def zero_noun_command(func):
     @functools.wraps(func)

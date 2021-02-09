@@ -1,12 +1,35 @@
-from pyqldb.cursor.buffered_cursor import BufferedCursor
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
 import logging
 from amazon.ion.simpleion import dumps
+from pyqldb.cursor.buffered_cursor import BufferedCursor
 
 
-def print_result(cursor: BufferedCursor):
+def print_result(cursor: BufferedCursor, show_stats):
     results = list(map(lambda x: dumps(x, binary=False,
                                        indent=' ', omit_version_marker=True), cursor))
     logging.info("\n" + str(',\n').join(results))
+    if show_stats:
+        consumed_ios = cursor.get_consumed_ios()
+        timing_info = cursor.get_timing_information()
+        read_ios = 'unavailable'
+        processing_time = 'unavailable'
+        if consumed_ios:
+            read_ios = consumed_ios.get('ReadIOs')
+        if timing_info:
+            processing_time = '{}ms'.format(timing_info.get('ProcessingTimeMilliseconds'))
+        logging.info('Read IOs: {}, Server-side latency: {}'.format(read_ios, processing_time))
 
 
 reserved_words = ['abort',

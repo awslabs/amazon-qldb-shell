@@ -1,4 +1,4 @@
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -10,43 +10,34 @@
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
-import os
-import sys
-driver_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(driver_path, u"..", u"..",u"qldbshell", u"deps" ,u"amazon-qldb-driver-python"))
 
 from botocore.exceptions import EndpointConnectionError, ClientError, NoCredentialsError
-from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
-from pyqldb.errors import SessionPoolEmptyError
 
 from qldbshell.errors import NoCredentialError
 from qldbshell.qldb_shell import QldbShell
 from unittest import mock, TestCase
 from unittest.mock import patch
-import builtins
 
 MOCK_MESSAGE = 'message'
 
 
 class TestQldbShell(TestCase):
 
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
     def test_constructor_success(self, mockdriver):
         mock_shell = QldbShell(None, mockdriver)
 
         assert mock_shell is not None
 
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
     def test_constructor_no_credentials_throws_exception(self, mockdriver):
-        mockdriver.get_session.side_effect = NoCredentialsError()
+        mockdriver.list_tables.side_effect = NoCredentialsError()
 
         with self.assertRaises(NoCredentialError):
             QldbShell(None, mockdriver)
 
-    @patch('pyqldb.session.pooled_qldb_session.PooledQldbSession')
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
-    def test_default_success(self, mock_driver, mock_pooled_session):
-        mock_driver.get_session.return_value = mock_pooled_session
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
+    def test_default_success(self, mock_driver):
 
         mock_cli = QldbShell(None, mock_driver)
         mock_cli._in_session = True
@@ -55,32 +46,24 @@ class TestQldbShell(TestCase):
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called()
-        assert mock_pooled_session.execute_lambda.call_count == 2
-        mock_pooled_session.close.assert_called()
+        mock_driver.execute_lambda.assert_called_once()
 
-    @patch('pyqldb.session.pooled_qldb_session.PooledQldbSession')
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
-    def test_default_client_error_session_closed(self, mock_driver, mock_pooled_session):
-        mock_driver.get_session.return_value = mock_pooled_session
-
-        mock_cli = QldbShell(None, mock_driver)
-        mock_cli._in_session = True
-        mock_cli._driver = mock_driver
-
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
+    def test_default_client_error_session_closed(self, mock_driver):
         mock_invalid_session_error_message = {'Error': {'Code': 'InvalidSessionException',
                                                         'Message': MOCK_MESSAGE}}
-        mock_pooled_session.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
+
+        mock_cli = QldbShell(None, mock_driver)
+        mock_driver.execute_lambda.side_effect = ClientError(mock_invalid_session_error_message, MOCK_MESSAGE)
 
         statement = "select * from another_table"
         mock_cli.default(statement)
 
-        mock_driver.get_session.assert_called()
-        mock_pooled_session.close.assert_called()
+        mock_driver.execute_lambda.assert_called_once()
 
     @patch('builtins.super')
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
-    def test_onecmd_connection_failure(self,  mock_driver, mock_super):
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
+    def test_onecmd_connection_failure(self, mock_driver, mock_super):
         statement = "select * from another_table"
         mock_super.onecmd.side_effect = EndpointConnectionError(endpoint_url=None)
         mock_shell = QldbShell(None, mock_driver)
@@ -93,7 +76,7 @@ class TestQldbShell(TestCase):
     @patch('qldbshell.qldb_shell.QldbShell._strip_text')
     @patch('qldbshell.qldb_shell.QldbShell.onecmd')
     @patch('qldbshell.qldb_shell.PromptSession')
-    @patch('pyqldb.driver.pooled_qldb_driver.PooledQldbDriver')
+    @patch('pyqldb.driver.qldb_driver.QldbDriver')
     def test_escape_sequences(self, mock_driver, mock_prompt_session, mock_onecmd, mock_strip_text, mock_do_exit):
         mock_prompt_session.return_value = mock_prompt_session
         mock_prompt_session.prompt.side_effect = [r'\\', r'\'', 'string with no escape sequences']

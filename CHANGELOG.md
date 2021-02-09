@@ -5,6 +5,7 @@
 * Fixed bug where the shell was not processing escape sequences in user input.
 
 # 1.2.0 (2020-11-13)
+
 ## :tada: Enhancements
 * Added `clear` to clear the screen.
 * Remove pyqldb as dependency and add driver submodule.

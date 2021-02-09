@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -14,18 +14,14 @@
 # permissions and limitations under the License.
 
 import argparse
-import logging
 import boto3
+import logging
 
 from botocore.config import Config
-import sys
-import os
-curpath = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(curpath, u"deps" ,u"amazon-qldb-driver-python"))
-from pyqldb.driver.pooled_qldb_driver import PooledQldbDriver
+from pyqldb.driver.qldb_driver import QldbDriver
 
-from qldbshell.errors import IllegalStateError
 from . import version
+from .errors import IllegalStateError
 from .qldb_shell import QldbShell
 
 
@@ -38,7 +34,7 @@ def main():
     parser.add_argument(
         "-v",
         "--verbose",
-        help="increase output verbosity",
+        help="Increase output verbosity",
         action="store_true")
     parser.add_argument(
         "-s",
@@ -56,8 +52,14 @@ def main():
     parser.add_argument(
         "-p",
         "--profile",
-        help="Name of a profile speficified in aws credentials setup whose credentials we should use",
+        help="Name of a profile specified in aws credentials setup whose credentials we should use",
         action="store",
+    )
+    parser.add_argument(
+        "-q",
+        "--query-stats",
+        help="Enable display of query statistics",
+        action="store_true"
     )
     required_named.add_argument(
         "-l",
@@ -68,22 +70,22 @@ def main():
     )
     args = parser.parse_args()
 
-  # Setup logging
+    # Setup logging
     if args.verbose:
-        loglevel = logging.DEBUG
+        log_level = logging.DEBUG
     else:
-        loglevel = logging.INFO
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-    botoSession = boto3.Session(
+        log_level = logging.INFO
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+    boto_session = boto3.Session(
         region_name=args.region, profile_name=args.profile)
 
     if args.ledger is None:
         raise IllegalStateError("Ledger must be specified")
-    SERVICE_DESCRIPTION = 'QLDB Shell for Python v{}'.format(version)
-    SHELL_CONFIG = Config(user_agent_extra=SERVICE_DESCRIPTION)
-    pooled_driver = PooledQldbDriver(
-        args.ledger, endpoint_url=args.qldb_session_endpoint, boto3_session=botoSession, config=SHELL_CONFIG)
-    shell = QldbShell(args.profile, pooled_driver=pooled_driver)
+    service_description = 'QLDB Shell for Python v{}'.format(version)
+    shell_config = Config(user_agent_extra=service_description)
+    qldb_driver = QldbDriver(
+        args.ledger, endpoint_url=args.qldb_session_endpoint, boto3_session=boto_session, config=shell_config)
+    shell = QldbShell(args.profile, driver=qldb_driver, show_stats=args.query_stats)
     shell.cmdloop(args.ledger)
 
 
