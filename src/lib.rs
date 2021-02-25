@@ -2,12 +2,15 @@ use amazon_qldb_driver::retry;
 use amazon_qldb_driver::{ion_compat, BlockingQldbDriver, QldbDriverBuilder};
 use async_trait::async_trait;
 
+use ion_c_sys::reader::IonCReaderHandle;
+use ion_c_sys::result::IonCError;
 use itertools::Itertools;
 use rusoto_core::{
     credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
     Region,
 };
 use std::error::Error as StdError;
+use thiserror::Error;
 
 use std::str::FromStr;
 #[macro_use]
@@ -41,6 +44,33 @@ struct Opt {
 
     #[structopt(short, long = "--verbose")]
     verbose: bool,
+
+    #[structopt(short, long = "--format", default_value = "ion")]
+    format: FormatMode,
+}
+
+#[derive(Debug)]
+enum FormatMode {
+    Ion,
+    Json,
+}
+
+#[derive(Error, Debug)]
+enum ParseFormatModeErr {
+    #[error("{0} is not a valid format mode")]
+    InvalidFormatMode(String),
+}
+
+impl FromStr for FormatMode {
+    type Err = ParseFormatModeErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match &s.to_lowercase()[..] {
+            "ion" | "ion-text" => FormatMode::Ion,
+            "json" => todo!("json is not yet supported"),
+            _ => return Err(ParseFormatModeErr::InvalidFormatMode(s.into())),
+        })
+    }
 }
 
 pub fn run() -> Result<(), Box<dyn StdError>> {
@@ -128,6 +158,7 @@ fn rusoto_region(opt: &Opt) -> Result<Region, Box<dyn StdError>> {
 }
 
 struct Deps {
+    opt: Opt,
     driver: BlockingQldbDriver,
     ui: Ui,
 }
@@ -151,10 +182,9 @@ impl Deps {
             .build()?
             .into_blocking()?;
 
-        Ok(Deps {
-            driver: driver,
-            ui: Ui::new(),
-        })
+        let ui = Ui::new();
+
+        Ok(Deps { opt, driver, ui })
     }
 }
 
@@ -257,7 +287,7 @@ impl TransactionMode {
         }
 
         let deps = self.deps.take().unwrap();
-        let Deps { driver, ui } = deps;
+        let Deps { opt, driver, ui } = deps;
         let committed = driver.transact(|mut tx| async {
             ui.set_prompt(format!("qldb(tx: {})> ", tx.id));
             let outcome = loop {
@@ -279,7 +309,7 @@ impl TransactionMode {
                                 results
                                     .readers()
                                     .map(|r| {
-                                        ion_compat::to_string_pretty(r.unwrap()).unwrap() // FIXME: err..
+                                        formatted_display(r, &opt.format)
                                     })
                                     .intersperse(",\n".to_owned())
                                     .for_each(|p|  print!("{}", p));
@@ -306,10 +336,7 @@ impl TransactionMode {
             }
         });
 
-        let deps = Deps {
-            driver: driver,
-            ui: ui,
-        };
+        let deps = Deps { opt, driver, ui };
 
         match committed {
             Ok(true) => println!("Transaction committed!"),
@@ -321,5 +348,31 @@ impl TransactionMode {
         }
 
         deps
+    }
+}
+
+fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatMode) -> String {
+    let value = match result {
+        Ok(v) => v,
+        Err(e) => {
+            warn!(
+                "unable to display document because it could not be parsed: {}",
+                e
+            );
+            return String::new();
+        }
+    };
+
+    match mode {
+        FormatMode::Ion => match ion_compat::to_string_pretty(value) {
+            Ok(d) => d,
+            Err(e) => {
+                warn!("ion formatter is not able to display this document: {}", e);
+                return String::new();
+            }
+        },
+        FormatMode::Json => {
+            todo!("json is not yet supported");
+        }
     }
 }
