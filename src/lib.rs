@@ -47,6 +47,9 @@ struct Opt {
 
     #[structopt(short, long = "--format", default_value = "ion")]
     format: FormatMode,
+
+    #[structopt(short, long = "--execute")]
+    execute: Option<ExecuteStatementOpt>,
 }
 
 #[derive(Debug)]
@@ -69,6 +72,23 @@ impl FromStr for FormatMode {
             "ion" | "ion-text" => FormatMode::Ion,
             "json" => todo!("json is not yet supported"),
             _ => return Err(ParseFormatModeErr::InvalidFormatMode(s.into())),
+        })
+    }
+}
+
+#[derive(Debug)]
+enum ExecuteStatementOpt {
+    SingleStatement(String),
+    Stdin,
+}
+
+impl FromStr for ExecuteStatementOpt {
+    type Err = String; // never happens
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "-" => ExecuteStatementOpt::Stdin,
+            _ => ExecuteStatementOpt::SingleStatement(s.into()),
         })
     }
 }
@@ -182,7 +202,16 @@ impl Deps {
             .build()?
             .into_blocking()?;
 
-        let ui = Ui::new();
+        let ui = match opt.execute {
+            Some(ref e) => {
+                let reader = match e {
+                    ExecuteStatementOpt::SingleStatement(statement) => statement,
+                    _ => todo!(),
+                };
+                Ui::new_for_script(&reader[..])?
+            }
+            None => Ui::new(),
+        };
 
         Ok(Deps { opt, driver, ui })
     }

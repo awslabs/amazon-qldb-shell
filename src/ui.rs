@@ -3,7 +3,7 @@ use dirs;
 use rustyline::error::ReadlineError;
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 
 struct UiInner {
     rl: Editor<ReplHelper>,
@@ -33,11 +33,41 @@ impl Ui {
 
         Ui {
             inner: RefCell::new(UiInner {
-                rl: rl,
+                rl,
                 prompt: "> ".to_owned(),
                 pending_actions: vec![],
             }),
         }
+    }
+
+    // This is a big hack. Some open questions:
+    //
+    // 1. How to support single statement transactions
+    // 2. Really don't need all the readline stuff here
+    // 3. Also don't want to load/persist history
+    // 4. exit is awful
+    pub(crate) fn new_for_script(script: &str) -> io::Result<Ui> {
+        let config = Config::builder().build();
+        let mut rl = Editor::with_config(config);
+        rl.set_helper(Some(ReplHelper::default()));
+
+        // We start the pending actions by reading the input, splitting it up into new lines..
+        let mut pending_actions: Vec<_> = script
+            .lines()
+            .map(|line| line.split(";").map(|it| it.trim().to_owned()))
+            .flatten()
+            .collect();
+        // ..and then adding an exit comment
+        pending_actions.push("exit".to_string()); // totally not a hack.
+        pending_actions.reverse(); // also not a hack
+
+        Ok(Ui {
+            inner: RefCell::new(UiInner {
+                rl,
+                prompt: "".to_owned(),
+                pending_actions,
+            }),
+        })
     }
 
     pub(crate) fn set_prompt(&self, prompt: String) {
