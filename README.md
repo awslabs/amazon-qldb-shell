@@ -1,13 +1,34 @@
-## My Project
+## QLDB Interactive Shell
 
-TODO: Fill this README out!
+## For Developers
 
-Be sure to:
+### Installing Rust
 
-* Change the title in this README
-* Edit your repository description on GitHub
+Go to [Rustup](https://rustup.rs/) and follow the instructions to install rust.
+
+If you would like to modify the source code and work on the driver, after cloning the repo, simply run:
+
+```
+cargo test
+```
+
+To run the shell, use:
+
+```
+cargo run -- --ledger chess
+```
+```
+
+And to run the test using the release optimized compilation, use:
+
+cargo run --release -- --ledger chess
+```
+
+Note that the `"--"` indicates to Cargo that what follows are args for the shell.
 
 ## License
 
 This project is licensed under the Apache-2.0 License.
 
+
+[]: https://rustup.rs/]{Rustup}
