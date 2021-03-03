@@ -20,6 +20,7 @@ use rustyline::error::ReadlineError;
 
 use crate::ui::Ui;
 use structopt::StructOpt;
+use std::mem::zeroed;
 
 mod repl_helper;
 mod ui;
@@ -260,6 +261,8 @@ To start a transaction type 'start', after which you may enter a series of Parti
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
         );
 
+        let mndlbrt = unsafe {std::str::from_utf8_unchecked(&[0x5cu8, 0x6du8, 0x61u8, 0x6eu8, 0x64u8, 0x65u8, 0x6cu8, 0x62u8, 0x72u8, 0x6fu8, 0x74u8]) };
+
         loop {
             self.ui().set_prompt(format!("qldb> "));
             let user_input = self.ui().user_input();
@@ -276,6 +279,9 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
                         }
                         "quit" | "exit" | "QUIT" | "EXIT" => {
                             break;
+                        }
+                        _ if line.eq(mndlbrt) => {
+                            Mndlbrt::plot()
                         }
                         _ => {
                             println!("unknown command");
@@ -403,5 +409,44 @@ fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatM
         FormatMode::Json => {
             todo!("json is not yet supported");
         }
+    }
+}
+
+struct Mndlbrt;
+impl Mndlbrt {
+    const CANVAS: (u32, u32) = (80, 24);
+    const LIMIT: u32 = 128;
+    fn plot() {
+        for y in 0 .. Mndlbrt::CANVAS.1 {
+            for x in 0 .. Mndlbrt::CANVAS.0 {
+                let point = Mndlbrt::pixel_to_point((x, y));
+                let iterations = Mndlbrt::escape_time(point);
+                match iterations {
+                    _ if iterations >= 20 => print!("*"),
+                    _ if iterations >= 5 => print!("."),
+                    _ => print!(" "),
+                };
+            }
+            println!()
+        }
+    }
+
+    fn pixel_to_point((x, y): (u32, u32)) -> (f64, f64) {
+        let (x_start, x_end) = (-2.5f64, 1f64); // real plane
+        let (y_start, y_end) = (-1f64, 1f64); // imaginary plane
+        let (width, height) = (x_end - x_start, y_end - y_start);
+        (x_start + x as f64 * width / Mndlbrt::CANVAS.0 as f64, y_end - y as f64 * height / Mndlbrt::CANVAS.1 as f64)
+    }
+
+    fn escape_time((re, im): (f64, f64)) -> u32 {
+        let mut z = (0f64, 0f64);
+        for i in 0..Mndlbrt::LIMIT {
+            let (x, y) = z;
+            if x*x + y*y >= 4f64 {
+                return i;
+            }
+            z = (x*x - y*y + re, 2f64*x*y + im);
+        }
+        return Mndlbrt::LIMIT;
     }
 }
