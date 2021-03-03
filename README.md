@@ -21,10 +21,10 @@ To run the shell, use:
 ```
 cargo run -- --ledger chess
 ```
-```
 
 And to run the test using the release optimized compilation, use:
 
+```
 cargo run --release -- --ledger chess
 ```
 
