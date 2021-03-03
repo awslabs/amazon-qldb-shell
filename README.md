@@ -4,7 +4,11 @@
 
 ### Installing Rust
 
-Go to [Rustup](https://rustup.rs/) and follow the instructions to install rust.
+Go to [Rustup](https://rustup.rs/) and follow the instructions to install rust. Then install `cmake`, for example on OSX:
+
+```
+brew install cmake
+```
 
 If you would like to modify the source code and work on the driver, after cloning the repo, simply run:
 
