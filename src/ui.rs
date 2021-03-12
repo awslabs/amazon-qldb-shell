@@ -24,18 +24,20 @@ pub(crate) trait Ui {
 }
 
 #[cfg(test)]
-mod testing {
+pub mod testing {
     use super::*;
 
+    #[derive(Default)]
     struct TestUiInner {
         prompt: String,
-        pending: Vec<String>,
+        pub(crate) pending: Vec<String>,
         output: Vec<String>,
         warn: Vec<String>,
         debug: Vec<String>
     }
 
-    struct TestUi {
+    #[derive(Default)]
+    pub struct TestUi {
         inner: RefCell<TestUiInner>
     }
 
@@ -47,7 +49,7 @@ mod testing {
         fn user_input(&self) -> Result<String, ReadlineError> {
             let current = &mut self.inner.borrow_mut().pending;
             if current.is_empty() {
-                return Err(ReadlineError::Eof);
+                return Err(ReadlineError::Utf8Error);
             }
             self.inner.borrow_mut().pending = current.split_off(1);
             return Ok(current.pop().unwrap());

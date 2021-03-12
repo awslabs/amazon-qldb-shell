@@ -104,7 +104,7 @@ impl FromStr for ExecuteStatementOpt {
 pub fn run() -> Result<(), Box<dyn StdError>> {
     let opt = Opt::from_args();
     configure_logging(&opt)?;
-    Runner::new(opt)?.run()
+    Runner::new(opt)?.start()
 }
 
 fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
@@ -236,7 +236,7 @@ impl Runner {
         })
     }
 
-    fn run(&mut self) -> Result<(), Box<dyn StdError>> {
+    fn start(&mut self) -> Result<(), Box<dyn StdError>> {
         self.deps.as_ref().unwrap().ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
@@ -245,14 +245,23 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
         );
 
         let mut mode = IdleMode::default();
+        self.repl(&mut mode)
+    }
+
+    fn repl(&mut self, mode: &mut IdleMode) -> Result<(), Box<dyn StdError>>  {
         loop {
-            mode.deps.replace(self.deps.take().unwrap());
-            if !mode.tick()? {
+            if !self.tick(mode)? {
                 break
             }
-            self.deps.replace(mode.deps.take().unwrap());
         }
         Ok(())
+    }
+
+    fn tick(&mut self, mode: &mut IdleMode) -> Result<bool, Box<dyn StdError>> {
+        mode.deps.replace(self.deps.take().unwrap());
+        let carry_on = mode.tick();
+        self.deps.replace(mode.deps.take().unwrap());
+        carry_on
     }
 }
 
@@ -424,6 +433,7 @@ fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatM
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ui::testing::*;
 
     #[test]
     fn test_can_start_the_shell() {
@@ -431,6 +441,11 @@ mod tests {
             ledger: "test".to_string(),
             .. Default::default()
         };
-        Runner::new(opt).unwrap().run();
+        let mut runner = Runner::new(opt).unwrap();
+        let ui = TestUi::default();
+        runner.deps.as_mut().unwrap().ui = Box::new(ui);
+        let mut mode = IdleMode::default();
+        // ui.inner.borrow_mut().pending.push("help".to_string());
+        runner.tick(&mut mode).unwrap();
     }
 }
