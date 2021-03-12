@@ -24,7 +24,7 @@ use structopt::StructOpt;
 mod repl_helper;
 mod ui;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 #[structopt(
     name = "qldb-shell",
     about = "A shell for interacting with Amazon QLDB."
@@ -56,6 +56,12 @@ struct Opt {
 enum FormatMode {
     Ion,
     Json,
+}
+
+impl Default for FormatMode {
+    fn default() -> Self {
+        FormatMode::Ion
+    }
 }
 
 #[derive(Error, Debug)]
@@ -414,5 +420,20 @@ fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatM
         FormatMode::Json => {
             todo!("json is not yet supported");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_can_start_the_shell() {
+        let opt = Opt {
+            ledger: "test".to_string(),
+            .. Default::default()
+        };
+        // Implement this!
+        // Runner::new(opt).unwrap().run();
     }
 }
