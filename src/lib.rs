@@ -225,7 +225,7 @@ impl Deps {
     }
 }
 
-struct Runner{
+struct Runner {
     deps: Option<Deps>,
 }
 
@@ -237,22 +237,31 @@ impl Runner {
     }
 
     fn run(&mut self) -> Result<(), Box<dyn StdError>> {
-        let mode = IdleMode::new(self.deps.take().unwrap());
-        let deps = mode.run()?.deps;
-        self.deps.replace(deps.unwrap());
+        self.deps.as_ref().unwrap().ui.println(
+            r#"Welcome to the Amazon QLDB Shell!
+
+To start a transaction type 'start', after which you may enter a series of PartiQL statements.
+When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
+        );
+
+        let mut mode = IdleMode::default();
+        loop {
+            mode.deps.replace(self.deps.take().unwrap());
+            if !mode.tick()? {
+                break
+            }
+            self.deps.replace(mode.deps.take().unwrap());
+        }
         Ok(())
     }
 }
 
+#[derive(Default)]
 struct IdleMode {
     deps: Option<Deps>,
 }
 
 impl IdleMode {
-    fn new(deps: Deps) -> IdleMode {
-        IdleMode { deps: Some(deps) }
-    }
-
     fn ui(&mut self) -> &mut Box<dyn Ui> {
         match &mut self.deps {
             Some(deps) => &mut deps.ui,
@@ -260,42 +269,29 @@ impl IdleMode {
         }
     }
 
-    fn run(mut self) -> Result<Self, Box<dyn StdError>> {
-        self.ui().println(
-            r#"Welcome to the Amazon QLDB Shell!
-
-To start a transaction type 'start', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
-        );
-
-        loop {
-            self.ui().set_prompt(format!("qldb> "));
-            let user_input = self.ui().user_input();
-            match user_input {
-                Ok(line) => {
-                    let carry_on = match &line[0..1] {
-                        r"\" => self.handle_command(&line[1..]),
-                        _ => self.handle_command(&line)
-                    };
-                    if !carry_on {
-                        break;
-                    }
-                }
-                Err(ReadlineError::Interrupted) => {
-                    self.ui().println("CTRL-C");
-                }
-                Err(ReadlineError::Eof) => {
-                    self.ui().println("CTRL-D");
-                    break;
-                }
-                Err(err) => {
-                    self.ui().warn(&format!("Error: {:?}", err));
-                    break;
+    fn tick(&mut self) -> Result<bool, Box<dyn StdError>> {
+        self.ui().set_prompt(format!("qldb> "));
+        let user_input = self.ui().user_input();
+        Ok(match user_input {
+            Ok(line) => {
+                match &line[0..1] {
+                    r"\" => self.handle_command(&line[1..]),
+                    _ => self.handle_command(&line)
                 }
             }
-        }
-
-        Ok(self)
+            Err(ReadlineError::Interrupted) => {
+                self.ui().println("CTRL-C");
+                true
+            }
+            Err(ReadlineError::Eof) => {
+                self.ui().println("CTRL-D");
+                false
+            }
+            Err(err) => {
+                self.ui().warn(&format!("Error: {:?}", err));
+                false
+            }
+        })
     }
 
     fn handle_command(&mut self, line: &str) -> bool {
