@@ -265,22 +265,13 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
             let user_input = self.ui().user_input();
             match user_input {
                 Ok(line) => {
-                    match &line[..] {
-                        "help" | "HELP" | "?" => {
-                            println!("To start a transaction enter 'start'. To exit, enter 'exit' or press CTRL-D.");
-                        }
-                        "start" | "START" => {
-                            let mode = TransactionMode::new(self.deps.take().unwrap());
-                            let deps = mode.run();
-                            self.deps.replace(deps);
-                        }
-                        "quit" | "exit" | "QUIT" | "EXIT" => {
-                            break;
-                        }
-                        _ => {
-                            println!("unknown command");
-                        }
+                    let carry_on = match &line[0..1] {
+                        r"\" => self.handle_command(&line[1..]),
+                        _ => self.handle_command(&line)
                     };
+                    if !carry_on {
+                        break;
+                    }
                 }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");
@@ -297,6 +288,26 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
         }
 
         Ok(self)
+    }
+
+    fn handle_command(&mut self, line: &str) -> bool {
+        match &line.to_lowercase()[..] {
+            "help" | "?" => {
+                println!("To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.");
+            }
+            "start transaction" | "begin" => {
+                let mode = TransactionMode::new(self.deps.take().unwrap());
+                let deps = mode.run();
+                self.deps.replace(deps);
+            }
+            "quit" | "exit" => {
+                return false;
+            }
+            _ => {
+                println!(r"Unknown command, enter '\help' for a list of commands.");
+            }
+        }
+        true
     }
 }
 
