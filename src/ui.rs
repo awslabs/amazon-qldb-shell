@@ -5,6 +5,24 @@ use rustyline::{Config, Editor};
 use std::cell::RefCell;
 use std::{io, path::PathBuf};
 
+pub(crate) trait Ui {
+    fn set_prompt(&self, prompt: String);
+
+    fn user_input(&self) -> Result<String, ReadlineError>;
+
+    fn clear_pending(&self);
+
+    fn println(&self, str: &str);
+
+    fn newline(&self);
+
+    fn print(&self, str: &str);
+
+    fn warn(&self, str: &str);
+
+    fn debug(&self, str: &str);
+}
+
 struct UiInner {
     rl: Editor<ReplHelper>,
     prompt: String,
@@ -16,12 +34,12 @@ struct UiInner {
 ///
 /// This type users interior mutability because the [`QldbDriver::transact`] method takes a `Fn` arg (not `FnMut`) so that retries don't have side-effects. However, we disable retries and
 /// thus don't care about the side-effects (e.g. of saving history).
-pub(crate) struct Ui {
+pub(crate) struct ConsoleUi {
     inner: RefCell<UiInner>,
 }
 
-impl Ui {
-    pub(crate) fn new() -> Ui {
+impl ConsoleUi {
+    pub(crate) fn new() -> ConsoleUi {
         let config = Config::builder() // FIXME: customize :)
             .build();
         let mut rl = Editor::with_config(config);
@@ -31,7 +49,7 @@ impl Ui {
             rl.load_history(&p).keep_going();
         }
 
-        Ui {
+        ConsoleUi {
             inner: RefCell::new(UiInner {
                 rl,
                 prompt: "> ".to_owned(),
@@ -46,7 +64,7 @@ impl Ui {
     // 2. Really don't need all the readline stuff here
     // 3. Also don't want to load/persist history
     // 4. exit is awful
-    pub(crate) fn new_for_script(script: &str) -> io::Result<Ui> {
+    pub(crate) fn new_for_script(script: &str) -> io::Result<ConsoleUi> {
         let config = Config::builder().build();
         let mut rl = Editor::with_config(config);
         rl.set_helper(Some(ReplHelper::default()));
@@ -61,7 +79,7 @@ impl Ui {
         pending_actions.push("exit".to_string()); // totally not a hack.
         pending_actions.reverse(); // also not a hack
 
-        Ok(Ui {
+        Ok(ConsoleUi {
             inner: RefCell::new(UiInner {
                 rl,
                 prompt: "".to_owned(),
@@ -69,8 +87,10 @@ impl Ui {
             }),
         })
     }
+}
 
-    pub(crate) fn set_prompt(&self, prompt: String) {
+impl Ui for ConsoleUi {
+    fn set_prompt(&self, prompt: String) {
         self.inner.borrow_mut().prompt = prompt;
     }
 
@@ -81,7 +101,7 @@ impl Ui {
     ///
     /// Note that the history will contain the actual input ('foo; bar' not 'foo' & 'bar'). Similarly, we trim the strings such that 'foo;bar' and 'foo; bar' are treated identically (but the
     /// history will have the raw input).
-    pub(crate) fn user_input(&self) -> Result<String, ReadlineError> {
+    fn user_input(&self) -> Result<String, ReadlineError> {
         let mut inner = self.inner.borrow_mut();
 
         if !inner.pending_actions.is_empty() {
@@ -102,32 +122,32 @@ impl Ui {
     }
 
     /// Clear the queue of pending actions. This method should be called on error.
-    pub(crate) fn clear_pending(&self) {
+    fn clear_pending(&self) {
         self.inner.borrow_mut().pending_actions.clear();
     }
 
-    pub(crate) fn println(&self, str: &str) {
+    fn println(&self, str: &str) {
         println!("{}",str);
     }
 
-    pub(crate) fn newline(&self) {
+    fn newline(&self) {
         println!();
     }
 
-    pub(crate) fn print(&self, str: &str) {
+    fn print(&self, str: &str) {
         print!("{}", str);
     }
 
-    pub(crate) fn warn(&self, str: &str) {
+    fn warn(&self, str: &str) {
         warn!("{}", str);
     }
 
-    pub(crate) fn debug(&self, str: &str) {
+    fn debug(&self, str: &str) {
         debug!("{}",str);
     }
 }
 
-impl Drop for Ui {
+impl Drop for ConsoleUi {
     fn drop(&mut self) {
         if let Some(p) = history_path() {
             self.inner.borrow_mut().rl.save_history(&p).keep_going();

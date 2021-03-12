@@ -19,6 +19,7 @@ extern crate log;
 use rustyline::error::ReadlineError;
 
 use crate::ui::Ui;
+use crate::ui::ConsoleUi;
 use structopt::StructOpt;
 
 mod repl_helper;
@@ -187,7 +188,7 @@ fn rusoto_region(opt: &Opt) -> Result<Region, Box<dyn StdError>> {
 struct Deps {
     opt: Opt,
     driver: BlockingQldbDriver,
-    ui: Ui,
+    ui: ConsoleUi,
 }
 
 impl Deps {
@@ -215,9 +216,9 @@ impl Deps {
                     ExecuteStatementOpt::SingleStatement(statement) => statement,
                     _ => todo!(),
                 };
-                Ui::new_for_script(&reader[..])?
+                ConsoleUi::new_for_script(&reader[..])?
             }
-            None => Ui::new(),
+            None => ConsoleUi::new(),
         };
 
         Ok(Deps { opt, driver, ui })
@@ -252,7 +253,7 @@ impl IdleMode {
         IdleMode { deps: Some(deps) }
     }
 
-    fn ui(&mut self) -> &mut Ui {
+    fn ui(&mut self) -> &mut ConsoleUi {
         match &mut self.deps {
             Some(deps) => &mut deps.ui,
             None => unreachable!(),
