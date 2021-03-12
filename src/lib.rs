@@ -188,7 +188,7 @@ fn rusoto_region(opt: &Opt) -> Result<Region, Box<dyn StdError>> {
 struct Deps {
     opt: Opt,
     driver: BlockingQldbDriver,
-    ui: ConsoleUi,
+    ui: Box<dyn Ui>,
 }
 
 impl Deps {
@@ -221,11 +221,11 @@ impl Deps {
             None => ConsoleUi::new(),
         };
 
-        Ok(Deps { opt, driver, ui })
+        Ok(Deps { opt, driver, ui: Box::new(ui) })
     }
 }
 
-struct Runner {
+struct Runner{
     deps: Option<Deps>,
 }
 
@@ -253,7 +253,7 @@ impl IdleMode {
         IdleMode { deps: Some(deps) }
     }
 
-    fn ui(&mut self) -> &mut ConsoleUi {
+    fn ui(&mut self) -> &mut Box<dyn Ui> {
         match &mut self.deps {
             Some(deps) => &mut deps.ui,
             None => unreachable!(),
