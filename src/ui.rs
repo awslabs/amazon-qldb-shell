@@ -105,6 +105,26 @@ impl Ui {
     pub(crate) fn clear_pending(&self) {
         self.inner.borrow_mut().pending_actions.clear();
     }
+
+    pub(crate) fn println(&self, str: &str) {
+        println!("{}",str);
+    }
+
+    pub(crate) fn newline(&self) {
+        println!();
+    }
+
+    pub(crate) fn print(&self, str: &str) {
+        print!("{}", str);
+    }
+
+    pub(crate) fn warn(&self, str: &str) {
+        warn!("{}", str);
+    }
+
+    pub(crate) fn debug(&self, str: &str) {
+        debug!("{}",str);
+    }
 }
 
 impl Drop for Ui {

@@ -55,7 +55,8 @@ struct Opt {
 #[derive(Debug)]
 enum FormatMode {
     Ion,
-    Json,
+    // Removing a warning temporarily
+    // Json,
 }
 
 impl Default for FormatMode {
@@ -259,7 +260,7 @@ impl IdleMode {
     }
 
     fn run(mut self) -> Result<Self, Box<dyn StdError>> {
-        println!(
+        self.ui().println(
             r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start', after which you may enter a series of PartiQL statements.
@@ -280,14 +281,14 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
                     }
                 }
                 Err(ReadlineError::Interrupted) => {
-                    println!("CTRL-C");
+                    self.ui().println("CTRL-C");
                 }
                 Err(ReadlineError::Eof) => {
-                    println!("CTRL-D");
+                    self.ui().println("CTRL-D");
                     break;
                 }
                 Err(err) => {
-                    warn!("Error: {:?}", err);
+                    self.ui().warn(&format!("Error: {:?}", err));
                     break;
                 }
             }
@@ -299,7 +300,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
     fn handle_command(&mut self, line: &str) -> bool {
         match &line.to_lowercase()[..] {
             "help" | "?" => {
-                println!("To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.");
+                self.ui().println("To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.");
             }
             "start transaction" | "begin" => {
                 let mode = TransactionMode::new(self.deps.take().unwrap());
@@ -310,7 +311,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
                 return false;
             }
             _ => {
-                println!(r"Unknown command, enter '\help' for a list of commands.");
+                self.ui().println(r"Unknown command, enter '\help' for a list of commands.");
             }
         }
         true
@@ -341,7 +342,7 @@ impl TransactionMode {
                     Ok(line) => {
                         match &line[..] {
                             "help" | "HELP" | "?" => {
-                                println!("Expecting a series of PartiQL statements or one of 'commit' or 'abort'.");
+                                ui.println("Expecting a series of PartiQL statements or one of 'commit' or 'abort'.");
                             }
                             "abort" | "ABORT" => {
                                 break Outcome::Abort;
@@ -358,20 +359,20 @@ impl TransactionMode {
                                         formatted_display(r, &opt.format)
                                     })
                                     .intersperse(",\n".to_owned())
-                                    .for_each(|p|  print!("{}", p));
-                                println!()
+                                    .for_each(|p|  ui.print(&p));
+                                ui.newline();
                             }
                         }
                     }
                     Err(ReadlineError::Interrupted) => {
-                        debug!("CTRL-C");
+                        ui.debug("CTRL-C");
                     }
                     Err(ReadlineError::Eof) => {
-                        println!("CTRL-D .. aborting");
+                        ui.println("CTRL-D .. aborting");
                         break Outcome::Abort;
                     }
                     Err(err) => {
-                        warn!("Error: {:?}", err);
+                        ui.warn(&format!("Error: {:?}", err));
                     }
                 }
             };
@@ -385,10 +386,10 @@ impl TransactionMode {
         let deps = Deps { opt, driver, ui };
 
         match committed {
-            Ok(true) => println!("Transaction committed!"),
-            Ok(false) => println!("Transaction aborted."),
+            Ok(true) => deps.ui.println("Transaction committed!"),
+            Ok(false) => deps.ui.println("Transaction aborted."),
             Err(e) => {
-                println!("Error during transaction: {}", e);
+                deps.ui.println(&format!("Error during transaction: {}", e));
                 deps.ui.clear_pending();
             }
         }
@@ -417,9 +418,9 @@ fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatM
                 return String::new();
             }
         },
-        FormatMode::Json => {
-            todo!("json is not yet supported");
-        }
+        // FormatMode::Json => {
+        //     todo!("json is not yet supported");
+        // }
     }
 }
 
@@ -433,7 +434,6 @@ mod tests {
             ledger: "test".to_string(),
             .. Default::default()
         };
-        // Implement this!
-        // Runner::new(opt).unwrap().run();
+        Runner::new(opt).unwrap().run();
     }
 }
