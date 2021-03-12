@@ -23,6 +23,63 @@ pub(crate) trait Ui {
     fn debug(&self, str: &str);
 }
 
+#[cfg(test)]
+mod testing {
+    use super::*;
+
+    struct TestUiInner {
+        prompt: String,
+        pending: Vec<String>,
+        output: Vec<String>,
+        warn: Vec<String>,
+        debug: Vec<String>
+    }
+
+    struct TestUi {
+        inner: RefCell<TestUiInner>
+    }
+
+    impl Ui for TestUi {
+        fn set_prompt(&self, prompt: String) {
+            self.inner.borrow_mut().prompt = prompt;
+        }
+
+        fn user_input(&self) -> Result<String, ReadlineError> {
+            let current = &mut self.inner.borrow_mut().pending;
+            if current.is_empty() {
+                return Err(ReadlineError::Eof);
+            }
+            self.inner.borrow_mut().pending = current.split_off(1);
+            return Ok(current.pop().unwrap());
+        }
+
+        fn clear_pending(&self) {
+            self.inner.borrow_mut().pending.clear();
+        }
+
+        fn println(&self, str: &str) {
+            self.inner.borrow_mut().output.push(str.to_string());
+        }
+
+        fn newline(&self) {
+            self.inner.borrow_mut().output.push("\n".to_string());
+        }
+
+        fn print(&self, str: &str) {
+            self.inner.borrow_mut().output.push(str.to_string());
+        }
+
+        fn warn(&self, str: &str) {
+            self.inner.borrow_mut().warn.push(str.to_string());
+        }
+
+        fn debug(&self, str: &str) {
+            self.inner.borrow_mut().debug.push(str.to_string());
+        }
+    }
+
+}
+
 struct UiInner {
     rl: Editor<ReplHelper>,
     prompt: String,
