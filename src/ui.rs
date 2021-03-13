@@ -25,20 +25,28 @@ pub(crate) trait Ui {
 
 #[cfg(test)]
 pub mod testing {
+    use std::{cell::RefMut, sync::Arc};
+
     use super::*;
 
     #[derive(Default)]
-    struct TestUiInner {
-        prompt: String,
-        pub(crate) pending: Vec<String>,
-        output: Vec<String>,
-        warn: Vec<String>,
-        debug: Vec<String>,
+    pub struct TestUiInner {
+        pub prompt: String,
+        pub pending: Vec<String>,
+        pub output: Vec<String>,
+        pub warn: Vec<String>,
+        pub debug: Vec<String>,
     }
 
-    #[derive(Default)]
+    #[derive(Default, Clone)]
     pub struct TestUi {
-        inner: RefCell<TestUiInner>,
+        pub inner: Arc<RefCell<TestUiInner>>,
+    }
+
+    impl TestUi {
+        pub fn inner(&self) -> RefMut<'_, TestUiInner> {
+            self.inner.borrow_mut()
+        }
     }
 
     impl Ui for TestUi {
@@ -47,12 +55,14 @@ pub mod testing {
         }
 
         fn user_input(&self) -> Result<String, ReadlineError> {
-            let current = &mut self.inner.borrow_mut().pending;
-            if current.is_empty() {
+            let mut inner = self.inner.borrow_mut();
+            if inner.pending.is_empty() {
                 return Err(ReadlineError::Utf8Error);
             }
-            self.inner.borrow_mut().pending = current.split_off(1);
-            return Ok(current.pop().unwrap());
+            let remaining = inner.pending.split_off(1);
+            let first = inner.pending.pop().unwrap();
+            inner.pending = remaining;
+            return Ok(first);
         }
 
         fn clear_pending(&self) {

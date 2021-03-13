@@ -1,7 +1,7 @@
 use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
-use rustyline::validate::{self, Validator};
+use rustyline::validate::Validator;
 use rustyline::Context;
 use rustyline::Result as RustylineResult;
 use rustyline::{
@@ -88,10 +88,7 @@ impl Highlighter for QldbHelper {
 }
 
 impl Validator for QldbHelper {
-    fn validate(
-        &self,
-        ctx: &mut validate::ValidationContext,
-    ) -> rustyline::Result<validate::ValidationResult> {
+    fn validate(&self, ctx: &mut ValidationContext) -> RustylineResult<ValidationResult> {
         self.validator.validate(ctx)
     }
 
