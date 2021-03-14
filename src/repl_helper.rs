@@ -1,32 +1,39 @@
-use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
-use rustyline::validate::{self, MatchingBracketValidator, Validator};
+use rustyline::validate::{self, Validator};
 use rustyline::Context;
+use rustyline::Result as RustylineResult;
+use rustyline::{
+    completion::{Completer, FilenameCompleter, Pair},
+    validate::{ValidationContext, ValidationResult},
+};
 use rustyline_derive::Helper;
-use std::borrow::Cow::{self, Borrowed, Owned};
+use std::{
+    borrow::Cow::{self, Borrowed, Owned},
+    fmt::Display,
+};
 
 #[derive(Helper)]
-pub(crate) struct ReplHelper {
+pub(crate) struct QldbHelper {
     completer: FilenameCompleter,
     highlighter: MatchingBracketHighlighter,
-    validator: MatchingBracketValidator,
+    validator: InputValidator,
     hinter: (),
 }
 
-impl Default for ReplHelper {
-    fn default() -> ReplHelper {
-        ReplHelper {
+impl Default for QldbHelper {
+    fn default() -> QldbHelper {
+        QldbHelper {
             completer: FilenameCompleter::new(),
             highlighter: MatchingBracketHighlighter::new(),
-            validator: MatchingBracketValidator::new(),
+            validator: InputValidator::new(),
             hinter: (),
         }
     }
 }
 
-impl Completer for ReplHelper {
+impl Completer for QldbHelper {
     type Candidate = Pair;
 
     fn complete(
@@ -39,13 +46,15 @@ impl Completer for ReplHelper {
     }
 }
 
-impl Hinter for ReplHelper {
+impl Hinter for QldbHelper {
+    type Hint = String;
+
     fn hint(&self, line: &str, pos: usize, ctx: &Context<'_>) -> Option<String> {
         self.hinter.hint(line, pos, ctx)
     }
 }
 
-impl Highlighter for ReplHelper {
+impl Highlighter for QldbHelper {
     /// Use the default for prompts like history search, else use a bold + color code. We use blue for 'not in a tx' and green for 'in a tx'. Hopefully this is color blind friendly.
     fn highlight_prompt<'b, 's: 'b, 'p: 'b>(
         &'s self,
@@ -78,7 +87,7 @@ impl Highlighter for ReplHelper {
     }
 }
 
-impl Validator for ReplHelper {
+impl Validator for QldbHelper {
     fn validate(
         &self,
         ctx: &mut validate::ValidationContext,
@@ -88,5 +97,150 @@ impl Validator for ReplHelper {
 
     fn validate_while_typing(&self) -> bool {
         self.validator.validate_while_typing()
+    }
+}
+
+/// Mostly MatchingBracketHighlighter but with support for PartiQL bags. This
+/// allows, primarily, for multi-line input of bags.
+struct InputValidator;
+
+impl InputValidator {
+    fn new() -> InputValidator {
+        InputValidator {}
+    }
+}
+
+impl Validator for InputValidator {
+    fn validate(&self, ctx: &mut ValidationContext) -> RustylineResult<ValidationResult> {
+        Ok(validate_structure(ctx.input()))
+    }
+
+    fn validate_while_typing(&self) -> bool {
+        false
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum StructureCheck {
+    Single(char),
+    Repeat(char),
+}
+
+impl StructureCheck {
+    fn starts(c: char, next: Option<&char>) -> Option<StructureCheck> {
+        use StructureCheck::*;
+
+        match c {
+            '(' => Some(Single(')')),
+            '[' => Some(Single(']')),
+            '{' => Some(Single('}')),
+            '<' => {
+                if let Some('<') = next {
+                    Some(Repeat('>'))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn completes(c: char, next: Option<&char>) -> Option<StructureCheck> {
+        use StructureCheck::*;
+
+        match c {
+            ')' | ']' | '}' => Some(Single(c)),
+            '>' => {
+                if let Some('>') = next {
+                    return Some(Repeat('>'));
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
+impl Display for StructureCheck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StructureCheck::Single(c) => write!(f, "{}", c),
+            StructureCheck::Repeat(c) => write!(f, "{}{}", c, c),
+        }
+    }
+}
+
+fn validate_structure(input: &str) -> ValidationResult {
+    let mut stack = vec![];
+    let mut iter = input.chars().peekable();
+    while let Some(c) = iter.next() {
+        if let Some(starts) = StructureCheck::starts(c, iter.peek()) {
+            stack.push(starts);
+        }
+
+        if let Some(completes) = StructureCheck::completes(c, iter.peek()) {
+            if let Some(top) = stack.pop() {
+                if completes != top {
+                    return ValidationResult::Invalid(Some(format!(
+                        "Invalid input, expecting: {}",
+                        top
+                    )));
+                }
+            } else {
+                return ValidationResult::Invalid(Some(format!(
+                    "Invalid input: {} is unpaired",
+                    completes
+                )));
+            }
+        }
+    }
+    if stack.is_empty() {
+        ValidationResult::Valid(None)
+    } else {
+        ValidationResult::Incomplete
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ValidationResult doesn't implement Debug
+    fn string(it: ValidationResult) -> String {
+        match it {
+            ValidationResult::Incomplete => format!("incomplete"),
+            ValidationResult::Invalid(Some(m)) => format!("invalid: {}", m),
+            ValidationResult::Valid(None) => format!("valid"),
+            ValidationResult::Valid(Some(m)) => format!("valid: {}", m),
+            _ => unreachable!(),
+        }
+    }
+
+    macro_rules! assert_validates {
+        ($expected:expr, $actual:expr) => {
+            assert_eq!(
+                string($expected),
+                string(validate_structure($actual)),
+                "{}",
+                $actual
+            );
+        };
+    }
+
+    #[test]
+    fn validate_structures() {
+        // Simple, complete cases
+        assert_validates!(ValidationResult::Valid(None), "");
+        assert_validates!(ValidationResult::Valid(None), "hello world");
+        assert_validates!(ValidationResult::Valid(None), "hello () [] {} << >> world");
+
+        // Struture started but not completed.
+        assert_validates!(ValidationResult::Incomplete, "hello (");
+        assert_validates!(ValidationResult::Incomplete, "hello [");
+        assert_validates!(ValidationResult::Incomplete, "hello {");
+        assert_validates!(ValidationResult::Incomplete, "hello <<");
+        // bag is <<
+        assert_validates!(ValidationResult::Valid(None), "hello <");
     }
 }
