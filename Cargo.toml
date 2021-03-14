@@ -10,7 +10,7 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", branch = "main" }
 rusoto_core = "0.46.0"
 rusoto_qldb_session = "0.46.0"
-rustyline = "6.2.0"
+rustyline = "8.0.0"
 dirs = "3.0.1"
 log = "0.4.11"
 fern = "0.6.0"
