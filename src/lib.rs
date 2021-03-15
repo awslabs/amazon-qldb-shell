@@ -244,7 +244,7 @@ impl Runner {
         self.deps.as_ref().unwrap().ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
-To start a transaction type 'start', after which you may enter a series of PartiQL statements.
+To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
