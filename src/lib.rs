@@ -18,8 +18,8 @@ extern crate log;
 
 use rustyline::error::ReadlineError;
 
-use crate::ui::Ui;
 use crate::ui::ConsoleUi;
+use crate::ui::Ui;
 use structopt::StructOpt;
 
 mod repl_helper;
@@ -221,7 +221,11 @@ impl Deps {
             None => ConsoleUi::new(),
         };
 
-        Ok(Deps { opt, driver, ui: Box::new(ui) })
+        Ok(Deps {
+            opt,
+            driver,
+            ui: Box::new(ui),
+        })
     }
 }
 
@@ -241,17 +245,17 @@ impl Runner {
             r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter 'commit' or 'abort' as appropriate."#
+When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
         let mut mode = IdleMode::default();
         self.repl(&mut mode)
     }
 
-    fn repl(&mut self, mode: &mut IdleMode) -> Result<(), Box<dyn StdError>>  {
+    fn repl(&mut self, mode: &mut IdleMode) -> Result<(), Box<dyn StdError>> {
         loop {
             if !self.tick(mode)? {
-                break
+                break;
             }
         }
         Ok(())
@@ -283,9 +287,13 @@ impl IdleMode {
         let user_input = self.ui().user_input();
         Ok(match user_input {
             Ok(line) => {
-                match &line[0..1] {
-                    r"\" => self.handle_command(&line[1..]),
-                    _ => self.handle_command(&line)
+                if line.is_empty() {
+                    true
+                } else {
+                    match &line[0..1] {
+                        r"\" => self.handle_command(&line[1..]),
+                        _ => self.handle_command(&line),
+                    }
                 }
             }
             Err(ReadlineError::Interrupted) => {
@@ -317,7 +325,8 @@ impl IdleMode {
                 return false;
             }
             _ => {
-                self.ui().println(r"Unknown command, enter '\help' for a list of commands.");
+                self.ui()
+                    .println(r"Unknown command, enter '\help' for a list of commands.");
             }
         }
         true
@@ -439,7 +448,7 @@ mod tests {
     fn test_can_start_the_shell() {
         let opt = Opt {
             ledger: "test".to_string(),
-            .. Default::default()
+            ..Default::default()
         };
         let mut runner = Runner::new(opt).unwrap();
         let ui = TestUi::default();
