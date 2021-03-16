@@ -57,7 +57,7 @@ pub mod testing {
         fn user_input(&self) -> Result<String, ReadlineError> {
             let mut inner = self.inner.borrow_mut();
             if inner.pending.is_empty() {
-                return Err(ReadlineError::Utf8Error);
+                panic!("mock is not ready for user input");
             }
             let remaining = inner.pending.split_off(1);
             let first = inner.pending.pop().unwrap();
