@@ -445,6 +445,12 @@ where
                                     .intersperse(",\n".to_owned())
                                     .for_each(|p|  ui.print(&p));
                                 ui.newline();
+                                let number_of_documents = results.len();
+                                let noun = match number_of_documents {
+                                    1 => "document",
+                                    _ => "documents",
+                                };
+                                ui.println(&format!("{} {} in bag ", number_of_documents, noun));
                             }
                         }
                     }

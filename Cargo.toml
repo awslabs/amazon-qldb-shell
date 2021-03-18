@@ -23,3 +23,7 @@ itertools = "0.9.0"
 thiserror = "1.0"
 anyhow = "1.0"
 tokio = "1.3"
+
+[[bin]]
+name = "qldbshell"
+path = "src/main.rs"
