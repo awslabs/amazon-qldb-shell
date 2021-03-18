@@ -11,7 +11,7 @@ use rusoto_core::{
     Region,
 };
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
-use std::str::FromStr;
+use std::{str::FromStr, time::Instant};
 use structopt::StructOpt;
 use thiserror::Error;
 use tokio::runtime::Runtime;
@@ -435,6 +435,7 @@ where
                                 break Outcome::Commit;
                             }
                             partiql => {
+                                let start = Instant::now();
                                 let results = tx.execute_statement(partiql).await?;
 
                                 results
@@ -450,7 +451,16 @@ where
                                     1 => "document",
                                     _ => "documents",
                                 };
-                                ui.println(&format!("{} {} in bag ", number_of_documents, noun));
+                                let stats = results.execution_stats();
+                                let server_time = stats.timing_information.processing_time_milliseconds;
+                                let total_time = Instant::now().duration_since(start).as_millis();
+                                ui.println(&format!("{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
+                                                    number_of_documents,
+                                                    noun,
+                                                    stats.io_usage.read_ios,
+                                                    server_time,
+                                                    total_time
+                                ));
                             }
                         }
                     }
