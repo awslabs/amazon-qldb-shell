@@ -111,8 +111,8 @@ pub(crate) struct ConsoleUi {
 }
 
 impl ConsoleUi {
-    pub(crate) fn new() -> ConsoleUi {
-        let mut editor = create_editor();
+    pub(crate) fn new(terminator_required: bool) -> ConsoleUi {
+        let mut editor = create_editor(terminator_required);
 
         if let Some(p) = history_path() {
             editor.load_history(&p).keep_going();
@@ -134,7 +134,7 @@ impl ConsoleUi {
     // 3. Also don't want to load/persist history
     // 4. exit is awful
     pub(crate) fn new_for_script(script: &str) -> io::Result<ConsoleUi> {
-        let editor = create_editor();
+        let editor = create_editor(false);
 
         // We start the pending actions by reading the input, splitting it up
         // into new lines..
@@ -157,11 +157,11 @@ impl ConsoleUi {
     }
 }
 
-fn create_editor() -> Editor<QldbHelper> {
+fn create_editor(terminator_required: bool) -> Editor<QldbHelper> {
     let config = Config::builder() // FIXME: customize :)
         .build();
     let mut editor = Editor::with_config(config);
-    editor.set_helper(Some(QldbHelper::default()));
+    editor.set_helper(Some(QldbHelper::new(terminator_required)));
     editor
 }
 

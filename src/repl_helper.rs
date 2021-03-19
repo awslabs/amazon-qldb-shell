@@ -22,12 +22,12 @@ pub(crate) struct QldbHelper {
     hinter: (),
 }
 
-impl Default for QldbHelper {
-    fn default() -> QldbHelper {
+impl QldbHelper {
+    pub fn new(terminator_required: bool) -> QldbHelper {
         QldbHelper {
             completer: FilenameCompleter::new(),
             highlighter: MatchingBracketHighlighter::new(),
-            validator: InputValidator::new(),
+            validator: InputValidator::new(terminator_required),
             hinter: (),
         }
     }
@@ -99,16 +99,26 @@ impl Validator for QldbHelper {
 
 /// Mostly MatchingBracketHighlighter but with support for PartiQL bags. This
 /// allows, primarily, for multi-line input of bags.
-struct InputValidator;
+struct InputValidator {
+    terminator_required: bool,
+}
 
 impl InputValidator {
-    fn new() -> InputValidator {
-        InputValidator {}
+    fn new(terminator_required: bool) -> InputValidator {
+        InputValidator {
+            terminator_required,
+        }
     }
 }
 
 impl Validator for InputValidator {
     fn validate(&self, ctx: &mut ValidationContext) -> RustylineResult<ValidationResult> {
+        if self.terminator_required {
+            if !ctx.input().ends_with(";") {
+                return Ok(ValidationResult::Incomplete);
+            }
+        }
+
         Ok(validate_structure(ctx.input()))
     }
 

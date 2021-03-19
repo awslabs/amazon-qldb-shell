@@ -54,6 +54,9 @@ struct Opt {
 
     #[structopt(short, long = "--execute")]
     execute: Option<ExecuteStatementOpt>,
+
+    #[structopt(long = "--terminator-required")]
+    terminator_required: bool,
 }
 
 #[derive(Debug)]
@@ -236,7 +239,7 @@ impl Deps<QldbSessionClient> {
                 };
                 ConsoleUi::new_for_script(&reader[..])?
             }
-            None => ConsoleUi::new(),
+            None => ConsoleUi::new(opt.terminator_required),
         };
 
         Ok(Deps {
