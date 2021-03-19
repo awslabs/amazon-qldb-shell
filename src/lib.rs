@@ -424,6 +424,10 @@ where
             let outcome = loop {
                 match ui.user_input() {
                     Ok(line) => {
+                        if line.is_empty() {
+                            // line is trimmed by the UI itself.
+                            continue
+                        }
                         match &line[..] {
                             "help" | "HELP" | "?" => {
                                 ui.println("Expecting a series of PartiQL statements or one of 'commit' or 'abort'.");

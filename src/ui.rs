@@ -190,7 +190,10 @@ impl Ui for ConsoleUi {
         let prompt = inner.prompt.clone();
         match inner.editor.readline(&prompt) {
             Ok(line) => {
-                inner.editor.add_history_entry(line.as_str());
+                let line = line.trim();
+                if !line.is_empty() {
+                    inner.editor.add_history_entry(line);
+                }
                 inner.pending_actions = line.split(";").map(|it| it.trim().to_owned()).collect();
                 inner.pending_actions.reverse();
                 drop(inner);
