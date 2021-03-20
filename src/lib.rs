@@ -6,6 +6,7 @@ use anyhow::Result;
 use ion_c_sys::reader::IonCReaderHandle;
 use ion_c_sys::result::IonCError;
 use itertools::Itertools;
+use opt::{ExecuteStatementOpt, FormatMode};
 use rusoto_core::{
     credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
     Region,
@@ -13,7 +14,6 @@ use rusoto_core::{
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use std::{str::FromStr, time::Instant};
 use structopt::StructOpt;
-use thiserror::Error;
 use tokio::runtime::Runtime;
 #[macro_use]
 extern crate log;
@@ -21,91 +21,14 @@ extern crate log;
 use rustyline::error::ReadlineError;
 
 use crate::blocking::{into_blocking, BlockingQldbDriver};
+use crate::opt::Opt;
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
 mod blocking;
+mod opt;
 mod repl_helper;
 mod ui;
-
-#[derive(Debug, StructOpt, Default)]
-#[structopt(
-    name = "qldb-shell",
-    about = "A shell for interacting with Amazon QLDB."
-)]
-struct Opt {
-    #[structopt(short, long = "--region")]
-    region: Option<String>,
-
-    #[structopt(short, long = "--ledger")]
-    ledger: String,
-
-    #[structopt(short = "-s", long = "--qldb-session-endpoint")]
-    qldb_session_endpoint: Option<String>,
-
-    #[structopt(short, long = "--profile")]
-    profile: Option<String>,
-
-    #[structopt(short, long = "--verbose")]
-    verbose: bool,
-
-    #[structopt(short, long = "--format", default_value = "ion")]
-    format: FormatMode,
-
-    #[structopt(short, long = "--execute")]
-    execute: Option<ExecuteStatementOpt>,
-
-    #[structopt(long = "--terminator-required")]
-    terminator_required: bool,
-}
-
-#[derive(Debug)]
-enum FormatMode {
-    Ion,
-    // Removing a warning temporarily
-    // Json,
-}
-
-impl Default for FormatMode {
-    fn default() -> Self {
-        FormatMode::Ion
-    }
-}
-
-#[derive(Error, Debug)]
-enum ParseFormatModeErr {
-    #[error("{0} is not a valid format mode")]
-    InvalidFormatMode(String),
-}
-
-impl FromStr for FormatMode {
-    type Err = ParseFormatModeErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match &s.to_lowercase()[..] {
-            "ion" | "ion-text" => FormatMode::Ion,
-            "json" => todo!("json is not yet supported"),
-            _ => return Err(ParseFormatModeErr::InvalidFormatMode(s.into())),
-        })
-    }
-}
-
-#[derive(Debug)]
-enum ExecuteStatementOpt {
-    SingleStatement(String),
-    Stdin,
-}
-
-impl FromStr for ExecuteStatementOpt {
-    type Err = String; // never happens
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "-" => ExecuteStatementOpt::Stdin,
-            _ => ExecuteStatementOpt::SingleStatement(s.into()),
-        })
-    }
-}
 
 pub fn run(runtime: Runtime) -> Result<()> {
     let opt = Opt::from_args();
