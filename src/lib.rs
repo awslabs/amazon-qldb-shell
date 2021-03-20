@@ -192,17 +192,27 @@ where
     }
 }
 
+#[derive(Error, Debug)]
+enum QldbShellError {
+    #[error("usage error: {0}")]
+    UsageError(String),
+}
+
+const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
+
 struct Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    deps: Option<Deps<C>>,
+    deps: Deps<C>,
+    current_transaction: Option<ShellTransaction>,
 }
 
 impl Runner<QldbSessionClient> {
     fn new_with_opt(opt: Opt) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Some(Deps::new_with_opt(opt)?),
+            deps: Deps::new_with_opt(opt)?,
+            current_transaction: None,
         })
     }
 }
@@ -212,71 +222,28 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     async fn start(&mut self) -> Result<()> {
-        self.deps.as_ref().unwrap().ui.println(
+        self.deps.ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
-        let mut mode = IdleMode::new();
         loop {
-            if !self.tick(&mut mode).await? {
+            if !self.tick().await? {
                 break;
             }
         }
         Ok(())
     }
 
-    async fn tick(&mut self, mode: &mut IdleMode<C>) -> Result<bool> {
-        mode.deps.replace(self.deps.take().unwrap());
-        let carry_on = mode.tick().await;
-        self.deps.replace(mode.deps.take().unwrap());
-        carry_on
-    }
-}
-
-#[derive(Error, Debug)]
-enum QldbShellError {
-    #[error("usage error: {0}")]
-    UsageError(String),
-}
-
-const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
-
-struct IdleMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    deps: Option<Deps<C>>,
-    current_transaction: Option<ShellTransaction>,
-}
-
-impl<C> IdleMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    fn new() -> IdleMode<C> {
-        IdleMode {
-            deps: None,
-            current_transaction: None,
-        }
-    }
-
-    fn ui(&mut self) -> &mut Box<dyn Ui> {
-        match &mut self.deps {
-            Some(deps) => &mut deps.ui,
-            None => unreachable!(),
-        }
-    }
-
     async fn tick(&mut self) -> Result<bool> {
         match self.current_transaction {
-            None => self.ui().set_prompt(format!("qldb> ")),
-            Some(_) => self.ui().set_prompt(format!("qldb *> ")),
+            None => self.deps.ui.set_prompt(format!("qldb> ")),
+            Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
-        let user_input = self.ui().user_input();
+        let user_input = self.deps.ui.user_input();
         Ok(match user_input {
             Ok(line) => {
                 if line.is_empty() {
@@ -295,15 +262,15 @@ where
                 }
             }
             Err(ReadlineError::Interrupted) => {
-                self.ui().println("CTRL-C");
+                self.deps.ui.println("CTRL-C");
                 true
             }
             Err(ReadlineError::Eof) => {
-                self.ui().println("CTRL-D");
+                self.deps.ui.println("CTRL-D");
                 false
             }
             Err(err) => {
-                self.ui().warn(&format!("Error: {:?}", err));
+                self.deps.ui.warn(&format!("Error: {:?}", err));
                 false
             }
         })
@@ -312,7 +279,7 @@ where
     async fn handle_command(&mut self, line: &str) -> Result<bool> {
         match &line.to_lowercase()[..] {
             "help" | "?" => {
-                self.ui().println(HELP_TEXT);
+                self.deps.ui.println(HELP_TEXT);
             }
             "quit" | "exit" => {
                 return Ok(false);
@@ -321,7 +288,8 @@ where
             "abort" | "ABORT" => self.handle_abort().await?,
             "commit" | "COMMIT" => self.handle_commit().await?,
             _ => {
-                self.ui()
+                self.deps
+                    .ui
                     .println(r"Unknown command, enter '\help' for a list of commands.");
             }
         }
@@ -331,11 +299,11 @@ where
 
     fn handle_start_transaction(&mut self) {
         if let Some(_) = self.current_transaction {
-            self.ui().println("Transaction already open");
+            self.deps.ui.println("Transaction already open");
             return;
         }
 
-        let new_tx = new_transaction(self.deps.as_ref().unwrap().driver.clone());
+        let new_tx = new_transaction(self.deps.driver.clone());
         self.current_transaction.replace(new_tx);
     }
 
@@ -344,13 +312,6 @@ where
             .current_transaction
             .as_mut()
             .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
-
-        // TODO: Remove this after fixing deps mess
-        let deps = match self.deps {
-            Some(ref mut d) => d,
-            _ => unreachable!(),
-        };
-        let Deps { ref ui, opt, .. } = deps;
 
         let start = Instant::now();
 
@@ -364,10 +325,10 @@ where
 
         results
             .readers()
-            .map(|r| formatted_display(r, &opt.format))
+            .map(|r| formatted_display(r, &self.deps.opt.format))
             .intersperse(",\n".to_owned())
-            .for_each(|p| ui.print(&p));
-        ui.newline();
+            .for_each(|p| self.deps.ui.print(&p));
+        self.deps.ui.newline();
         let number_of_documents = results.len();
         let noun = match number_of_documents {
             1 => "document",
@@ -376,7 +337,7 @@ where
         let stats = results.execution_stats();
         let server_time = stats.timing_information.processing_time_milliseconds;
         let total_time = Instant::now().duration_since(start).as_millis();
-        ui.println(&format!(
+        self.deps.ui.println(&format!(
             "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
             number_of_documents, noun, stats.io_usage.read_ios, server_time, total_time
         ));
@@ -525,11 +486,11 @@ mod tests {
         let ui = TestUi::default();
 
         let mut runner = Runner {
-            deps: Some(Deps::new_with(opt, client, ui.clone())?),
+            deps: Deps::new_with(opt, client, ui.clone())?,
+            current_transaction: None,
         };
-        let mut mode = IdleMode::new();
         ui.inner().pending.push("help".to_string());
-        runner.tick(&mut mode).await?;
+        runner.tick().await?;
         let output = ui.inner().output.pop().unwrap();
         assert_eq!(HELP_TEXT, output);
 
