@@ -64,7 +64,7 @@ impl Highlighter for QldbHelper {
         if default {
             // FIXME: Use ansi crate
             // FIXME: Find another way of determining state (than substring matching)
-            if prompt.contains("tx") {
+            if prompt.contains("*") {
                 Owned(format!("\x1b[1;32m{}\x1b[0m", prompt))
             } else {
                 Owned(format!("\x1b[1;34m{}\x1b[0m", prompt))
