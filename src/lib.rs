@@ -1,5 +1,5 @@
-use amazon_qldb_driver::retry;
-use amazon_qldb_driver::{ion_compat, QldbDriverBuilder};
+use amazon_qldb_driver::{ion_compat, transaction::StatementResults, QldbDriverBuilder, QldbError};
+use amazon_qldb_driver::{retry, QldbDriver};
 use async_trait::async_trait;
 
 use anyhow::Result;
@@ -12,28 +12,33 @@ use rusoto_core::{
     Region,
 };
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
-use std::{str::FromStr, time::Instant};
+use std::{str::FromStr, sync::Arc, time::Instant};
 use structopt::StructOpt;
-use tokio::runtime::Runtime;
+use thiserror::Error;
+use tokio::{
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Mutex,
+    },
+    task::{self, JoinHandle},
+};
 #[macro_use]
 extern crate log;
 
 use rustyline::error::ReadlineError;
 
-use crate::blocking::{into_blocking, BlockingQldbDriver};
 use crate::opt::Opt;
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
-mod blocking;
 mod opt;
 mod repl_helper;
 mod ui;
 
-pub fn run(runtime: Runtime) -> Result<()> {
+pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
     configure_logging(&opt)?;
-    Runner::new_with_opt(opt, runtime)?.start()
+    Runner::new_with_opt(opt)?.start().await
 }
 
 fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
@@ -119,14 +124,14 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     opt: Opt,
-    driver: BlockingQldbDriver<C>,
+    driver: QldbDriver<C>,
     ui: Box<dyn Ui>,
 }
 
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    fn new_with_opt(opt: Opt, runtime: Runtime) -> Result<Deps<QldbSessionClient>> {
+    fn new_with_opt(opt: Opt) -> Result<Deps<QldbSessionClient>> {
         let provider = profile_provider(&opt)?;
         let region = rusoto_region(&opt)?;
         let creds = match provider {
@@ -139,20 +144,12 @@ impl Deps<QldbSessionClient> {
         // enter them again! We can't simply remember their inputs and try
         // again, as individual statements may be derived from values seen from
         // yet other statements.
-        let driver = {
-            // The driver is usually setup in a tokio runtime. The connection
-            // pool spawns tasks and thus needs to be able to find a spawner. We
-            // use `enter` here to associate the runtime in a threadlocal while
-            // we setup the driver. Bit annoying, bb8!
-            let _enter = runtime.enter();
-            let driver = QldbDriverBuilder::new()
-                .ledger_name(&opt.ledger)
-                .region(region)
-                .credentials_provider(creds)
-                .transaction_retry_policy(retry::never())
-                .build()?;
-            into_blocking(driver, runtime)
-        };
+        let driver = QldbDriverBuilder::new()
+            .ledger_name(&opt.ledger)
+            .region(region)
+            .credentials_provider(creds)
+            .transaction_retry_policy(retry::never())
+            .build()?;
 
         let ui = match opt.execute {
             Some(ref e) => {
@@ -178,18 +175,14 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     #[cfg(test)]
-    fn new_with<U>(opt: Opt, client: C, ui: U, runtime: Runtime) -> Result<Deps<C>>
+    fn new_with<U>(opt: Opt, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
-        let driver = {
-            let _enter = runtime.enter();
-            let driver = QldbDriverBuilder::new()
-                .ledger_name(&opt.ledger)
-                .transaction_retry_policy(retry::never())
-                .build_with_client(client)?;
-            into_blocking(driver, runtime)
-        };
+        let driver = QldbDriverBuilder::new()
+            .ledger_name(&opt.ledger)
+            .transaction_retry_policy(retry::never())
+            .build_with_client(client)?;
 
         Ok(Deps {
             opt,
@@ -199,17 +192,27 @@ where
     }
 }
 
+#[derive(Error, Debug)]
+enum QldbShellError {
+    #[error("usage error: {0}")]
+    UsageError(String),
+}
+
+const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
+
 struct Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    deps: Option<Deps<C>>,
+    deps: Deps<C>,
+    current_transaction: Option<ShellTransaction>,
 }
 
 impl Runner<QldbSessionClient> {
-    fn new_with_opt(opt: Opt, runtime: Runtime) -> Result<Runner<QldbSessionClient>> {
+    fn new_with_opt(opt: Opt) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Some(Deps::new_with_opt(opt, runtime)?),
+            deps: Deps::new_with_opt(opt)?,
+            current_transaction: None,
         })
     }
 }
@@ -218,213 +221,208 @@ impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    fn start(&mut self) -> Result<()> {
-        self.deps.as_ref().unwrap().ui.println(
+    async fn start(&mut self) -> Result<()> {
+        self.deps.ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
-        let mut mode = IdleMode::new();
-        self.repl(&mut mode)
-    }
-
-    fn repl(&mut self, mode: &mut IdleMode<C>) -> Result<()> {
         loop {
-            if !self.tick(mode)? {
+            if !self.tick().await? {
                 break;
             }
         }
         Ok(())
     }
 
-    fn tick(&mut self, mode: &mut IdleMode<C>) -> Result<bool> {
-        mode.deps.replace(self.deps.take().unwrap());
-        let carry_on = mode.tick();
-        self.deps.replace(mode.deps.take().unwrap());
-        carry_on
-    }
-}
-
-const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
-
-struct IdleMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    deps: Option<Deps<C>>,
-}
-
-impl<C> IdleMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    fn new() -> IdleMode<C> {
-        IdleMode { deps: None }
-    }
-
-    fn ui(&mut self) -> &mut Box<dyn Ui> {
-        match &mut self.deps {
-            Some(deps) => &mut deps.ui,
-            None => unreachable!(),
+    async fn tick(&mut self) -> Result<bool> {
+        match self.current_transaction {
+            None => self.deps.ui.set_prompt(format!("qldb> ")),
+            Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
-    }
 
-    fn tick(&mut self) -> Result<bool> {
-        self.ui().set_prompt(format!("qldb> "));
-        let user_input = self.ui().user_input();
+        let user_input = self.deps.ui.user_input();
         Ok(match user_input {
             Ok(line) => {
                 if line.is_empty() {
                     true
                 } else {
                     match &line[0..1] {
-                        r"\" => self.handle_command(&line[1..]),
-                        _ => self.handle_command(&line),
+                        r"\" => self.handle_command(&line[1..]).await?,
+                        _ => match self.current_transaction {
+                            Some(_) => {
+                                self.handle_partiql(&line).await?;
+                                true
+                            }
+                            None => self.handle_command(&line).await?,
+                        },
                     }
                 }
             }
             Err(ReadlineError::Interrupted) => {
-                self.ui().println("CTRL-C");
+                self.deps.ui.println("CTRL-C");
                 true
             }
             Err(ReadlineError::Eof) => {
-                self.ui().println("CTRL-D");
+                self.deps.ui.println("CTRL-D");
                 false
             }
             Err(err) => {
-                self.ui().warn(&format!("Error: {:?}", err));
+                self.deps.ui.warn(&format!("Error: {:?}", err));
                 false
             }
         })
     }
 
-    fn handle_command(&mut self, line: &str) -> bool {
+    async fn handle_command(&mut self, line: &str) -> Result<bool> {
         match &line.to_lowercase()[..] {
             "help" | "?" => {
-                self.ui().println(HELP_TEXT);
-            }
-            "start transaction" | "begin" => {
-                let mode = TransactionMode::new(self.deps.take().unwrap());
-                let deps = mode.run();
-                self.deps.replace(deps);
+                self.deps.ui.println(HELP_TEXT);
             }
             "quit" | "exit" => {
-                return false;
+                return Ok(false);
             }
+            "start transaction" | "begin" => self.handle_start_transaction(),
+            "abort" | "ABORT" => self.handle_abort().await?,
+            "commit" | "COMMIT" => self.handle_commit().await?,
             _ => {
-                self.ui()
+                self.deps
+                    .ui
                     .println(r"Unknown command, enter '\help' for a list of commands.");
             }
         }
-        true
-    }
-}
 
-struct TransactionMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    deps: Option<Deps<C>>,
-}
-
-impl<C> TransactionMode<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    fn new(deps: Deps<C>) -> TransactionMode<C> {
-        TransactionMode { deps: Some(deps) }
+        Ok(true)
     }
 
-    fn run(mut self) -> Deps<C> {
-        enum Outcome {
-            Commit,
-            Abort,
+    fn handle_start_transaction(&mut self) {
+        if let Some(_) = self.current_transaction {
+            self.deps.ui.println("Transaction already open");
+            return;
         }
 
-        let deps = self.deps.take().unwrap();
-        let Deps { opt, driver, ui } = deps;
-        let committed = driver.transact(|mut tx| async {
-            ui.set_prompt(format!("qldb(tx: {})> ", tx.id));
-            let outcome = loop {
-                match ui.user_input() {
-                    Ok(line) => {
-                        if line.is_empty() {
-                            // line is trimmed by the UI itself.
-                            continue
-                        }
-                        match &line[..] {
-                            "help" | "HELP" | "?" => {
-                                ui.println("Expecting a series of PartiQL statements or one of 'commit' or 'abort'.");
-                            }
-                            "abort" | "ABORT" => {
-                                break Outcome::Abort;
-                            }
-                            "commit" | "COMMIT" => {
-                                break Outcome::Commit;
-                            }
-                            partiql => {
-                                let start = Instant::now();
-                                let results = tx.execute_statement(partiql).await?;
+        let new_tx = new_transaction(self.deps.driver.clone());
+        self.current_transaction.replace(new_tx);
+    }
 
-                                results
-                                    .readers()
-                                    .map(|r| {
-                                        formatted_display(r, &opt.format)
-                                    })
-                                    .intersperse(",\n".to_owned())
-                                    .for_each(|p|  ui.print(&p));
-                                ui.newline();
-                                let number_of_documents = results.len();
-                                let noun = match number_of_documents {
-                                    1 => "document",
-                                    _ => "documents",
-                                };
-                                let stats = results.execution_stats();
-                                let server_time = stats.timing_information.processing_time_milliseconds;
-                                let total_time = Instant::now().duration_since(start).as_millis();
-                                ui.println(&format!("{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
-                                                    number_of_documents,
-                                                    noun,
-                                                    stats.io_usage.read_ios,
-                                                    server_time,
-                                                    total_time
-                                ));
+    async fn handle_partiql(&mut self, line: &str) -> Result<()> {
+        let tx = self
+            .current_transaction
+            .as_mut()
+            .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
+
+        let start = Instant::now();
+
+        tx.input
+            .send(TransactionRequest::ExecuteStatement(line.to_string()))
+            .await?;
+        let results = match tx.results.recv().await {
+            Some(r) => r?,
+            _ => unreachable!(),
+        };
+
+        results
+            .readers()
+            .map(|r| formatted_display(r, &self.deps.opt.format))
+            .intersperse(",\n".to_owned())
+            .for_each(|p| self.deps.ui.print(&p));
+        self.deps.ui.newline();
+        let number_of_documents = results.len();
+        let noun = match number_of_documents {
+            1 => "document",
+            _ => "documents",
+        };
+        let stats = results.execution_stats();
+        let server_time = stats.timing_information.processing_time_milliseconds;
+        let total_time = Instant::now().duration_since(start).as_millis();
+        self.deps.ui.println(&format!(
+            "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
+            number_of_documents, noun, stats.io_usage.read_ios, server_time, total_time
+        ));
+
+        Ok(())
+    }
+
+    async fn handle_abort(&mut self) -> Result<()> {
+        let tx = self
+            .current_transaction
+            .take()
+            .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
+
+        tx.input.send(TransactionRequest::Abort).await?;
+        tx.handle.await?
+    }
+
+    async fn handle_commit(&mut self) -> Result<()> {
+        let tx = self
+            .current_transaction
+            .take()
+            .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
+
+        tx.input.send(TransactionRequest::Commit).await?;
+        tx.handle.await?
+    }
+}
+
+struct ShellTransaction {
+    input: Sender<TransactionRequest>,
+    results: Receiver<Result<StatementResults, QldbError>>,
+    handle: JoinHandle<Result<()>>,
+}
+
+#[derive(Debug)]
+enum TransactionRequest {
+    ExecuteStatement(String),
+    Commit,
+    Abort,
+}
+
+fn new_transaction<C>(driver: QldbDriver<C>) -> ShellTransaction
+where
+    C: QldbSession + Send + Sync + Clone + 'static,
+{
+    let (input, recv) = channel(1);
+    let (output, results) = channel(1);
+
+    let handle = task::spawn(async move {
+        let recv = Arc::new(Mutex::new(recv));
+
+        let outcome = driver
+            .transact(|mut tx| async {
+                loop {
+                    let input = async {
+                        let mut guard = recv.lock().await;
+                        guard.recv().await
+                    };
+
+                    match input.await {
+                        Some(TransactionRequest::ExecuteStatement(partiql)) => {
+                            let results = tx.execute_statement(partiql).await;
+                            if let Err(_) = output.send(results).await {
+                                panic!("results ch should never be closed");
                             }
                         }
-                    }
-                    Err(ReadlineError::Interrupted) => {
-                        ui.debug("CTRL-C");
-                    }
-                    Err(ReadlineError::Eof) => {
-                        ui.println("CTRL-D .. aborting");
-                        break Outcome::Abort;
-                    }
-                    Err(err) => {
-                        ui.warn(&format!("Error: {:?}", err));
+                        Some(TransactionRequest::Commit) => {
+                            break tx.ok(()).await;
+                        }
+                        Some(TransactionRequest::Abort) => {
+                            break tx.abort(()).await;
+                        }
+                        _ => unreachable!(),
                     }
                 }
-            };
+            })
+            .await?;
 
-            match outcome {
-                Outcome::Commit => tx.ok(true).await,
-                Outcome::Abort => tx.abort(false).await,
-            }
-        });
+        Ok(outcome)
+    });
 
-        let deps = Deps { opt, driver, ui };
-
-        match committed {
-            Ok(true) => deps.ui.println("Transaction committed!"),
-            Ok(false) => deps.ui.println("Transaction aborted."),
-            Err(e) => {
-                deps.ui.println(&format!("Error during transaction: {}", e));
-                deps.ui.clear_pending();
-            }
-        }
-
-        deps
+    ShellTransaction {
+        input,
+        results,
+        handle,
     }
 }
 
@@ -459,7 +457,6 @@ mod tests {
     use super::*;
     use crate::ui::testing::*;
     use anyhow::Result;
-    use tokio::runtime;
 
     // TODO: Find something better.
     #[derive(Clone)]
@@ -478,12 +475,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn start_help() -> Result<()> {
-        let runtime = runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-
+    #[tokio::test]
+    async fn start_help() -> Result<()> {
         let opt = Opt {
             ledger: "test".to_string(),
             ..Default::default()
@@ -493,11 +486,11 @@ mod tests {
         let ui = TestUi::default();
 
         let mut runner = Runner {
-            deps: Some(Deps::new_with(opt, client, ui.clone(), runtime)?),
+            deps: Deps::new_with(opt, client, ui.clone())?,
+            current_transaction: None,
         };
-        let mut mode = IdleMode::new();
         ui.inner().pending.push("help".to_string());
-        runner.tick(&mut mode).unwrap();
+        runner.tick().await?;
         let output = ui.inner().output.pop().unwrap();
         assert_eq!(HELP_TEXT, output);
 
