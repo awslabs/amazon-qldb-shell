@@ -196,6 +196,9 @@ where
 enum QldbShellError {
     #[error("usage error: {0}")]
     UsageError(String),
+
+    #[error("unknown command")]
+    UnknownCommand,
 }
 
 const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
@@ -256,7 +259,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                                 self.handle_partiql(&line).await?;
                                 true
                             }
-                            None => self.handle_command(&line).await?,
+                            None => self.handle_autocommit_partiql_or_command(&line).await?,
                         },
                     }
                 }
@@ -265,10 +268,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                 self.deps.ui.println("CTRL-C");
                 true
             }
-            Err(ReadlineError::Eof) => {
-                self.deps.ui.println("CTRL-D");
-                false
-            }
+            Err(ReadlineError::Eof) => self.handle_break().await?,
             Err(err) => {
                 self.deps.ui.warn(&format!("Error: {:?}", err));
                 false
@@ -276,7 +276,33 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         })
     }
 
+    async fn handle_break(&mut self) -> Result<bool> {
+        self.deps.ui.println("CTRL-D");
+        Ok(if let Some(_) = self.current_transaction {
+            self.handle_abort().await?;
+            true
+        } else {
+            false
+        })
+    }
+
     async fn handle_command(&mut self, line: &str) -> Result<bool> {
+        match self._handle_command(line).await {
+            Err(e) => {
+                if let Some(QldbShellError::UnknownCommand) = e.downcast_ref::<QldbShellError>() {
+                    self.deps
+                        .ui
+                        .println(r"Unknown command, enter '\help' for a list of commands.");
+                    Ok(true)
+                } else {
+                    Err(e)
+                }
+            }
+            other => other,
+        }
+    }
+
+    async fn _handle_command(&mut self, line: &str) -> Result<bool> {
         match &line.to_lowercase()[..] {
             "help" | "?" => {
                 self.deps.ui.println(HELP_TEXT);
@@ -287,14 +313,35 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "start transaction" | "begin" => self.handle_start_transaction(),
             "abort" | "ABORT" => self.handle_abort().await?,
             "commit" | "COMMIT" => self.handle_commit().await?,
-            _ => {
-                self.deps
-                    .ui
-                    .println(r"Unknown command, enter '\help' for a list of commands.");
-            }
+            _ => Err(QldbShellError::UnknownCommand)?,
         }
 
         Ok(true)
+    }
+
+    async fn handle_autocommit_partiql_or_command(&mut self, line: &str) -> Result<bool> {
+        match self._handle_command(line).await {
+            Err(e) => {
+                if let Some(QldbShellError::UnknownCommand) = e.downcast_ref::<QldbShellError>() {
+                    self.handle_autocommit_partiql(line).await?;
+                    Ok(true)
+                } else {
+                    Err(e)
+                }
+            }
+            other => other,
+        }
+    }
+
+    async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<()> {
+        self.handle_start_transaction();
+        if let Err(e) = self.handle_partiql(line).await {
+            // By dropping the current transaction, the input channel will be
+            // closed which ends the transaction.
+            self.current_transaction.take();
+            Err(e)?
+        }
+        self.handle_commit().await
     }
 
     fn handle_start_transaction(&mut self) {
@@ -407,10 +454,9 @@ where
                         Some(TransactionRequest::Commit) => {
                             break tx.ok(()).await;
                         }
-                        Some(TransactionRequest::Abort) => {
+                        Some(TransactionRequest::Abort) | None => {
                             break tx.abort(()).await;
                         }
-                        _ => unreachable!(),
                     }
                 }
             })
