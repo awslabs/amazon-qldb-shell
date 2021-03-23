@@ -201,7 +201,7 @@ enum QldbShellError {
     UnknownCommand,
 }
 
-const HELP_TEXT: &'static str = "To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
+const HELP_TEXT: &'static str = r"To start a transaction, enter '\start transaction' or '\begin'. To exit, enter '\exit' or press CTRL-D.";
 
 struct Runner<C>
 where
@@ -228,8 +228,8 @@ where
         self.deps.ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
-To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
+To start a transaction type '\start transaction', after which you may enter a series of PartiQL statements.
+When your transaction is complete, enter '\commit' or '\abort' as appropriate."#,
         );
 
         loop {
