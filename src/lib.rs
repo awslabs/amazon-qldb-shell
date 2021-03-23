@@ -349,7 +349,21 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             .send(TransactionRequest::ExecuteStatement(line.to_string()))
             .await?;
         let results = match tx.results.recv().await {
-            Some(r) => r?,
+            Some(Ok(r)) => r,
+            Some(Err(e)) => {
+                // Some errors end the transaction, some are recoverable.
+                if let QldbError::Rusoto(rusoto_core::RusotoError::Service(ref service)) = e {
+                    let broken = match service {
+                        rusoto_qldb_session::SendCommandError::BadRequest(_)
+                        | rusoto_qldb_session::SendCommandError::InvalidSession(_) => true,
+                        _ => false,
+                    };
+                    if broken {
+                        let _ = self.current_transaction.take();
+                    }
+                }
+                Err(e)?
+            }
             _ => unreachable!(),
         };
 
