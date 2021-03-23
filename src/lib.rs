@@ -373,18 +373,24 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             .intersperse(",\n".to_owned())
             .for_each(|p| self.deps.ui.print(&p));
         self.deps.ui.newline();
-        let number_of_documents = results.len();
-        let noun = match number_of_documents {
-            1 => "document",
-            _ => "documents",
-        };
-        let stats = results.execution_stats();
-        let server_time = stats.timing_information.processing_time_milliseconds;
-        let total_time = Instant::now().duration_since(start).as_millis();
-        self.deps.ui.println(&format!(
-            "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
-            number_of_documents, noun, stats.io_usage.read_ios, server_time, total_time
-        ));
+
+        if !self.deps.opt.no_query_metrics {
+            let noun = match results.len() {
+                1 => "document",
+                _ => "documents",
+            };
+            let stats = results.execution_stats();
+            let server_time = stats.timing_information.processing_time_milliseconds;
+            let total_time = Instant::now().duration_since(start).as_millis();
+            self.deps.ui.println(&format!(
+                "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
+                results.len(),
+                noun,
+                stats.io_usage.read_ios,
+                server_time,
+                total_time
+            ));
+        }
 
         Ok(true)
     }
