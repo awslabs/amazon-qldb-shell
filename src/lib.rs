@@ -233,8 +233,10 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
         loop {
-            if !self.tick().await? {
-                break;
+            match self.tick().await {
+                Ok(false) => break,
+                Err(e) => self.deps.ui.println(&format!("{}", e)),
+                _ => {}
             }
         }
         Ok(())
@@ -255,10 +257,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                     match &line[0..1] {
                         r"\" => self.handle_command(&line[1..]).await?,
                         _ => match self.current_transaction {
-                            Some(_) => {
-                                self.handle_partiql(&line).await?;
-                                true
-                            }
+                            Some(_) => self.handle_partiql(&line).await?,
                             None => self.handle_autocommit_partiql_or_command(&line).await?,
                         },
                     }
@@ -354,7 +353,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         self.current_transaction.replace(new_tx);
     }
 
-    async fn handle_partiql(&mut self, line: &str) -> Result<()> {
+    async fn handle_partiql(&mut self, line: &str) -> Result<bool> {
         let tx = self
             .current_transaction
             .as_mut()
@@ -389,7 +388,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             number_of_documents, noun, stats.io_usage.read_ios, server_time, total_time
         ));
 
-        Ok(())
+        Ok(true)
     }
 
     async fn handle_abort(&mut self) -> Result<()> {
