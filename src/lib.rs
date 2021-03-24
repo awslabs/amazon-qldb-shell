@@ -317,8 +317,8 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
     }
 
     async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<()> {
-        if !self.deps.opt.auto_commit {
-            // if we're not in auto-commit mode, then this is a usage error
+        if self.deps.opt.auto_commit != "on" {
+            // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
                 Start a transaction with '\\start transaction'")))?
