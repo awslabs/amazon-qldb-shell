@@ -33,8 +33,8 @@ pub struct Opt {
     #[structopt(long = "--terminator-required")]
     pub terminator_required: bool,
 
-    #[structopt(long = "--auto-commit")]
-    pub auto_commit: bool,
+    #[structopt(long = "--auto-commit", default_value = "on")]
+    pub auto_commit: String,
 
     #[structopt(long = "--no-query-metrics")]
     pub no_query_metrics: bool,
