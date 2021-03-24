@@ -34,10 +34,40 @@ pub struct Opt {
     pub terminator_required: bool,
 
     #[structopt(long = "--auto-commit", default_value = "on")]
-    pub auto_commit: String,
+    pub auto_commit: AutoCommitMode,
 
     #[structopt(long = "--no-query-metrics")]
     pub no_query_metrics: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum AutoCommitMode {
+    On,
+    Off
+}
+
+impl Default for AutoCommitMode {
+    fn default() -> Self {
+        AutoCommitMode::On
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ParseAutoCommitModeErr {
+    #[error("{0} is not a valid auto-commit mode")]
+    InvalidAutoCommitMode(String),
+}
+
+impl FromStr for AutoCommitMode {
+    type Err = ParseAutoCommitModeErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match &s.to_lowercase()[..] {
+            "on" | "true" | "yes" => AutoCommitMode::On,
+            "off" | "false" | "no" => AutoCommitMode::Off,
+            _ => return Err(ParseAutoCommitModeErr::InvalidAutoCommitMode(s.into())),
+        })
+    }
 }
 
 #[derive(Debug)]
