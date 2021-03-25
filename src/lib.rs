@@ -3,7 +3,7 @@ use amazon_qldb_driver::{retry, QldbDriver};
 use async_trait::async_trait;
 
 use anyhow::Result;
-use ion_c_sys::reader::IonCReaderHandle;
+use ion_c_sys::reader::{IonCReaderHandle, IonCReader};
 use ion_c_sys::result::IonCError;
 use itertools::Itertools;
 use rusoto_core::{
@@ -304,6 +304,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             "abort" | "ABORT" => self.handle_abort().await?,
             "commit" | "COMMIT" => self.handle_commit().await?,
             "env" => self.handle_env(),
+            "show-tables" => self.handle_show_tables().await?,
             _ => Err(QldbShellError::UnknownCommand)?,
         }
 
@@ -312,6 +313,22 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
 
     fn handle_env(&self) {
         self.deps.ui.println(&format!("{:#?}", self.deps.env));
+    }
+
+    async fn handle_show_tables(&self) -> Result<()> {
+        let table_names = self.deps.driver.transact(|mut tx| async {
+            let table_names =
+                tx.execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'").await?;
+            tx.ok(table_names).await
+        }).await?;
+
+        for reader in table_names.readers() {
+            let mut reader = reader?;
+            reader.next()?;
+            let name= reader.read_string()?;
+            self.deps.ui.println(&format!("- {}", name.as_str()));
+        }
+        Ok(())
     }
 
     async fn handle_autocommit_partiql_or_command(&mut self, line: &str) -> Result<bool> {
