@@ -1,0 +1,119 @@
+name: CI Release
+
+on:
+  push:
+    branches:
+      - rust
+    tags:
+      - "v*.*.*"
+  pull_request:
+
+jobs:
+
+  test:
+    name: Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Env Variable Setup
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Git Checkout
+        uses: actions/checkout@v2
+      - name: Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Cargo Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+      - name: Cargo Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
+
+  release:
+    name: Release
+    needs: [test]
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            bin: qldb
+          - os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            bin: qldb.exe
+          - os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            bin: qldb
+          - os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+            bin: qldb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+          target: ${{ matrix.target }}
+      - name: Install musl tools
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          sudo apt-get install -y musl-tools
+      - name: Workaround xcode issue
+        if: matrix.target == 'aarch64-apple-darwin'
+        # https://github.com/actions/virtual-environments/issues/2557#issuecomment-769611326
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_12.3.app"
+          sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: cargo fetch
+        run: cargo fetch --target ${{ matrix.target }}
+      - name: Release build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Package
+        shell: bash
+        run: |
+          name=qldb
+          tag=$(git describe --tags --abbrev=0)
+          release_name="$name-$tag-${{ matrix.target }}"
+          release_tar="${release_name}.tar.gz"
+          mkdir "$release_name"
+          if [ "${{ matrix.target }}" != "x86_64-pc-windows-msvc" ]; then
+              strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          fi
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "$release_name/"
+          cp README.md LICENSE "$release_name/"
+          tar czvf "$release_tar" "$release_name"
+          rm -r "$release_name"
+          # Windows environments in github actions don't have the gnu coreutils installed,
+          # which includes the shasum exe, so we just use powershell instead
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            echo "(Get-FileHash \"${release_tar}\" -Algorithm SHA256).Hash | Out-File -Encoding ASCII -NoNewline \"${release_tar}.sha256\"" | pwsh -c -
+          else
+            echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
+          fi
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          prerelease: true
+          files: "qldb*"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
