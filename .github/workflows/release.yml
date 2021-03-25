@@ -72,15 +72,17 @@ jobs:
           override: true
           target: ${{ matrix.target }}
       - name: Install musl tools
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install -y musl-tools
+
       - name: Workaround xcode issue
         if: matrix.target == 'aarch64-apple-darwin'
         # https://github.com/actions/virtual-environments/issues/2557#issuecomment-769611326
         run: |
           sudo xcode-select -s "/Applications/Xcode_12.3.app"
           sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
+
       - name: Checkout
         uses: actions/checkout@v2
       - name: cargo fetch
@@ -109,11 +111,15 @@ jobs:
           else
             echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
           fi
+          git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > ${{ github.workflow }}-TAG-COMMENT.txt
+
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
           draft: true
           prerelease: true
           files: "qldb*"
+          body_path: ${{ github.workflow }}-TAG-COMMENT.txt
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
