@@ -383,7 +383,18 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
                 }
                 Err(e)?
             }
-            _ => unreachable!(),
+            None => {
+                // If the results channel is closed, it means the coroutine has
+                // quit. Await it to get the error.
+                if let Some(tx) = self.current_transaction.take() {
+                    match tx.handle.await? {
+                        Ok(()) => unreachable!(),
+                        Err(e) => Err(e)?,
+                    }
+                }
+
+                unreachable!()
+            }
         };
 
         let iter = results
