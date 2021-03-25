@@ -6,12 +6,12 @@ use anyhow::Result;
 use ion_c_sys::reader::IonCReaderHandle;
 use ion_c_sys::result::IonCError;
 use itertools::Itertools;
-use opt::{ExecuteStatementOpt, FormatMode};
 use rusoto_core::{
     credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
     Region,
 };
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
+use settings::{Environment, ExecuteStatementOpt, FormatMode};
 use std::{str::FromStr, sync::Arc, time::Instant};
 use structopt::StructOpt;
 use thiserror::Error;
@@ -27,18 +27,22 @@ extern crate log;
 
 use rustyline::error::ReadlineError;
 
-use crate::opt::{Opt, AutoCommitMode};
+use crate::settings::{AutoCommitMode, Config, Opt};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
-mod opt;
 mod repl_helper;
+mod settings;
 mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
     configure_logging(&opt)?;
-    Runner::new_with_opt(opt)?.start().await
+    let config = Config::load_default()?;
+    let mut env = Environment::new();
+    env.apply_config(&config);
+    env.apply_cli(&opt);
+    Runner::new_with_opt(opt, env)?.start().await
 }
 
 fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
@@ -123,6 +127,7 @@ struct Deps<C: QldbSession>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
+    env: Environment,
     opt: Opt,
     driver: QldbDriver<C>,
     ui: Box<dyn Ui>,
@@ -131,7 +136,7 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    fn new_with_opt(opt: Opt) -> Result<Deps<QldbSessionClient>> {
+    fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
         let provider = profile_provider(&opt)?;
         let region = rusoto_region(&opt)?;
         let creds = match provider {
@@ -163,6 +168,7 @@ impl Deps<QldbSessionClient> {
         };
 
         Ok(Deps {
+            env,
             opt,
             driver,
             ui: Box::new(ui),
@@ -175,7 +181,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     #[cfg(test)]
-    fn new_with<U>(opt: Opt, client: C, ui: U) -> Result<Deps<C>>
+    fn new_with<U>(env: Environment, opt: Opt, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
@@ -185,6 +191,7 @@ where
             .build_with_client(client)?;
 
         Ok(Deps {
+            env,
             opt,
             driver,
             ui: Box::new(ui),
@@ -212,9 +219,9 @@ where
 }
 
 impl Runner<QldbSessionClient> {
-    fn new_with_opt(opt: Opt) -> Result<Runner<QldbSessionClient>> {
+    fn new_with_opt(opt: Opt, env: Environment) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new_with_opt(opt)?,
+            deps: Deps::new_with_opt(opt, env)?,
             current_transaction: None,
         })
     }
@@ -296,10 +303,15 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             "start transaction" | "begin" => self.handle_start_transaction(),
             "abort" | "ABORT" => self.handle_abort().await?,
             "commit" | "COMMIT" => self.handle_commit().await?,
+            "env" => self.handle_env(),
             _ => Err(QldbShellError::UnknownCommand)?,
         }
 
         Ok(true)
+    }
+
+    fn handle_env(&self) {
+        self.deps.ui.println(&format!("{:#?}", self.deps.env));
     }
 
     async fn handle_autocommit_partiql_or_command(&mut self, line: &str) -> Result<bool> {
@@ -321,7 +333,8 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
-                Start a transaction with '\\start transaction'")))?
+                Start a transaction with '\\start transaction'"
+            )))?;
         }
         self.handle_start_transaction();
         if let Err(e) = self.handle_partiql(line).await {
@@ -373,11 +386,10 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             _ => unreachable!(),
         };
 
-        results
+        let iter = results
             .readers()
-            .map(|r| formatted_display(r, &self.deps.opt.format))
-            .intersperse(",\n".to_owned())
-            .for_each(|p| self.deps.ui.print(&p));
+            .map(|r| formatted_display(r, &self.deps.opt.format));
+        Itertools::intersperse(iter, ",\n".to_owned()).for_each(|p| self.deps.ui.print(&p));
         self.deps.ui.newline();
 
         if !self.deps.opt.no_query_metrics {
@@ -541,7 +553,7 @@ mod tests {
         let ui = TestUi::default();
 
         let mut runner = Runner {
-            deps: Deps::new_with(opt, client, ui.clone())?,
+            deps: Deps::new_with(Environment::new(), opt, client, ui.clone())?,
             current_transaction: None,
         };
         ui.inner().pending.push("help".to_string());
