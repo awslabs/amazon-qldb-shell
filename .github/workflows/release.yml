@@ -71,10 +71,10 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           target: ${{ matrix.target }}
-      - name: Install musl tools
+      - name: Install ubuntu tools
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get install -y musl-tools
+          sudo apt-get install -y musl-tools pkg-config libssl-dev
 
       - name: Workaround xcode issue
         if: matrix.target == 'aarch64-apple-darwin'
