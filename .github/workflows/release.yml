@@ -85,10 +85,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
-      - name: cargo fetch
-        run: cargo fetch --target ${{ matrix.target }}
-      - name: Release build
-        run: cargo build --release --target ${{ matrix.target }}
       - name: Package
         shell: bash
         run: |
@@ -97,6 +93,13 @@ jobs:
           release_name="$name-$tag-${{ matrix.target }}"
           release_tar="${release_name}.tar.gz"
           mkdir "$release_name"
+
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            cargo fetch && cargo build --release
+          else
+            cargo fetch --target ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }}
+          fi
+
           if [ "${{ matrix.target }}" != "x86_64-pc-windows-msvc" ]; then
               strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           fi
