@@ -1,18 +1,12 @@
-use amazon_qldb_driver::{ion_compat, transaction::StatementResults, QldbDriverBuilder, QldbError};
-use amazon_qldb_driver::{retry, QldbDriver};
-use async_trait::async_trait;
-
+use amazon_qldb_driver::QldbDriver;
+use amazon_qldb_driver::{ion_compat, transaction::StatementResults, QldbError};
 use anyhow::Result;
-use ion_c_sys::reader::{IonCReaderHandle, IonCReader};
+use ion_c_sys::reader::{IonCReader, IonCReaderHandle};
 use ion_c_sys::result::IonCError;
 use itertools::Itertools;
-use rusoto_core::{
-    credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
-    Region,
-};
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt, FormatMode};
-use std::{str::FromStr, sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant};
 use structopt::StructOpt;
 use thiserror::Error;
 use tokio::{
@@ -32,6 +26,7 @@ use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
 mod repl_helper;
+mod rusoto_driver;
 mod settings;
 mod ui;
 
@@ -66,63 +61,6 @@ fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
         .apply()
 }
 
-/// Required for static dispatch of [`QldbSessionClient::new_with`].
-enum CredentialProvider {
-    Profile(ProfileProvider),
-    Chain(ChainProvider),
-}
-
-#[async_trait]
-impl ProvideAwsCredentials for CredentialProvider {
-    async fn credentials(
-        &self,
-    ) -> Result<rusoto_core::credential::AwsCredentials, rusoto_core::credential::CredentialsError>
-    {
-        use CredentialProvider::*;
-        match self {
-            Profile(p) => p.credentials().await,
-            Chain(c) => c.credentials().await,
-        }
-    }
-}
-
-fn profile_provider(opt: &Opt) -> Result<Option<ProfileProvider>> {
-    let it = match &opt.profile {
-        Some(p) => {
-            let mut prof = ProfileProvider::new()?;
-            prof.set_profile(p);
-            Some(prof)
-        }
-        None => None,
-    };
-
-    Ok(it)
-}
-
-// FIXME: Default region should consider what is set in the Profile.
-fn rusoto_region(opt: &Opt) -> Result<Region> {
-    let it = match (&opt.region, &opt.qldb_session_endpoint) {
-        (Some(r), Some(e)) => Region::Custom {
-            name: r.to_owned(),
-            endpoint: e.to_owned(),
-        },
-        (Some(r), None) => match Region::from_str(&r) {
-            Ok(it) => it,
-            Err(e) => {
-                warn!("Unknown region {}: {}. If you know the endpoint, you can specify it and try again.", r, e);
-                return Err(e)?;
-            }
-        },
-        (None, Some(e)) => Region::Custom {
-            name: Region::default().name().to_owned(),
-            endpoint: e.to_owned(),
-        },
-        (None, None) => Region::default(),
-    };
-
-    Ok(it)
-}
-
 struct Deps<C: QldbSession>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
@@ -137,24 +75,7 @@ impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
     fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
-        let provider = profile_provider(&opt)?;
-        let region = rusoto_region(&opt)?;
-        let creds = match provider {
-            Some(p) => CredentialProvider::Profile(p),
-            None => CredentialProvider::Chain(ChainProvider::new()),
-        };
-
-        // We disable transaction retries because they don't make sense. Users
-        // are entering statements, so if the tx fails they actually have to
-        // enter them again! We can't simply remember their inputs and try
-        // again, as individual statements may be derived from values seen from
-        // yet other statements.
-        let driver = QldbDriverBuilder::new()
-            .ledger_name(&opt.ledger)
-            .region(region)
-            .credentials_provider(creds)
-            .transaction_retry_policy(retry::never())
-            .build()?;
+        let driver = rusoto_driver::build_driver(&opt)?;
 
         let ui = match opt.execute {
             Some(ref e) => {
@@ -185,6 +106,8 @@ where
     where
         U: Ui + 'static,
     {
+        use amazon_qldb_driver::{retry, QldbDriverBuilder};
+
         let driver = QldbDriverBuilder::new()
             .ledger_name(&opt.ledger)
             .transaction_retry_policy(retry::never())
@@ -325,7 +248,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
         for reader in table_names.readers() {
             let mut reader = reader?;
             reader.next()?;
-            let name= reader.read_string()?;
+            let name = reader.read_string()?;
             self.deps.ui.println(&format!("- {}", name.as_str()));
         }
         Ok(())
@@ -552,6 +475,7 @@ mod tests {
     use super::*;
     use crate::ui::testing::*;
     use anyhow::Result;
+    use async_trait::async_trait;
 
     // TODO: Find something better.
     #[derive(Clone)]
