@@ -48,40 +48,26 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            rust: stable
-            target: x86_64-unknown-linux-musl
+            variant: linux
             bin: qldb
           - os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-msvc
+            variant: windows
             bin: qldb.exe
           - os: macos-latest
-            rust: stable
-            target: x86_64-apple-darwin
-            bin: qldb
-          - os: macos-latest
-            rust: stable
-            target: aarch64-apple-darwin
+            variant: mac
             bin: qldb
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.rust }}
+          profil minimal
+          toolchain: stable
           override: true
-          target: ${{ matrix.target }}
       - name: Install ubuntu tools
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install -y musl-tools pkg-config libssl-dev
-
-      - name: Workaround xcode issue
-        if: matrix.target == 'aarch64-apple-darwin'
-        # https://github.com/actions/virtual-environments/issues/2557#issuecomment-769611326
-        run: |
-          sudo xcode-select -s "/Applications/Xcode_12.3.app"
-          sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -90,20 +76,16 @@ jobs:
         run: |
           name=qldb
           tag=$(git describe --tags --abbrev=0)
-          release_name="$name-$tag-${{ matrix.target }}"
+          release_name="$name-$tag-${{ matrix.variant }}"
           release_tar="${release_name}.tar.gz"
           mkdir "$release_name"
 
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            cargo fetch && cargo build --release
-          else
-            cargo fetch --target ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }}
-          fi
+          cargo fetch && cargo build --release
 
-          if [ "${{ matrix.target }}" != "x86_64-pc-windows-msvc" ]; then
+          if [ "${{ matrix.os }}" != "windows-latest" ]; then
               strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           fi
-          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "$release_name/"
+          cp "target/release/${{ matrix.bin }}" "$release_name/"
           cp README.md LICENSE "$release_name/"
           tar czvf "$release_tar" "$release_name"
           rm -r "$release_name"
