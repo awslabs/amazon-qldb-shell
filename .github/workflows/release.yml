@@ -62,7 +62,7 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          profil minimal
+          profile: minimal
           toolchain: stable
           override: true
       - name: Install ubuntu tools
