@@ -97,7 +97,7 @@ jobs:
           else
             echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
           fi
-          git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > ${{ github.workflow }}-TAG-COMMENT.txt
+          git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
       - name: Publish
         uses: softprops/action-gh-release@v1
@@ -105,7 +105,7 @@ jobs:
           draft: true
           prerelease: true
           files: "qldb*"
-          body_path: ${{ github.workflow }}-TAG-COMMENT.txt
+          body_path: TAG-COMMENT.txt
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
