@@ -12,6 +12,7 @@ jobs:
 
   test:
     name: Test
+    if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
