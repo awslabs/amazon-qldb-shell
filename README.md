@@ -48,6 +48,37 @@ cargo run --release -- --ledger <ledger-name>
 
 Note that the `"--"` indicates to Cargo that what follows are args for the shell.
 
+To install the shell on your system, use:
+
+```
+cargo install --path .
+```
+
+### Windows installation
+
+> Note: these instructions are relevant because of our dependency on ion-c-sys
+> which uses cmake/clang to build the underlying C library.
+
+CMake can be downloaded from https://cmake.org/download/. First, find the
+*latest release* and pick the installer for your platform. At the time of
+writing, the latest 64 bit installer was:
+https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-win64-x64.msi.
+
+When running the installer, take note at the prompt on `PATH`. The default
+option is to not modify the PATH, which means that after installing CMake it
+*will not be found* by `cargo`. If you have a single-user machine, you can
+select "for all users".
+
+After installing CMake, you must make a new terminal to receive the updated
+PATH.
+
+If you do not have Visual Studio, you can install it by downloading the
+community edition from https://visualstudio.microsoft.com/downloads/. After
+setting it up, you can install clang by going to
+https://releases.llvm.org/download.html and selecting a pre-built binary for
+your architecture. Once both these steps are done, you should be able to open a
+"native tools command prompt".
+
 ## License
 
 This project is licensed under the Apache-2.0 License.
