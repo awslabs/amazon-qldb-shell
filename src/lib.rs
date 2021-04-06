@@ -242,7 +242,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
         let table_names = self.deps.driver.transact(|mut tx| async {
             let table_names =
                 tx.execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'").await?;
-            tx.ok(table_names).await
+            tx.commit(table_names).await
         }).await?;
 
         for reader in table_names.readers() {
@@ -424,7 +424,7 @@ where
                             }
                         }
                         Some(TransactionRequest::Commit) => {
-                            break tx.ok(()).await;
+                            break tx.commit(()).await;
                         }
                         Some(TransactionRequest::Abort) | None => {
                             break tx.abort(()).await;
