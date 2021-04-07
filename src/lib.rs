@@ -37,7 +37,8 @@ pub async fn run() -> Result<()> {
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt);
-    Runner::new_with_opt(opt, env)?.start().await
+    let mut runner = Runner::new_with_opt(opt, env).await?;
+    runner.start().await
 }
 
 fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
@@ -74,8 +75,8 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(&opt)?;
+    async fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
+        let driver = rusoto_driver::build_driver(&opt).await?;
 
         let ui = match opt.execute {
             Some(ref e) => {
@@ -102,7 +103,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     #[cfg(test)]
-    fn new_with<U>(env: Environment, opt: Opt, client: C, ui: U) -> Result<Deps<C>>
+    async fn new_with<U>(env: Environment, opt: Opt, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
@@ -111,7 +112,8 @@ where
         let driver = QldbDriverBuilder::new()
             .ledger_name(&opt.ledger)
             .transaction_retry_policy(retry::never())
-            .build_with_client(client)?;
+            .build_with_client(client)
+            .await?;
 
         Ok(Deps {
             env,
@@ -142,9 +144,9 @@ where
 }
 
 impl Runner<QldbSessionClient> {
-    fn new_with_opt(opt: Opt, env: Environment) -> Result<Runner<QldbSessionClient>> {
+    async fn new_with_opt(opt: Opt, env: Environment) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new_with_opt(opt, env)?,
+            deps: Deps::new_with_opt(opt, env).await?,
             current_transaction: None,
         })
     }
@@ -427,7 +429,7 @@ where
                             break tx.commit(()).await;
                         }
                         Some(TransactionRequest::Abort) | None => {
-                            break tx.abort(()).await;
+                            break tx.abort().await;
                         }
                     }
                 }
@@ -505,7 +507,7 @@ mod tests {
         let ui = TestUi::default();
 
         let mut runner = Runner {
-            deps: Deps::new_with(Environment::new(), opt, client, ui.clone())?,
+            deps: Deps::new_with(Environment::new(), opt, client, ui.clone()).await?,
             current_transaction: None,
         };
         ui.inner().pending.push("help".to_string());

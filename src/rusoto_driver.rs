@@ -13,7 +13,7 @@ use amazon_qldb_driver::{retry, QldbDriver};
 
 use crate::settings::Opt;
 
-pub fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
+pub async fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
     let provider = profile_provider(&opt)?;
     let region = rusoto_region(&opt)?;
     let creds = match provider {
@@ -32,6 +32,7 @@ pub fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
         .credentials_provider(creds)
         .transaction_retry_policy(retry::never())
         .build()
+        .await
 }
 
 /// Required for static dispatch of [`QldbSessionClient::new_with`].
