@@ -478,6 +478,7 @@ mod tests {
     use crate::ui::testing::*;
     use anyhow::Result;
     use async_trait::async_trait;
+    use rusoto_qldb_session::SendCommandResult;
 
     // TODO: Find something better.
     #[derive(Clone)]
@@ -492,7 +493,7 @@ mod tests {
             rusoto_qldb_session::SendCommandResult,
             rusoto_core::RusotoError<rusoto_qldb_session::SendCommandError>,
         > {
-            todo!()
+            Ok(SendCommandResult::default())
         }
     }
 
