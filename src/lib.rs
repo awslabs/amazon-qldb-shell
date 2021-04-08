@@ -1,11 +1,9 @@
 use amazon_qldb_driver::QldbDriver;
-use amazon_qldb_driver::{ion_compat, transaction::StatementResults, QldbError};
+use amazon_qldb_driver::{transaction::StatementResults, QldbError};
 use anyhow::Result;
-use ion_c_sys::reader::{IonCReader, IonCReaderHandle};
-use ion_c_sys::result::IonCError;
-use itertools::Itertools;
+use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
-use settings::{Environment, ExecuteStatementOpt, FormatMode};
+use settings::{Environment, ExecuteStatementOpt};
 use std::{sync::Arc, time::Instant};
 use structopt::StructOpt;
 use thiserror::Error;
@@ -19,13 +17,13 @@ use tokio::{
 #[macro_use]
 extern crate log;
 
-use rustyline::error::ReadlineError;
-
 use crate::settings::{AutoCommitMode, Config, Opt};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
+use rustyline::error::ReadlineError;
 
 mod repl_helper;
+mod results;
 mod rusoto_driver;
 mod settings;
 mod ui;
@@ -339,7 +337,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             }
         };
 
-        display_results(&results, &self.deps.opt.format, &self.deps.ui);
+        results::display_results(&results, &self.deps.opt.format, &self.deps.ui);
 
         if !self.deps.opt.no_query_metrics {
             let noun = match results.len() {
@@ -439,43 +437,6 @@ where
         input,
         results,
         handle,
-    }
-}
-
-fn display_results(results: &StatementResults, format: &FormatMode, ui: &Box<dyn Ui>) {
-    let iter = results
-        .readers()
-        .map(|r| formatted_display(r, &format));
-    Itertools::intersperse(iter, ",\n".to_owned()).for_each(|p| ui.print(&p));
-    ui.newline();
-}
-
-fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatMode) -> String {
-    let value = match result {
-        Ok(v) => v,
-        Err(e) => {
-            warn!(
-                "unable to display document because it could not be parsed: {}",
-                e
-            );
-            return String::new();
-        }
-    };
-
-    match mode {
-        FormatMode::Ion => match ion_compat::to_string_pretty(value) {
-            Ok(d) => d,
-            Err(e) => {
-                warn!("ion formatter is not able to display this document: {}", e);
-                return String::new();
-            }
-        },
-        FormatMode::Table => {
-            todo!("table mode is not yet supported");
-        }
-        // FormatMode::Json => {
-        //     todo!("json is not yet supported");
-        // }
     }
 }
 
