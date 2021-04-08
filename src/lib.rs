@@ -466,6 +466,9 @@ fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatM
                 return String::new();
             }
         },
+        FormatMode::Table => {
+            todo!("table mode is not yet supported");
+        }
         // FormatMode::Json => {
         //     todo!("json is not yet supported");
         // }

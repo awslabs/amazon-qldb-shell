@@ -222,6 +222,7 @@ impl FromStr for AutoCommitMode {
 #[derive(Debug)]
 pub enum FormatMode {
     Ion,
+    Table,
     // Removing a warning temporarily
     // Json,
 }
@@ -244,6 +245,7 @@ impl FromStr for FormatMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match &s.to_lowercase()[..] {
             "ion" | "ion-text" => FormatMode::Ion,
+            "table" => FormatMode::Table,
             "json" => todo!("json is not yet supported"),
             _ => return Err(ParseFormatModeErr::InvalidFormatMode(s.into())),
         })
