@@ -339,11 +339,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             }
         };
 
-        let iter = results
-            .readers()
-            .map(|r| formatted_display(r, &self.deps.opt.format));
-        Itertools::intersperse(iter, ",\n".to_owned()).for_each(|p| self.deps.ui.print(&p));
-        self.deps.ui.newline();
+        display_results(&results, &self.deps.opt.format, &self.deps.ui);
 
         if !self.deps.opt.no_query_metrics {
             let noun = match results.len() {
@@ -444,6 +440,14 @@ where
         results,
         handle,
     }
+}
+
+fn display_results(results: &StatementResults, format: &FormatMode, ui: &Box<dyn Ui>) {
+    let iter = results
+        .readers()
+        .map(|r| formatted_display(r, &format));
+    Itertools::intersperse(iter, ",\n".to_owned()).for_each(|p| ui.print(&p));
+    ui.newline();
 }
 
 fn formatted_display(result: Result<IonCReaderHandle, IonCError>, mode: &FormatMode) -> String {
