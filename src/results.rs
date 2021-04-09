@@ -1,14 +1,16 @@
 use crate::{settings::FormatMode, ui::Ui};
 use amazon_qldb_driver::{ion_compat, transaction::StatementResults};
 use anyhow::Result;
-use ion_c_sys::reader::IonCReaderHandle;
-use ion_c_sys::result::IonCError;
+use ion_c_sys::reader::{IonCReaderHandle, IonCReader};
+use ion_c_sys::result::{IonCError};
+use ion_c_sys::{ION_TYPE_EOF};
 use itertools::Itertools;
+use std::collections::HashSet;
 
 pub(crate) fn display_results(results: &StatementResults, format: &FormatMode, ui: &Box<dyn Ui>) {
     match format {
         FormatMode::Ion => display_results_ion_text(results, ui),
-        FormatMode::Table => display_results_table(results, ui),
+        FormatMode::Table => display_results_table(results, ui).unwrap(),
     }
 }
 
@@ -39,6 +41,16 @@ fn ion_text_string(result: Result<IonCReaderHandle, IonCError>) -> String {
     }
 }
 
-fn display_results_table(_results: &StatementResults, _ui: &Box<dyn Ui>) {
-    unimplemented!()
+fn display_results_table(results: &StatementResults, ui: &Box<dyn Ui>) -> Result<()> {
+    let mut columns = HashSet::new();
+    for reader in results.readers() {
+        let mut reader = reader?;
+        let _ = reader.next()?;
+        let _ = reader.step_in()?;
+        while reader.next()? != ION_TYPE_EOF {
+            columns.insert(reader.get_field_name()?.as_str().to_string());
+        }
+    }
+    ui.println(&format!("Your columns are: {:?}", &columns));
+    return Ok(());
 }
