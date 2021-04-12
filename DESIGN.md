@@ -61,12 +61,13 @@ Usage:
 Users can type three types of entries into the shell:
 
 1. [PartiQL statements](https://partiql.org/)., 
-1. Database commands, and
-1. Shell commands.
+2. Database commands, and
+3. Shell commands.
 
 ### PartiQL statements
-These statements are any valid PartiQL syntax. These queries will be captured as is and sent to the server for
-evaluation with the results returned and displayed in the specified format.
+These statements are any PartiQL syntax. Everything that is not a database or meta-command will be assumed to be a 
+PartiQL statement. These queries will be captured as is and sent to the server for evaluation with the results returned 
+and displayed in the specified format.
 
 ### Database commands
 These commands are specifically limited to those specified here and relate to the principle of least astonishment.
@@ -124,9 +125,8 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
 
 ### Line terminators
 
-The way to indicate to the shell that you are done with a command is by using
-CTRL-LF (`\n` or `\r\n`). Some SQL data miners using shells regularly type out
-long commands and separating this over multiple lines is natural. For these
+The way to indicate to the shell that you are done with a command is by pressing the ENTER key. Some SQL data miners 
+using shells regularly type out long commands and separating this over multiple lines is natural. For these
 users they can change their terminator to be required and set the command
 delimiter to be semi-colon (;) as follows:
 
