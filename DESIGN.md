@@ -106,10 +106,10 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
   * Determines whether or not metrics will be emitted after the results of a query are shown.
   * last prints out the last known metrics from your previous command.
 * `\query-results-format [ion|json|table|csv]`
-  * ion Prints the objects from the database as ION documents in text.
-  * json Prints the objects from the database as JSON documents in text.
-  * table Tabulates the data and prints out the data as rows.
-  * table Prints out the data in CSV format.
+  * `ion`: Prints the objects from the database as ION documents in text.
+  * `json`: Prints the objects from the database as JSON documents in text.
+  * `table`: Tabulates the data and prints out the data as rows.
+  * `csv`: Prints out the data in CSV format.
 * `\auto-commit`
   * Determines whether each statement will be executed as a transaction or
     not. By default this is off, meaning that statements are all executed as
