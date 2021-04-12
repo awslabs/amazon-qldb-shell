@@ -9,7 +9,8 @@
    ```
    xcode-select --install # required to use Homebrew
    brew tap aws/tap # Add AWS as a Homebrew tap
-   brew install qldb
+   brew install qldbshell
+  qldb --ledger <your-ledger>
    ```
 
 ## For Developers
