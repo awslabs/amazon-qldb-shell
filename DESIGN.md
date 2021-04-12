@@ -2,7 +2,9 @@
 
 ## About
 
-This is the specification of the QLDB Shell containing all features, commands, and options.
+This is the specification of the QLDB Shell containing all features, commands, and options. Note that this is not yet
+completely implemented and is a work-progress-subject to change. As features become reality, this content will become
+the user guide.
 
 ## Tenets
 
@@ -54,97 +56,73 @@ Usage:
 -e --execute ["text"|script-file|STDIN]
 ```
 
-## Meta Commands
+## Command interface
+
+Users can type three types of entries into the shell:
+
+1. [PartiQL statements](https://partiql.org/)., 
+1. Database commands, and
+1. Shell commands.
+
+### PartiQL statements
+These statements are any valid PartiQL syntax. These queries will be captured as is and sent to the server for
+evaluation with the results returned and displayed in the specified format.
+
+### Database commands
+These commands are specifically limited to those specified here and relate to the principle of least astonishment.
+These are the types of commands users will be used to seeing in other database shells. These aren't queries and cannot
+be executed by the database query engine, rather they are commands at the level of the database itself, rather than
+the data in the database.
+
+* `start transaction` or `begin`
+  * This starts a transaction. If we are in auto-commit mode, the shell reports a warning saying that this has no 
+    effect. 
+* `commit`
+  * This commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is 
+    no active transaction. If we are in auto-commit mode, the command is accepted and no error or warning or information
+    is reported.
+* `use [ledger|endpoint] ledger-or-endpoint`
+  * Connect to a different endpoint or ledger.
+* `show [ledgers|tables]`
+  * Display a list of tables in the current ledger, or ledgers at the current endpoint, depending on the command 
+    arguments.
+* `help`
+  * Prints the lists of database and meta commands.
+* `quit`
+  * Quits the shell.
+
+### Shell Meta Commands
 
 All commands to the shell itself will be prefixed with a backslash (\), e.g:
 
 * `\quit`
-    * Quits the shell
+  * Quits the shell. This can be preceded by the backslash or not.
 * `\help`
-    * Prints the lists of meta commands
+  * Prints the lists of meta commands. This can be preceded by the backslash or not.
 * `\status`
-    * Prints out things like connection status, server ping latency, etc.
+  * Prints out things like connection status, server ping latency, etc.
 * `\metrics [on|off|last]`
-    * Determines whether or not metrics will be emitted after the results of a query are shown.
-    * last prints out the last known metrics from your previous command.
-* `\query-results-format [ion|json|table]`
-    * ion Prints the objects from the database as ION documents in text.
-    * json Prints the objects from the database as JSON documents in text.
-    * table Tabulates the data and prints out the data as rows.
+  * Determines whether or not metrics will be emitted after the results of a query are shown.
+  * last prints out the last known metrics from your previous command.
+* `\query-results-format [ion|json|table|csv]`
+  * ion Prints the objects from the database as ION documents in text.
+  * json Prints the objects from the database as JSON documents in text.
+  * table Tabulates the data and prints out the data as rows.
+  * table Prints out the data in CSV format.
 * `\auto-commit`
-    * Determines whether each statement will be executed as a transaction or
-      not. By default this is off, meaning that statements are all executed as
-      individual transactions.
+  * Determines whether each statement will be executed as a transaction or
+    not. By default this is off, meaning that statements are all executed as
+    individual transactions.
 * `\history [limit]`
-    * Print out the last limit commands executed.
+  * Print out the last limit commands executed.
 * `\use [ledger|endpoint] ledger-or-endpoint`
-    * Connect to a different endpoint or ledger.
-* `\ledger [list|create|delete] [ledger-name]?`
-    * Show, create, or delete a ledger.
-* `\show-tables`
-    * Provide a list of tables in the current ledger.
+  * Connect to a different endpoint or ledger.
 * `\delimiter delimiter-characters`
-    * Specify the delimiter for end of command processing, such as `\n` or `;`.
+  * Specify the delimiter for end of command processing, such as `\n` or `;`.
 * `\output [console|file] [outfile]?`
-    * Write results either into a file which you specify, or into the console.
+  * Write results either into a file which you specify, or into the console.
 
-## Customizing your display
-
-You can use the `\prompt` command to customize your prompt and this can be saved
-in your `~/.qldb/shell.conf` file.
-
-```sh
-\prompt qldb
-qldb> # this is the default
-
-\prompt ${ledger-name}/${database-name}-${transaction-id}>
-PeopleLedger/PeopleDatabase-(a-transaction-id)> ...
-```
-
-## Configuration
-
-All possible configuration options are settable on the command line or in a conf
-file using the standard MySQL
-(https://dev.mysql.com/doc/refman/8.0/en/option-files.html) or Git
-(https://git-scm.com/docs/git-config/2.1.4) syntax (TOML
-(https://github.com/toml-lang/toml)). The format is as follows:
-
-```toml
-[section]
-option[ = value]? [# comments]?
-[# comments]?
-
-Full options are as follows:
-
-[metrics]
-display = [on|off] # default: on
-
-[results]
-format = [ion|json\table] # default: ion
-
-[transactions]
-auto-commit = [on|off] # default: on
-
-[connection]
-endpoint = default-endpoint # default: taken from credentials
-ledger = default-ledger # default: none
-
-[interface]
-prompt = your-prompt-syntax # default: qldb>
-termintor-required = [true|false] # default: true
-delimiter = your-statement-delimiter # default: ;
-output = [console|file] [outfile]? # default: console
-
-[history]
-record-commands = [on|off] [file]? # default: on ~/.qldb/command-history
-limit = [0-9]+ # default: 10000
-```
-
-### Comments
-
-Any statement that starts with a hash (`#`) will be ignored as a comment.
-
-## Command interface
+### Line terminators
 
 The way to indicate to the shell that you are done with a command is by using
 CTRL-LF (`\n` or `\r\n`). Some SQL data miners using shells regularly type out
@@ -181,6 +159,62 @@ qldb> select * from Person;
 ```
 
 We support readline, so things like up-arrow, i-search, CTRL-D work as expected.
+
+### Comments
+
+Any statement that starts with a hash (`#`) will be ignored as a comment.
+
+## Customizing your display
+
+You can use the `\prompt` command to customize your prompt and this can be saved
+in your `~/.qldb/shell.conf` file.
+
+```sh
+\prompt qldb
+qldb> # this is the default
+
+\prompt ${ledger-name}/${database-name}-${transaction-id}>
+PeopleLedger/PeopleDatabase-(a-transaction-id)> ...
+```
+
+## Configuration
+
+All possible configuration options are settable on the command line or in a conf
+file using the standard MySQL
+(https://dev.mysql.com/doc/refman/8.0/en/option-files.html) or Git
+(https://git-scm.com/docs/git-config/2.1.4) syntax (TOML
+(https://github.com/toml-lang/toml)). The format is as follows:
+
+```
+[section]
+option[ = value]? [# comments]?
+[# comments]?
+
+Full options are as follows:
+
+[metrics]
+display = [on|off] # default: on
+
+[results]
+format = [ion|json\table] # default: ion
+
+[transactions]
+auto-commit = [on|off] # default: on
+
+[connection]
+endpoint = default-endpoint # default: taken from credentials
+ledger = default-ledger # default: none
+
+[interface]
+prompt = your-prompt-syntax # default: qldb>
+termintor-required = [true|false] # default: true
+delimiter = your-statement-delimiter # default: ;
+output = [console|file] [outfile]? # default: console
+
+[history]
+record-commands = [on|off] [file]? # default: on ~/.qldb/command-history
+limit = [0-9]+ # default: 10000
+```
 
 ## Transactions
 
