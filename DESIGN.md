@@ -48,6 +48,7 @@ Usage:
 
 -P --prompt your-prompt-syntax # default: qldb>
 -d --delimiter your-delimiter # default: \n
+-t --terminator-required # default: unspecified and therefore false
 -o --output [STDOUT|file] [outfile]? # default: console
 
 -h --history [on|off] [file]? # default: on ~/.qldb/command-history
@@ -82,11 +83,6 @@ the data in the database.
   * This commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is 
     no active transaction. If we are in auto-commit mode, the command is accepted and no error or warning or information
     is reported.
-* `use [ledger|endpoint] ledger-or-endpoint`
-  * Connect to a different endpoint or ledger.
-* `show [ledgers|tables]`
-  * Display a list of tables in the current ledger, or ledgers at the current endpoint, depending on the command 
-    arguments.
 * `help`
   * Prints the lists of database and meta commands.
 * `quit`
@@ -100,30 +96,37 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
   * Quits the shell. This can be preceded by the backslash or not.
 * `\help`
   * Prints the lists of meta commands. This can be preceded by the backslash or not.
-* `\status`
-  * Prints out things like connection status, server ping latency, etc.
-* `\metrics [on|off|last]`
-  * Determines whether or not metrics will be emitted after the results of a query are shown.
-  * last prints out the last known metrics from your previous command.
-* `\query-results-format [ion|json|table|csv]`
-  * `ion`: Prints the objects from the database as ION documents in text.
-  * `json`: Prints the objects from the database as JSON documents in text.
-  * `table`: Tabulates the data and prints out the data as rows.
-  * `csv`: Prints out the data in CSV format.
-* `\auto-commit`
-  * Determines whether each statement will be executed as a transaction or
-    not. By default this is off, meaning that statements are all executed as
-    individual transactions.
-* `\history [limit]`
-  * Print out the last limit commands executed.
 * `\use [ledger|endpoint] ledger-or-endpoint`
   * Connect to a different endpoint or ledger.
-* `\delimiter delimiter-characters`
-  * Specify the delimiter for end of command processing, such as `\n` or `;`.
-* `\output [console|file] [outfile]?`
-  * Write results either into a file which you specify, or into the console.
+* `\show [ledgers|tables]`
+  * Display a list of tables in the current ledger, or ledgers at the current endpoint, depending on the command
+    arguments.
+* `\status`
+  * Prints out things like connection status, server ping latency, etc.
+* `\option [option-name]=[option-value]`. Sets an option to the value, valid options are:
+  * `metrics=[on|off|last]`
+    * Determines whether or not metrics will be emitted after the results of a query are shown.
+    * last prints out the last known metrics from your previous command.
+  * `query-results-format=[ion|json|table|csv]`
+    * `ion`: Prints the objects from the database as ION documents in text.
+    * `json`: Prints the objects from the database as JSON documents in text.
+    * `table`: Tabulates the data and prints out the data as rows.
+    * `csv`: Prints out the data in CSV format.
+  * `auto-commit=[on|off]`
+    * Determines whether each statement will be executed as a transaction or
+      not. By default this is on, meaning that statements are all executed as
+      individual transactions.
+  * `delimiter=delimiter-characters`
+    * Specify the delimiter for end of command processing, such as `\n` or `;`.
+  * `output="[STDOUT|output-file]"`
+    * Write results either into a file which you specify, or to STDOUT. If running in scripted mode, this outputs to 
+    * `STDOUT` by default.
+  * `terminator-required=[true|false]`
+    * Sets the terminator-required option. See [here](#line-terminators) for details.
+* `\history [limit]`
+  * Print out the last limit commands executed.
 
-### Line terminators
+### Line terminators <a href="line-terminators">
 
 The way to indicate to the shell that you are done with a command is by pressing the ENTER key. Some SQL data miners 
 using shells regularly type out long commands and separating this over multiple lines is natural. For these
@@ -196,7 +199,7 @@ Full options are as follows:
 display = [on|off] # default: on
 
 [results]
-format = [ion|json\table] # default: ion
+format = [ion|json|table|csv] # default: ion
 
 [transactions]
 auto-commit = [on|off] # default: on
@@ -207,7 +210,7 @@ ledger = default-ledger # default: none
 
 [interface]
 prompt = your-prompt-syntax # default: qldb>
-termintor-required = [true|false] # default: true
+terminator-required = [true|false] # default: false
 delimiter = your-statement-delimiter # default: ;
 output = [console|file] [outfile]? # default: console
 
