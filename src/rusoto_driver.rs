@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use rusoto_core::{
     credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
-    Region,
+    Client, HttpClient, Region,
 };
 use rusoto_qldb_session::QldbSessionClient;
 
@@ -33,6 +33,40 @@ pub async fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
         .transaction_retry_policy(retry::never())
         .build()
         .await
+}
+
+pub(crate) async fn health_check_start_session(opt: &Opt) -> Result<()> {
+    use rusoto_qldb_session::*;
+    let session_client = build_rusoto_client(&opt).await?;
+
+    session_client
+        .send_command(SendCommandRequest {
+            start_session: Some(StartSessionRequest {
+                ledger_name: opt.ledger.clone(),
+            }),
+            ..Default::default()
+        })
+        .await?;
+
+    Ok(())
+}
+
+async fn build_rusoto_client(opt: &Opt) -> Result<QldbSessionClient> {
+    let provider = profile_provider(&opt)?;
+    let region = rusoto_region(&opt)?;
+    let creds = match provider {
+        Some(p) => CredentialProvider::Profile(p),
+        None => CredentialProvider::Chain(ChainProvider::new()),
+    };
+
+    let mut hyper = HttpClient::new()?;
+    hyper.local_agent(format!(
+        "QLDB Driver for Rust v{}",
+        env!("CARGO_PKG_VERSION")
+    ));
+
+    let client = Client::new_with(creds, hyper);
+    Ok(QldbSessionClient::new_with_client(client, region))
 }
 
 /// Required for static dispatch of [`QldbSessionClient::new_with`].

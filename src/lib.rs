@@ -35,6 +35,7 @@ pub async fn run() -> Result<()> {
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt);
+    rusoto_driver::health_check_start_session(&opt).await?;
     let mut runner = Runner::new_with_opt(opt, env).await?;
     runner.start().await
 }
