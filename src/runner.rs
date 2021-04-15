@@ -29,6 +29,13 @@ impl Runner<QldbSessionClient> {
     }
 }
 
+fn is_special_command(line: &str) -> bool {
+    match &line.to_lowercase()[..] {
+        "help" | "quit" | "exit" | "start transaction" | "begin" | "abort" | "commit" => true,
+        _ => false
+    }
+}
+
 impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
@@ -65,9 +72,10 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
                 } else {
                     match &line[0..1] {
                         r"\" => self.handle_command(&line[1..]).await?,
+                        _ if is_special_command(&line) => self.handle_command(&line).await?,
                         _ => match self.current_transaction {
                             Some(_) => self.handle_partiql(&line).await?,
-                            None => self.handle_autocommit_partiql_or_command(&line).await?,
+                            None => self.handle_autocommit_partiql(&line).await?,
                         },
                     }
                 }
@@ -131,22 +139,5 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             self.deps.ui.println(&format!("- {}", name.as_str()));
         }
         Ok(())
-    }
-
-    pub(crate) async fn handle_autocommit_partiql_or_command(
-        &mut self,
-        line: &str,
-    ) -> Result<bool> {
-        match self.handle_command(line).await {
-            Err(e) => {
-                if let Some(QldbShellError::UnknownCommand) = e.downcast_ref::<QldbShellError>() {
-                    self.handle_autocommit_partiql(line).await?;
-                    Ok(true)
-                } else {
-                    Err(e)
-                }
-            }
-            other => other,
-        }
     }
 }

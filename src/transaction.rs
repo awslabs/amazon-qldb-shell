@@ -79,7 +79,7 @@ impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<()> {
+    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<bool> {
         if self.deps.opt.auto_commit == AutoCommitMode::Off {
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
@@ -94,7 +94,8 @@ where
             self.current_transaction.take();
             Err(e)?
         }
-        self.handle_commit().await
+        self.handle_commit().await?;
+        Ok(true)
     }
 
     pub(crate) fn handle_start_transaction(&mut self) {
