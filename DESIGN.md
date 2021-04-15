@@ -121,10 +121,14 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
   * `output="[STDOUT|output-file]"`
     * Write results either into a file which you specify, or to STDOUT. If running in scripted mode, this outputs to 
     * `STDOUT` by default.
+  * `prompt=<your-prompt-syntax>`
+    * Sets your prompt to your desired value.
   * `terminator-required=[true|false]`
     * Sets the terminator-required option. See [here](#line-terminators) for details.
 * `\history [limit]`
   * Print out the last limit commands executed.
+* `\env`
+  * Prints out your current environment settings including where they were set from.
 
 ### Line terminators <a href="line-terminators"/>
 
