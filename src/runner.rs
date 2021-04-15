@@ -103,8 +103,8 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
                 return Ok(false);
             }
             "start transaction" | "begin" => self.handle_start_transaction(),
-            "abort" | "ABORT" => self.handle_abort().await?,
-            "commit" | "COMMIT" => self.handle_commit().await?,
+            "abort" => self.handle_abort().await?,
+            "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
             "show-tables" => self.handle_show_tables().await?,
             _ => Err(QldbShellError::UnknownCommand)?,
