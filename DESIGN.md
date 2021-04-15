@@ -83,7 +83,7 @@ the data in the database.
   * This commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is 
     no active transaction. If we are in auto-commit mode, the command is accepted and no error or warning or information
     is reported.
-* `aobrt`
+* `abort`
   * This aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is
     no active transaction. If we are in auto-commit mode, the command is accepted and no error or warning or information
     is reported.
