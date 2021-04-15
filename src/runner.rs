@@ -114,7 +114,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             "abort" => self.handle_abort().await?,
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
-            "show-tables" => self.handle_show_tables().await?,
+            "show tables" => self.handle_show_tables().await?,
             _ => Err(QldbShellError::UnknownCommand)?,
         }
 
