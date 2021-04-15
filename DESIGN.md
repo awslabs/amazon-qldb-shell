@@ -223,6 +223,9 @@ record-commands = [on|off] [file]? # default: on ~/.qldb/command-history
 limit = [0-9]+ # default: 10000
 ```
 
+The default config file will be found at `$XDG_CONFIG_HOME/qldbshell/default_config.toml`. For example on OSX this will
+typically be at `/Users/username/Library/Application Support/qldbshell/default_config.toml`.
+
 ## Transactions
 
 Following MySQL's lead, starting a transaction uses the following statement
