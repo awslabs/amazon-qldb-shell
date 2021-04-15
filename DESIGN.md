@@ -126,7 +126,7 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
 * `\history [limit]`
   * Print out the last limit commands executed.
 
-### Line terminators <a href="line-terminators">
+### Line terminators <a href="line-terminators"/>
 
 The way to indicate to the shell that you are done with a command is by pressing the ENTER key. Some SQL data miners 
 using shells regularly type out long commands and separating this over multiple lines is natural. For these
