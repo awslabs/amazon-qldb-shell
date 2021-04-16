@@ -26,7 +26,7 @@ pub struct Setting<T: Clone> {
     name: String,
     modified: bool,
     setter: Setter,
-    value: T,
+    pub value: T,
 }
 
 impl<T> Setting<T>
@@ -83,7 +83,8 @@ impl FromStr for CommandLineSetting {
 
 #[derive(Debug)]
 pub struct Environment {
-    auto_commit: Setting<bool>,
+    pub auto_commit: Setting<bool>,
+    pub prompt: Setting<String>,
 }
 
 impl Environment {
@@ -95,11 +96,18 @@ impl Environment {
                 setter: Setter::Environment,
                 value: true,
             },
+            prompt: Setting {
+                name: "prompt".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: "qldb>".to_string(),
+            },
         }
     }
 
     pub fn apply_config(&mut self, config: &Config) {
         self.auto_commit.apply(config.auto_commit, Setter::Config);
+        self.prompt.apply(config.ui.prompt.clone(), Setter::Config);
     }
 
     pub fn apply_cli(&mut self, opt: &Opt) {
@@ -123,8 +131,14 @@ impl Environment {
 }
 
 #[derive(Default, Serialize, Deserialize)]
+pub struct UiTomlTable {
+    prompt: Option<String>,
+}
+
+#[derive(Default, Serialize, Deserialize)]
 pub struct Config {
     auto_commit: Option<bool>,
+    ui: UiTomlTable,
 }
 
 impl Config {

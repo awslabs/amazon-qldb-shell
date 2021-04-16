@@ -60,7 +60,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
 
     pub(crate) async fn tick(&mut self) -> Result<bool> {
         match self.current_transaction {
-            None => self.deps.ui.set_prompt(format!("qldb> ")),
+            None => self.deps.ui.set_prompt(format!("{} ", self.deps.env.prompt.value)),
             Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
