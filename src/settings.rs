@@ -107,7 +107,10 @@ impl Environment {
 
     pub fn apply_config(&mut self, config: &Config) {
         self.auto_commit.apply(config.auto_commit, Setter::Config);
-        self.prompt.apply(config.ui.prompt.clone(), Setter::Config);
+
+        if let Some(ui) = &config.ui {
+            self.prompt.apply(Some(ui.prompt.clone()), Setter::Config);
+        }
     }
 
     pub fn apply_cli(&mut self, opt: &Opt) {
@@ -132,13 +135,13 @@ impl Environment {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct UiTomlTable {
-    prompt: Option<String>,
+    prompt: String,
 }
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Config {
     auto_commit: Option<bool>,
-    ui: UiTomlTable,
+    ui: Option<UiTomlTable>,
 }
 
 impl Config {
