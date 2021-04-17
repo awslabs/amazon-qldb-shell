@@ -4,10 +4,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-};
+use std::{collections::HashMap, fs};
 use thiserror::Error;
 use toml;
 
@@ -158,9 +155,10 @@ impl Config {
         fs::create_dir_all(&shell_dir)?;
         let config_file = shell_dir.join("default_config.toml");
         if !config_file.exists() {
-            File::create(&config_file)?;
+            Ok(Config::default())
+        } else {
+            Config::load(&config_file)
         }
-        Config::load(&config_file)
     }
 }
 
@@ -282,5 +280,23 @@ impl FromStr for ExecuteStatementOpt {
             "-" => ExecuteStatementOpt::Stdin,
             _ => ExecuteStatementOpt::SingleStatement(s.into()),
         })
+    }
+}
+
+#[cfg(test)]
+mod settings_tests {
+    use super::*;
+    use fs::File;
+    use tempdir::TempDir;
+
+    /// Tests that an empty config is valid. This makes sure we don't forget an
+    /// `Optional` in any new fields we add.
+    #[test]
+    fn load_empty_config() -> Result<()> {
+        let tmp = TempDir::new("config")?;
+        let path = tmp.path().join("empty.toml");
+        File::create(&path)?;
+        let _ = Config::load(&path)?;
+        Ok(())
     }
 }

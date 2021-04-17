@@ -29,6 +29,9 @@ pest = "2.1.3"
 pest_derive = "2.1.0"
 tracing = { version = "0.1.25", features = ["log"] }
 
+[dev-dependencies]
+tempdir = "0.3"
+
 [[bin]]
 name = "qldb"
 path = "src/main.rs"
