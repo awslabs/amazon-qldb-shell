@@ -10,53 +10,53 @@ on:
 
 jobs:
 
-  test:
-    name: Test
-    if: startsWith(github.ref, 'refs/tags/')
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Env Variable Setup
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Git Checkout
-        uses: actions/checkout@v2
-      - name: Rust Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Cargo Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose
-      - name: Cargo Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --verbose
+#   test:
+#     name: Test
+#     if: startsWith(github.ref, 'refs/tags/')
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest, macOS-latest, windows-latest]
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#       - name: Env Variable Setup
+#         if: matrix.os == 'windows-latest'
+#         run: |
+#           echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+#       - name: Git Checkout
+#         uses: actions/checkout@v2
+#       - name: Rust Toolchain
+#         uses: actions-rs/toolchain@v1
+#         with:
+#           profile: minimal
+#           toolchain: stable
+#           override: true
+#       - name: Cargo Build
+#         uses: actions-rs/cargo@v1
+#         with:
+#           command: build
+#           args: --verbose
+#       - name: Cargo Test
+#         uses: actions-rs/cargo@v1
+#         with:
+#           command: test
+#           args: --verbose
 
   release:
     name: Release
-    needs: [test]
+#     needs: [test]
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            variant: linux
-            bin: qldb
+#           - os: ubuntu-latest
+#             variant: linux
+#             bin: qldb
           - os: windows-latest
             variant: windows
             bin: qldb.exe
-          - os: macos-latest
-            variant: mac
-            bin: qldb
+#           - os: macos-latest
+#             variant: mac
+#             bin: qldb
     runs-on: ${{ matrix.os }}
     steps:
       - name: Env Variable Setup
@@ -78,6 +78,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Package
         shell: bash
+        if: matrix.os == 'ubuntu-latest' ||  matrix.os == 'macos-latest' 
         run: |
           name=qldb
           tag=$(git describe --tags --abbrev=0)
@@ -103,6 +104,22 @@ jobs:
           fi
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
+      - name: MSI
+        shell: bash
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Return a qldb.exe
+          cargo fetch && cargo build --release  
+          
+          strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          
+          cargo install cargo-wix
+          
+          cargo wix init # create folder in `target/wix`
+          # Create MSI
+          cargo wix 
+          
+        
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
@@ -113,3 +130,7 @@ jobs:
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    
+    
