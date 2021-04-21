@@ -108,6 +108,10 @@ jobs:
         shell: bash
         if: matrix.os == 'windows-latest'
         run: |
+          name=qldb
+          tag=$(git describe --tags --abbrev=0)
+          release_name="$name-$tag-${{ matrix.variant }}"
+          mkdir "$release_name"
           # Return a qldb.exe
           cargo fetch && cargo build --release  
           
@@ -126,7 +130,9 @@ jobs:
           for file in *.msi; do
               mv $file ../../qldb.msi
           done
-          
+          cd ../..
+          cp README.md LICENSE "$release_name/"
+          cp qldb.msi "$release_name/"
           echo "AFTER UPDATING FILE"
           ls
           
