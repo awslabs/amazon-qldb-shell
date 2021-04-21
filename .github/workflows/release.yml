@@ -119,6 +119,14 @@ jobs:
           # Create MSI
           cargo wix 
           
+          cd target/wix
+          ls
+          
+          # rename msi file to "qldb.msi"
+          for file in *.msi; do
+              mv $name qldb.msi
+          done
+
         
       - name: Publish
         uses: softprops/action-gh-release@v1
