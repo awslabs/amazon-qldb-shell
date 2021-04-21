@@ -124,7 +124,7 @@ jobs:
           
           # rename msi file to "qldb.msi"
           for file in *.msi; do
-              mv $name qldb.msi
+              mv $file qldb.msi
           done
 
         
