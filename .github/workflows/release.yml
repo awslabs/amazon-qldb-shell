@@ -146,7 +146,7 @@ jobs:
         with:
           draft: true
           prerelease: true
-          files: "qldb* README.md LICENSE"
+          files: "qldb*; README.md; LICENSE"
           body_path: TAG-COMMENT.txt
 
         env:
