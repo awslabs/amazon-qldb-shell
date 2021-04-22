@@ -13,7 +13,6 @@ use tokio::{
 
 use crate::results;
 use crate::runner::Runner;
-use crate::settings::AutoCommitMode;
 use crate::QldbShellError;
 
 pub(crate) struct ShellTransaction {
@@ -80,7 +79,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<bool> {
-        if self.deps.opt.auto_commit == AutoCommitMode::Off {
+        if self.deps.env.auto_commit.value {
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
