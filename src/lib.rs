@@ -28,7 +28,7 @@ pub async fn run() -> Result<()> {
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt);
-    rusoto_driver::health_check_start_session(&opt).await?;
+    rusoto_driver::health_check_start_session(&env).await?;
     let mut runner = Runner::new_with_opt(opt, env).await?;
     runner.start().await
 }
@@ -68,7 +68,7 @@ impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
     async fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(&opt).await?;
+        let driver = rusoto_driver::build_driver(&env).await?;
 
         let ui = match opt.execute {
             Some(ref e) => {

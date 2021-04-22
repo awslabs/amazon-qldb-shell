@@ -81,7 +81,11 @@ impl FromStr for CommandLineSetting {
 #[derive(Debug)]
 pub struct Environment {
     pub auto_commit: Setting<bool>,
+    pub ledger: Setting<String>,
     pub prompt: Setting<String>,
+    pub profile: Setting<Option<String>>,
+    pub qldb_session_endpoint: Setting<Option<String>>,
+    pub region: Setting<Option<String>>,
 }
 
 impl Environment {
@@ -99,6 +103,31 @@ impl Environment {
                 setter: Setter::Environment,
                 value: "qldb>".to_string(),
             },
+            profile: Setting {
+                name: "profile".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: None,
+            },
+            qldb_session_endpoint: Setting {
+                name: "qldb_session_endpoint".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: None,
+            },
+            region: Setting {
+                name: "region".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: None,
+            },
+            ledger: Setting {
+                name: "ledger".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                // FIXME: How to assert that there should be a ledger name specified
+                value: "!!unknown".to_string(),
+            },
         }
     }
 
@@ -110,6 +139,11 @@ impl Environment {
     }
 
     pub fn apply_cli(&mut self, opt: &Opt) {
+        self.ledger.apply(Some(opt.ledger.clone()), Setter::CommandLine);
+        self.qldb_session_endpoint.apply(Some(opt.qldb_session_endpoint.clone()), Setter::CommandLine);
+        self.profile.apply(Some(opt.profile.clone()), Setter::CommandLine);
+        self.region.apply(Some(opt.region.clone()), Setter::CommandLine);
+
         let options = match opt.options {
             Some(ref o) => o,
             None => return,

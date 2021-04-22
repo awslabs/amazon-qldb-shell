@@ -11,11 +11,11 @@ use rusoto_qldb_session::QldbSessionClient;
 use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
 
-use crate::settings::Opt;
+use crate::settings::{Environment};
 
-pub async fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
-    let provider = profile_provider(&opt)?;
-    let region = rusoto_region(&opt)?;
+pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
+    let provider = profile_provider(&env)?;
+    let region = rusoto_region(&env)?;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Chain(ChainProvider::new()),
@@ -27,7 +27,7 @@ pub async fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
     // again, as individual statements may be derived from values seen from
     // yet other statements.
     QldbDriverBuilder::new()
-        .ledger_name(&opt.ledger)
+        .ledger_name(&env.ledger.value)
         .region(region)
         .credentials_provider(creds)
         .transaction_retry_policy(retry::never())
@@ -35,14 +35,14 @@ pub async fn build_driver(opt: &Opt) -> Result<QldbDriver<QldbSessionClient>> {
         .await
 }
 
-pub(crate) async fn health_check_start_session(opt: &Opt) -> Result<()> {
+pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> {
     use rusoto_qldb_session::*;
-    let session_client = build_rusoto_client(&opt).await?;
+    let session_client = build_rusoto_client(&env).await?;
 
     session_client
         .send_command(SendCommandRequest {
             start_session: Some(StartSessionRequest {
-                ledger_name: opt.ledger.clone(),
+                ledger_name: env.ledger.value.clone(),
             }),
             ..Default::default()
         })
@@ -51,9 +51,9 @@ pub(crate) async fn health_check_start_session(opt: &Opt) -> Result<()> {
     Ok(())
 }
 
-async fn build_rusoto_client(opt: &Opt) -> Result<QldbSessionClient> {
-    let provider = profile_provider(&opt)?;
-    let region = rusoto_region(&opt)?;
+async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
+    let provider = profile_provider(&env)?;
+    let region = rusoto_region(&env)?;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Chain(ChainProvider::new()),
@@ -89,8 +89,8 @@ impl ProvideAwsCredentials for CredentialProvider {
     }
 }
 
-fn profile_provider(opt: &Opt) -> Result<Option<ProfileProvider>> {
-    let it = match &opt.profile {
+fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
+    let it = match &env.profile.value {
         Some(p) => {
             let mut prof = ProfileProvider::new()?;
             prof.set_profile(p);
@@ -103,8 +103,8 @@ fn profile_provider(opt: &Opt) -> Result<Option<ProfileProvider>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-fn rusoto_region(opt: &Opt) -> Result<Region> {
-    let it = match (&opt.region, &opt.qldb_session_endpoint) {
+fn rusoto_region(env: &Environment) -> Result<Region> {
+    let it = match (&env.region.value, &env.qldb_session_endpoint.value) {
         (Some(r), Some(e)) => Region::Custom {
             name: r.to_owned(),
             endpoint: e.to_owned(),
