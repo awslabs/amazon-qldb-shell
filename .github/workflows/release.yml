@@ -107,11 +107,7 @@ jobs:
       - name: MSI
         shell: bash
         if: matrix.os == 'windows-latest'
-        run: |
-          name=qldb
-          tag=$(git describe --tags --abbrev=0)
-          release_name="$name-$tag-${{ matrix.variant }}"
-          mkdir "$release_name"
+        run: |        
           # Return a qldb.exe
           cargo fetch && cargo build --release  
           
@@ -119,11 +115,17 @@ jobs:
           
           cargo install cargo-wix
           
-          cargo wix init # create folder in `target/wix`
-          # Create MSI
+          # create folder in `target/wix`
+          cargo wix init 
+          
+          # at this point edit wxs file (with a Python script) to include 
+          # the logo, license
+          
+          # Then create MSI
           cargo wix 
           
           cd target/wix
+          echo "Before Updating"
           ls
           
           # rename msi file to "qldb.msi"
@@ -131,8 +133,9 @@ jobs:
               mv $file ../../qldb.msi
           done
           cd ../..
-          cp README.md LICENSE "$release_name/"
-          cp qldb.msi "$release_name/"
+          #cp README.md 
+          #cd LICENSE
+        
           echo "AFTER UPDATING FILE"
           ls
           
@@ -143,7 +146,7 @@ jobs:
         with:
           draft: true
           prerelease: true
-          files: "qldb*"
+          files: "qldb* README.md LICENSE"
           body_path: TAG-COMMENT.txt
 
         env:
