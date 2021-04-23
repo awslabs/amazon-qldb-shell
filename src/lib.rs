@@ -24,7 +24,10 @@ mod ui;
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
     configure_logging(&opt)?;
-    let config = Config::load_default()?;
+    let config = match opt.config {
+        None => Config::load_default()?,
+        Some(ref path) => Config::load(path)?,
+    };
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt);
@@ -66,7 +69,10 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    async fn new_with_env(env: Environment, execute: &Option<ExecuteStatementOpt>) -> Result<Deps<QldbSessionClient>> {
+    async fn new_with_env(
+        env: Environment,
+        execute: &Option<ExecuteStatementOpt>,
+    ) -> Result<Deps<QldbSessionClient>> {
         let driver = rusoto_driver::build_driver(&env).await?;
 
         let ui = match execute {

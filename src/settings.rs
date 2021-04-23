@@ -3,7 +3,7 @@ use dirs;
 use pest::Parser;
 use pest_derive::Parser;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{collections::HashMap, fs};
 use thiserror::Error;
 use toml;
@@ -190,12 +190,14 @@ impl Environment {
         }
         self.format.apply_value(&opt.format, Setter::CommandLine);
         self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
-        self.show_query_metrics.apply_value(&!opt.no_query_metrics, Setter::CommandLine);
+        self.show_query_metrics
+            .apply_value(&!opt.no_query_metrics, Setter::CommandLine);
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
         self.region.apply_opt(&opt.region, Setter::CommandLine);
-        self.terminator_required.apply_value(&opt.terminator_required, Setter::CommandLine);
+        self.terminator_required
+            .apply_value(&opt.terminator_required, Setter::CommandLine);
 
         let options = match opt.options {
             Some(ref o) => o,
@@ -236,11 +238,15 @@ impl Config {
         Ok(config)
     }
 
-    pub fn load_default() -> Result<Config> {
+    pub fn default_config_file_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir().ok_or(anyhow!("$XDG_CONFIG_HOME not set"))?;
         let shell_dir = config_dir.join("qldbshell");
         fs::create_dir_all(&shell_dir)?;
-        let config_file = shell_dir.join("default_config.toml");
+        Ok(shell_dir.join("default_config.toml"))
+    }
+
+    pub fn load_default() -> Result<Config> {
+        let config_file = Config::default_config_file_path()?;
         if !config_file.exists() {
             Ok(Config::default())
         } else {
@@ -260,6 +266,9 @@ pub struct Opt {
 
     #[structopt(short, long = "--ledger")]
     pub ledger: String,
+
+    #[structopt(short, long, parse(from_os_str))]
+    pub config: Option<PathBuf>,
 
     #[structopt(short = "-s", long = "--qldb-session-endpoint")]
     pub qldb_session_endpoint: Option<String>,

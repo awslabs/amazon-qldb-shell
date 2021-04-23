@@ -5,6 +5,10 @@
 ### Changed
 
   * Started decoupling the program from CLI opts. This will allow better and dynamic configuration.
+  
+### Added
+
+  * Added `--config PATH` to customize where we load config from. 
 
 ## [2.0.0.alpha3] - 2021-04-21
 
