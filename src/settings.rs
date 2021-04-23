@@ -30,11 +30,34 @@ impl<T> Setting<T>
 where
     T: Clone,
 {
-    fn apply(&mut self, other: Option<T>, setter: Setter) {
+    fn apply_value(&mut self, other: &T, setter: Setter) {
+        self.modified = true;
+        self.setter = setter;
+        self.value = other.clone();
+    }
+
+    fn apply_value_opt(&mut self, other: &Option<T>, setter: Setter) {
         if let Some(value) = other {
             self.modified = true;
             self.setter = setter;
-            self.value = value;
+            self.value = value.clone();
+        }
+    }
+}
+
+impl<T> Setting<Option<T>>
+where
+    T: Clone,
+{
+    fn apply_opt(&mut self, other: &Option<T>, setter: Setter) {
+        match (&self.value, other) {
+            (None, None) => {}
+            (Some(_), None) => {
+                self.modified = true;
+                self.setter = setter;
+                self.value = None;
+            }
+            (_, Some(_)) => self.apply_value(other, setter),
         }
     }
 }
@@ -132,31 +155,24 @@ impl Environment {
     }
 
     pub fn apply_config(&mut self, config: &Config) {
-        self.auto_commit.apply(config.auto_commit, Setter::Config);
+        self.auto_commit
+            .apply_value_opt(&config.auto_commit, Setter::Config);
         if let Some(ref ui) = config.ui {
-            self.prompt.apply(ui.prompt.clone(), Setter::Config);
+            self.prompt.apply_value_opt(&ui.prompt, Setter::Config);
         }
     }
 
     pub fn apply_cli(&mut self, opt: &Opt) {
-        self.ledger
-            .apply(Some(opt.ledger.clone()), Setter::CommandLine);
-        if let Some(v) = &opt.qldb_session_endpoint {
-            self.qldb_session_endpoint
-                .apply(Some(Some(v.clone())), Setter::CommandLine);
-        }
-        if let Some(v) = &opt.profile {
-            self.profile
-                .apply(Some(Some(v.clone())), Setter::CommandLine);
-        }
-        if let Some(v) = &opt.region {
-            self.region
-                .apply(Some(Some(v.clone())), Setter::CommandLine);
-        }
         match opt.auto_commit {
-            AutoCommitMode::On => self.auto_commit.apply(Some(true), Setter::CommandLine),
-            AutoCommitMode::Off => self.auto_commit.apply(Some(false), Setter::CommandLine),
+            AutoCommitMode::On => self.auto_commit.apply_value(&true, Setter::CommandLine),
+            AutoCommitMode::Off => self.auto_commit.apply_value(&false, Setter::CommandLine),
         }
+        self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
+        // FIXME: self.prompt.apply_opt(&opt.prompt, Setter::CommandLine);
+        self.profile.apply_opt(&opt.profile, Setter::CommandLine);
+        self.qldb_session_endpoint
+            .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
+        self.region.apply_opt(&opt.region, Setter::CommandLine);
 
         let options = match opt.options {
             Some(ref o) => o,
@@ -172,7 +188,7 @@ impl Environment {
 
         if let Some(setting) = named.get("auto_commit") {
             self.auto_commit
-                .apply(Some(setting.value), Setter::CommandLine);
+                .apply_value_opt(&Some(setting.value), Setter::CommandLine);
         }
     }
 }
