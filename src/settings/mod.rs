@@ -63,7 +63,7 @@ where
 }
 
 #[derive(Parser)]
-#[grammar = "settings.pest"]
+#[grammar = "settings/settings.pest"]
 pub struct SettingParser;
 
 impl SettingParser {
