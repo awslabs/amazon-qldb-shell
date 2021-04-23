@@ -1,8 +1,11 @@
 # Changelog
 
-## [2.0.0.alpha5] - [Unreleased]
+## [2.0.0-alpha5] - [Unreleased]
 
-### Changed
+### Fixed
+
+  * The version returned by `--version` or `-V` is now correct
+    - Going forward, alpha versions are separated by a hyphen not a period
 
 ## [2.0.0.alpha4] - 2021-04-23
 
