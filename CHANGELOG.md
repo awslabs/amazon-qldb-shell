@@ -7,6 +7,8 @@
   * Started decoupling the program from CLI opts. This will allow better and dynamic configuration.
   * `--verbose` can be used repeatedly to increase the level of logging.
     - We now use the `tracing` library instead of the `log` and `fern` libraries.
+  * Removed `--auto-commit` in favor of `--opt auto_commit=true`.
+    - This is part of an overall strategy to avoid having a million flags.
   
 ### Added
 

@@ -1,14 +1,13 @@
 use anyhow::{anyhow, Result};
-pub use config::Config;
-use pest::Parser;
-use pest_derive::Parser;
-use std::collections::HashMap;
+use command_line::CommandLineOptionParser;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
 use thiserror::Error;
-use tracing::debug;
 
+pub use config::Config;
+
+mod command_line;
 mod config;
 
 #[derive(Clone, Debug)]
@@ -59,45 +58,6 @@ where
             }
             (_, Some(_)) => self.apply_value(other, setter),
         }
-    }
-}
-
-#[derive(Parser)]
-#[grammar = "settings/settings.pest"]
-pub struct SettingParser;
-
-impl SettingParser {
-    pub fn parse_bool(s: &str, setter: Setter) -> Result<Setting<bool>> {
-        let assignment = SettingParser::parse(Rule::assignment, s)?.next().unwrap();
-        let mut rule = assignment.into_inner();
-        let name = rule.next().unwrap().as_str();
-        let value = rule.next().unwrap().as_str();
-        let value = match &value.to_lowercase()[..] {
-            "" | "true" | "on" => true,
-            "false" | "off" => false,
-            _ => Err(anyhow!(
-                "expecting 'name=enabled', where enabled is one of: true, false, on or off"
-            ))?,
-        };
-
-        Ok(Setting {
-            name: name.to_string(),
-            modified: true,
-            setter,
-            value,
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct CommandLineSetting(Setting<bool>);
-
-impl FromStr for CommandLineSetting {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let setting = SettingParser::parse_bool(s, Setter::CommandLine)?;
-        Ok(CommandLineSetting(setting))
     }
 }
 
@@ -183,11 +143,7 @@ impl Environment {
         }
     }
 
-    pub fn apply_cli(&mut self, opt: &Opt) {
-        match opt.auto_commit {
-            AutoCommitMode::On => self.auto_commit.apply_value(&true, Setter::CommandLine),
-            AutoCommitMode::Off => self.auto_commit.apply_value(&false, Setter::CommandLine),
-        }
+    pub fn apply_cli(&mut self, opt: &Opt) -> Result<()> {
         self.format.apply_value(&opt.format, Setter::CommandLine);
         self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
         self.show_query_metrics
@@ -201,20 +157,20 @@ impl Environment {
 
         let options = match opt.options {
             Some(ref o) => o,
-            None => return,
+            None => return Ok(()),
         };
 
-        let mut named = HashMap::new();
-        for setting in options {
-            named.insert(setting.0.name.to_string(), setting.0.clone());
+        for unparsed in options {
+            let supplied = CommandLineOptionParser::parse_on_off(unparsed)?;
+            let existing = match &supplied.name[..] {
+                "auto_commit" => &mut self.auto_commit,
+                _ => Err(anyhow!("unknown option {}", supplied.name))?,
+            };
+
+            existing.apply_value(&supplied.value, Setter::CommandLine);
         }
 
-        debug!("cli environment options: {:#?}", named);
-
-        if let Some(setting) = named.get("auto_commit") {
-            self.auto_commit
-                .apply_value_opt(&Some(setting.value), Setter::CommandLine);
-        }
+        Ok(())
     }
 }
 
@@ -252,47 +208,14 @@ pub struct Opt {
     pub execute: Option<ExecuteStatementOpt>,
 
     #[structopt(short = "-o", long = "--opt")]
-    pub options: Option<Vec<CommandLineSetting>>,
+    pub options: Option<Vec<String>>,
 
     // FIXME: Deprecate the 3 below, replacing with `options`.
     #[structopt(long = "--terminator-required")]
     pub terminator_required: bool,
 
-    #[structopt(long = "--auto-commit", default_value = "on")]
-    pub auto_commit: AutoCommitMode,
-
     #[structopt(long = "--no-query-metrics")]
     pub no_query_metrics: bool,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum AutoCommitMode {
-    On,
-    Off,
-}
-
-impl Default for AutoCommitMode {
-    fn default() -> Self {
-        AutoCommitMode::On
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum ParseAutoCommitModeErr {
-    #[error("{0} is not a valid auto-commit mode")]
-    InvalidAutoCommitMode(String),
-}
-
-impl FromStr for AutoCommitMode {
-    type Err = ParseAutoCommitModeErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match &s.to_lowercase()[..] {
-            "on" | "true" | "yes" => AutoCommitMode::On,
-            "off" | "false" | "no" => AutoCommitMode::Off,
-            _ => return Err(ParseAutoCommitModeErr::InvalidAutoCommitMode(s.into())),
-        })
-    }
 }
 
 #[derive(Debug, Clone)]
