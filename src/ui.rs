@@ -4,6 +4,7 @@ use rustyline::error::ReadlineError;
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
 use std::{io, path::PathBuf};
+use tracing::{debug, warn};
 
 pub(crate) trait Ui {
     fn set_prompt(&self, prompt: String);

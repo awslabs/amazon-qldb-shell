@@ -5,6 +5,8 @@
 ### Changed
 
   * Started decoupling the program from CLI opts. This will allow better and dynamic configuration.
+  * `--verbose` can be used repeatedly to increase the level of logging.
+    - We now use the `tracing` library instead of the `log` and `fern` libraries.
   
 ### Added
 

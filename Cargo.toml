@@ -12,8 +12,6 @@ rusoto_core = "0.46.0"
 rusoto_qldb_session = "0.46.0"
 rustyline = "8.0.0"
 dirs = "3.0.1"
-log = "0.4.14"
-fern = "0.6.0"
 structopt = "0.3.21"
 ion-rs = "0.4"
 ion-c-sys = "0.4.6"
@@ -28,7 +26,8 @@ toml = "0.5.8"
 serde = "1.0.125"
 pest = "2.1.3"
 pest_derive = "2.1.0"
-tracing = { version = "0.1.25", features = ["log"] }
+tracing = { version = "0.1.25" }
+tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
 comfy-table = "2.1.0"
 bigdecimal = "0.2.0"
 

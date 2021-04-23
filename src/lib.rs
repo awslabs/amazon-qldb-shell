@@ -4,9 +4,7 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt};
 use structopt::StructOpt;
 use thiserror::Error;
-
-#[macro_use]
-extern crate log;
+use tracing_subscriber::fmt::SubscriberBuilder;
 
 use crate::runner::Runner;
 use crate::settings::{Config, Opt};
@@ -23,7 +21,7 @@ mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
-    configure_logging(&opt)?;
+    configure_tracing(&opt);
     let config = match opt.config {
         None => Config::load_default()?,
         Some(ref path) => Config::load(path)?,
@@ -36,25 +34,15 @@ pub async fn run() -> Result<()> {
     runner.start().await
 }
 
-fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
+fn configure_tracing(opt: &Opt) {
+    let subscriber = SubscriberBuilder::default();
     let level = match opt.verbose {
-        true => log::LevelFilter::Debug,
-        false => log::LevelFilter::Info,
+        0 => "error",
+        1 => "info",
+        2 => "debug",
+        _ => "trace",
     };
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        })
-        .level(level)
-        .chain(std::io::stdout())
-        .filter(|metadata| metadata.target() != "rustyline")
-        .apply()
+    subscriber.with_env_filter(level).init();
 }
 
 struct Deps<C: QldbSession>

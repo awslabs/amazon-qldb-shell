@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
 use thiserror::Error;
+use tracing::debug;
 
 mod config;
 
@@ -238,8 +239,11 @@ pub struct Opt {
     #[structopt(short, long = "--profile")]
     pub profile: Option<String>,
 
-    #[structopt(short, long = "--verbose")]
-    pub verbose: bool,
+    #[structopt(short, long = "--verbose", parse(from_occurrences))]
+    /// Configure verbosity of logging. By default, only errors will be logged.
+    /// Repeated usages of this (e.g. `-vv`) will increase the level. The
+    /// highest level is `-vvv` which corresponds to `trace`.
+    pub verbose: u8,
 
     #[structopt(short, long = "--format", default_value = "ion")]
     pub format: FormatMode,

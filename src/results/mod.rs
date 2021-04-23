@@ -5,6 +5,7 @@ use ion_c_sys::reader::IonCReaderHandle;
 use ion_c_sys::result::IonCError;
 use itertools::Itertools;
 use table::display_results_table;
+use tracing::warn;
 
 mod table;
 

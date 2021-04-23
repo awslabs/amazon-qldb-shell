@@ -1,5 +1,6 @@
-use std::str::FromStr;
-
+use crate::settings::Environment;
+use amazon_qldb_driver::QldbDriverBuilder;
+use amazon_qldb_driver::{retry, QldbDriver};
 use anyhow::Result;
 use async_trait::async_trait;
 use rusoto_core::{
@@ -7,11 +8,8 @@ use rusoto_core::{
     Client, HttpClient, Region,
 };
 use rusoto_qldb_session::QldbSessionClient;
-
-use amazon_qldb_driver::QldbDriverBuilder;
-use amazon_qldb_driver::{retry, QldbDriver};
-
-use crate::settings::{Environment};
+use std::str::FromStr;
+use tracing::warn;
 
 pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
     let provider = profile_provider(&env)?;
