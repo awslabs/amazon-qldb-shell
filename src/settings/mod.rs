@@ -1,15 +1,14 @@
 use anyhow::{anyhow, Result};
-use dirs;
+pub use config::Config;
 use pest::Parser;
 use pest_derive::Parser;
-use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
-use std::{collections::HashMap, fs};
-use thiserror::Error;
-use toml;
-
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
+use thiserror::Error;
+
+mod config;
 
 #[derive(Clone, Debug)]
 pub enum Setter {
@@ -218,43 +217,6 @@ impl Environment {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
-pub struct UiTomlTable {
-    prompt: Option<String>,
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct Config {
-    auto_commit: Option<bool>,
-    ui: Option<UiTomlTable>,
-}
-
-impl Config {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Config> {
-        let path = path.as_ref();
-        let contents = fs::read_to_string(path)?;
-        let config = toml::from_str(&contents)
-            .map_err(|e| anyhow!("unable to load config at {}: {}", path.display(), e))?;
-        Ok(config)
-    }
-
-    pub fn default_config_file_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir().ok_or(anyhow!("$XDG_CONFIG_HOME not set"))?;
-        let shell_dir = config_dir.join("qldbshell");
-        fs::create_dir_all(&shell_dir)?;
-        Ok(shell_dir.join("default_config.toml"))
-    }
-
-    pub fn load_default() -> Result<Config> {
-        let config_file = Config::default_config_file_path()?;
-        if !config_file.exists() {
-            Ok(Config::default())
-        } else {
-            Config::load(&config_file)
-        }
-    }
-}
-
 #[derive(Debug, StructOpt, Default)]
 #[structopt(
     name = "qldb-shell",
@@ -376,23 +338,5 @@ impl FromStr for ExecuteStatementOpt {
             "-" => ExecuteStatementOpt::Stdin,
             _ => ExecuteStatementOpt::SingleStatement(s.into()),
         })
-    }
-}
-
-#[cfg(test)]
-mod settings_tests {
-    use super::*;
-    use fs::File;
-    use tempdir::TempDir;
-
-    /// Tests that an empty config is valid. This makes sure we don't forget an
-    /// `Optional` in any new fields we add.
-    #[test]
-    fn load_empty_config() -> Result<()> {
-        let tmp = TempDir::new("config")?;
-        let path = tmp.path().join("empty.toml");
-        File::create(&path)?;
-        let _ = Config::load(&path)?;
-        Ok(())
     }
 }
