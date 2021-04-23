@@ -44,8 +44,8 @@ where
         self.deps.ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
-To start a transaction type '\start transaction', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter '\commit' or '\abort' as appropriate."#,
+To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
+When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
         loop {
