@@ -1,6 +1,6 @@
 [package]
 name = "amazon_qldb_shell"
-version = "2.0.0-alpha4"
+version = "2.0.0-alpha5"
 authors = ["Marc Bowes <bowes@amazon.com>"]
 edition = "2018"
 
