@@ -97,6 +97,13 @@ impl Environment {
                 setter: Setter::Environment,
                 value: true,
             },
+            ledger: Setting {
+                name: "ledger".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                // FIXME: How to assert that there should be a ledger name specified
+                value: "!!unknown".to_string(),
+            },
             prompt: Setting {
                 name: "prompt".to_string(),
                 modified: false,
@@ -120,13 +127,6 @@ impl Environment {
                 modified: false,
                 setter: Setter::Environment,
                 value: None,
-            },
-            ledger: Setting {
-                name: "ledger".to_string(),
-                modified: false,
-                setter: Setter::Environment,
-                // FIXME: How to assert that there should be a ledger name specified
-                value: "!!unknown".to_string(),
             },
         }
     }
