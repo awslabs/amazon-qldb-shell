@@ -139,15 +139,23 @@ impl Environment {
     }
 
     pub fn apply_cli(&mut self, opt: &Opt) {
-        self.ledger.apply(Some(opt.ledger.clone()), Setter::CommandLine);
+        self.ledger
+            .apply(Some(opt.ledger.clone()), Setter::CommandLine);
         if let Some(v) = &opt.qldb_session_endpoint {
-            self.qldb_session_endpoint.apply(Some(Some(v.clone())), Setter::CommandLine);
+            self.qldb_session_endpoint
+                .apply(Some(Some(v.clone())), Setter::CommandLine);
         }
         if let Some(v) = &opt.profile {
-            self.profile.apply(Some(Some(v.clone())), Setter::CommandLine);
+            self.profile
+                .apply(Some(Some(v.clone())), Setter::CommandLine);
         }
         if let Some(v) = &opt.region {
-            self.region.apply(Some(Some(v.clone())), Setter::CommandLine);
+            self.region
+                .apply(Some(Some(v.clone())), Setter::CommandLine);
+        }
+        match opt.auto_commit {
+            AutoCommitMode::On => self.auto_commit.apply(Some(true), Setter::CommandLine),
+            AutoCommitMode::Off => self.auto_commit.apply(Some(false), Setter::CommandLine),
         }
 
         let options = match opt.options {
