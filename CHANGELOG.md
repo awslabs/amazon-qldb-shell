@@ -1,12 +1,18 @@
 # Changelog
 
-## [2.0.0-alpha5] - [Unreleased]
+## [2.0.0-alpha6] - [Unreleased]
+
+## [2.0.0-alpha5] - 2021-04-23
 
 ### Changed
 
   * Reworked verbose to be more useful.
     - rustyline is completely removed
     - at trace level, the pretty format is used
+
+### Fixed
+
+   * Linux builds now use the older 18.04 (fixes #59)
 
 ## [2.0.0-alpha4] - 2021-04-23
 
