@@ -104,11 +104,14 @@ impl FromStr for CommandLineSetting {
 #[derive(Debug)]
 pub struct Environment {
     pub auto_commit: Setting<bool>,
+    pub format: Setting<FormatMode>,
     pub ledger: Setting<String>,
     pub prompt: Setting<String>,
     pub profile: Setting<Option<String>>,
     pub qldb_session_endpoint: Setting<Option<String>>,
     pub region: Setting<Option<String>>,
+    pub show_query_metrics: Setting<bool>,
+    pub terminator_required: Setting<bool>,
 }
 
 impl Environment {
@@ -119,6 +122,12 @@ impl Environment {
                 modified: false,
                 setter: Setter::Environment,
                 value: true,
+            },
+            format: Setting {
+                name: "format".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: FormatMode::Ion,
             },
             ledger: Setting {
                 name: "ledger".to_string(),
@@ -151,6 +160,18 @@ impl Environment {
                 setter: Setter::Environment,
                 value: None,
             },
+            show_query_metrics: Setting {
+                name: "show_query_metrics".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: true,
+            },
+            terminator_required: Setting {
+                name: "terminator_required".to_string(),
+                modified: false,
+                setter: Setter::Environment,
+                value: false,
+            },
         }
     }
 
@@ -167,12 +188,14 @@ impl Environment {
             AutoCommitMode::On => self.auto_commit.apply_value(&true, Setter::CommandLine),
             AutoCommitMode::Off => self.auto_commit.apply_value(&false, Setter::CommandLine),
         }
+        self.format.apply_value(&opt.format, Setter::CommandLine);
         self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
-        // FIXME: self.prompt.apply_opt(&opt.prompt, Setter::CommandLine);
+        self.show_query_metrics.apply_value(&!opt.no_query_metrics, Setter::CommandLine);
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
         self.region.apply_opt(&opt.region, Setter::CommandLine);
+        self.terminator_required.apply_value(&opt.terminator_required, Setter::CommandLine);
 
         let options = match opt.options {
             Some(ref o) => o,
@@ -297,7 +320,7 @@ impl FromStr for AutoCommitMode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FormatMode {
     Ion,
     Table,

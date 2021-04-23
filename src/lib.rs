@@ -29,7 +29,7 @@ pub async fn run() -> Result<()> {
     env.apply_config(&config);
     env.apply_cli(&opt);
     rusoto_driver::health_check_start_session(&env).await?;
-    let mut runner = Runner::new_with_opt(opt, env).await?;
+    let mut runner = Runner::new_with_env(env, &opt.execute).await?;
     runner.start().await
 }
 
@@ -59,7 +59,6 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     env: Environment,
-    opt: Opt,
     driver: QldbDriver<C>,
     ui: Box<dyn Ui>,
 }
@@ -67,10 +66,10 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    async fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
+    async fn new_with_env(env: Environment, execute: &Option<ExecuteStatementOpt>) -> Result<Deps<QldbSessionClient>> {
         let driver = rusoto_driver::build_driver(&env).await?;
 
-        let ui = match opt.execute {
+        let ui = match execute {
             Some(ref e) => {
                 let reader = match e {
                     ExecuteStatementOpt::SingleStatement(statement) => statement,
@@ -78,12 +77,11 @@ impl Deps<QldbSessionClient> {
                 };
                 ConsoleUi::new_for_script(&reader[..])?
             }
-            None => ConsoleUi::new(opt.terminator_required),
+            None => ConsoleUi::new(env.terminator_required.value),
         };
 
         Ok(Deps {
             env,
-            opt,
             driver,
             ui: Box::new(ui),
         })
@@ -95,21 +93,20 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     #[cfg(test)]
-    async fn new_with<U>(env: Environment, opt: Opt, client: C, ui: U) -> Result<Deps<C>>
+    async fn new_with<U>(env: Environment, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(&opt.ledger)
+            .ledger_name(&env.ledger.value.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;
 
         Ok(Deps {
             env,
-            opt,
             driver,
             ui: Box::new(ui),
         })
@@ -166,8 +163,10 @@ mod tests {
         let client = TodoClient {};
         let ui = TestUi::default();
 
+        let mut env = Environment::new();
+        env.apply_cli(&opt);
         let mut runner = Runner {
-            deps: Deps::new_with(Environment::new(), opt, client, ui.clone()).await?,
+            deps: Deps::new_with(env, client, ui.clone()).await?,
             current_transaction: None,
         };
         ui.inner().pending.push("help".to_string());

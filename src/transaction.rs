@@ -148,9 +148,9 @@ where
             }
         };
 
-        results::display_results(&results, &self.deps.opt.format, &self.deps.ui);
+        results::display_results(&results, &self.deps.env.format.value, &self.deps.ui);
 
-        if !self.deps.opt.no_query_metrics {
+        if self.deps.env.show_query_metrics.value {
             let noun = match results.len() {
                 1 => "document",
                 _ => "documents",

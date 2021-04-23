@@ -3,7 +3,7 @@ use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
 
-use crate::settings::{Environment, Opt};
+use crate::settings::{Environment, ExecuteStatementOpt};
 use crate::transaction::ShellTransaction;
 use crate::{Deps, QldbShellError};
 
@@ -18,12 +18,12 @@ where
 }
 
 impl Runner<QldbSessionClient> {
-    pub(crate) async fn new_with_opt(
-        opt: Opt,
+    pub(crate) async fn new_with_env(
         env: Environment,
+        execute: &Option<ExecuteStatementOpt>,
     ) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new_with_opt(opt, env).await?,
+            deps: Deps::new_with_env(env, execute).await?,
             current_transaction: None,
         })
     }
