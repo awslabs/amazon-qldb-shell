@@ -9,6 +9,11 @@
 ### Added
 
   * Added `--config PATH` to customize where we load config from. 
+  * Improved table support.
+    - `--format table` is now mostly complete
+    - Includes support for nested content
+    - Includes support for `select VALUE`
+    - Timestamps are not yet supported
 
 ## [2.0.0.alpha3] - 2021-04-21
 
