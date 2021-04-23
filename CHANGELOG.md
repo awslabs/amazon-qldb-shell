@@ -2,12 +2,8 @@
 
 ## [2.0.0-alpha5] - [Unreleased]
 
-### Fixed
 
-  * The version returned by `--version` or `-V` is now correct
-    - Going forward, alpha versions are separated by a hyphen not a period
-
-## [2.0.0.alpha4] - 2021-04-23
+## [2.0.0-alpha4] - 2021-04-23
 
 ### Changed
 
@@ -16,6 +12,7 @@
     - We now use the `tracing` library instead of the `log` and `fern` libraries.
   * Removed `--auto-commit` in favor of `--opt auto_commit=true`.
     - This is part of an overall strategy to avoid having a million flags.
+  * Added this file (CHANGELOG.md) to the release tar file.
   
 ### Added
 
@@ -25,6 +22,11 @@
     - Includes support for nested content
     - Includes support for `select VALUE`
     - Timestamps are not yet supported
+
+### Fixed
+
+  * The version returned by `--version` or `-V` is now correct
+    - Going forward, alpha versions are separated by a hyphen not a period
 
 ## [2.0.0.alpha3] - 2021-04-21
 
