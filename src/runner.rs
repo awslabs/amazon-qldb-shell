@@ -1,7 +1,9 @@
 use anyhow::Result;
+use core::fmt;
 use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
+use tracing::instrument;
 
 use crate::settings::{Environment, ExecuteStatementOpt};
 use crate::transaction::ShellTransaction;
@@ -15,6 +17,15 @@ where
 {
     pub(crate) deps: Deps<C>,
     pub(crate) current_transaction: Option<ShellTransaction>,
+}
+
+impl<C> fmt::Debug for Runner<C>
+where
+    C: QldbSession + Send + Sync + Clone + 'static,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Runner")
+    }
 }
 
 impl Runner<QldbSessionClient> {
@@ -32,7 +43,7 @@ impl Runner<QldbSessionClient> {
 fn is_special_command(line: &str) -> bool {
     match &line.to_lowercase()[..] {
         "help" | "quit" | "exit" | "start transaction" | "begin" | "abort" | "commit" => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -58,9 +69,13 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         Ok(())
     }
 
+    #[instrument]
     pub(crate) async fn tick(&mut self) -> Result<bool> {
         match self.current_transaction {
-            None => self.deps.ui.set_prompt(format!("{} ", self.deps.env.prompt.value)),
+            None => self
+                .deps
+                .ui
+                .set_prompt(format!("{} ", self.deps.env.prompt.value)),
             Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
