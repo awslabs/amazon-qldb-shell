@@ -1,10 +1,31 @@
 # Changelog
 
-## [2.0.0-alpha5] - [Unreleased]
+## [2.0.0-alpha6] - [Unreleased]
 
  * The prompt can now be configured in the config file with `$LEDGER` and `$REGION`. e.g: `prompt="$REGION/$LEDGER > "`
 
+## [2.0.0-alpha5] - 2021-04-23
+
+### Changed
+
+  * Reworked verbose to be more useful.
+    - rustyline is completely removed
+    - at trace level, the pretty format is used
+
+### Fixed
+
+   * Linux builds now use the older 18.04 (fixes #59)
+
 ## [2.0.0-alpha4] - 2021-04-23
+
+### Added
+
+  * Added `--config PATH` to customize where we load config from. 
+  * Improved table support.
+    - `--format table` is now mostly complete
+    - Includes support for nested content
+    - Includes support for `select VALUE`
+    - Timestamps are not yet supported
 
 ### Changed
 
@@ -15,15 +36,6 @@
     - This is part of an overall strategy to avoid having a million flags.
   * Added this file (CHANGELOG.md) to the release tar file.
   
-### Added
-
-  * Added `--config PATH` to customize where we load config from. 
-  * Improved table support.
-    - `--format table` is now mostly complete
-    - Includes support for nested content
-    - Includes support for `select VALUE`
-    - Timestamps are not yet supported
-
 ### Fixed
 
   * The version returned by `--version` or `-V` is now correct

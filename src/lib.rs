@@ -4,7 +4,7 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt};
 use structopt::StructOpt;
 use thiserror::Error;
-use tracing_subscriber::fmt::SubscriberBuilder;
+use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
 
 use crate::runner::Runner;
 use crate::settings::{Config, Opt};
@@ -21,7 +21,7 @@ mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
-    configure_tracing(&opt);
+    configure_tracing(&opt)?;
     let config = match opt.config {
         None => Config::load_default()?,
         Some(ref path) => Config::load(path)?,
@@ -34,15 +34,29 @@ pub async fn run() -> Result<()> {
     runner.start().await
 }
 
-fn configure_tracing(opt: &Opt) {
+fn configure_tracing(opt: &Opt) -> Result<()> {
     let subscriber = SubscriberBuilder::default();
+
     let level = match opt.verbose {
         0 => "error",
         1 => "info",
         2 => "debug",
         _ => "trace",
     };
-    subscriber.with_env_filter(level).init();
+
+    let filter = EnvFilter::from_default_env()
+        .add_directive("rustyline=off".parse()?)
+        .add_directive(level.parse()?);
+
+    let subscriber = subscriber.with_env_filter(filter);
+
+    if opt.verbose == 3 {
+        subscriber.pretty().init()
+    } else {
+        subscriber.compact().init()
+    };
+
+    Ok(())
 }
 
 struct Deps<C: QldbSession>

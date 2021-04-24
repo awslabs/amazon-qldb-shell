@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use toml;
+use tracing::debug;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Config {
@@ -35,6 +36,10 @@ impl Config {
     pub fn load_default() -> Result<Config> {
         let config_file = Config::default_config_file_path()?;
         if !config_file.exists() {
+            debug!(
+                path = config_file.display().to_string().as_str(),
+                "The default config file does not exist"
+            );
             Ok(Config::default())
         } else {
             Config::load(&config_file)
