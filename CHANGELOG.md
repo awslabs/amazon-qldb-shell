@@ -2,7 +2,7 @@
 
 ## [2.0.0-alpha5] - [Unreleased]
 
- * The prompt can now be configured in the config file with `$LEDGER` and `$REGION`. e.g: `prompt="$REGION/$LEDGER >"`
+ * The prompt can now be configured in the config file with `$LEDGER` and `$REGION`. e.g: `prompt="$REGION/$LEDGER > "`
 
 ## [2.0.0-alpha4] - 2021-04-23
 
