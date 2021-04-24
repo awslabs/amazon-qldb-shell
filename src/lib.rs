@@ -1,5 +1,6 @@
 use amazon_qldb_driver::QldbDriver;
 use anyhow::Result;
+use runner::ProgramFlow;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt};
 use structopt::StructOpt;
@@ -29,9 +30,16 @@ pub async fn run() -> Result<()> {
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt)?;
+
+    //loop {
     rusoto_driver::health_check_start_session(&env).await?;
     let mut runner = Runner::new_with_env(env, &opt.execute).await?;
-    runner.start().await
+    if let ProgramFlow::Exit = runner.start().await? {
+        return Ok(());
+    } else {
+        unreachable!() // Restart not yet implemented
+    }
+    //}
 }
 
 fn configure_tracing(opt: &Opt) -> Result<()> {

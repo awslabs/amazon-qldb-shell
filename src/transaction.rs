@@ -11,9 +11,9 @@ use tokio::{
     task::{self, JoinHandle},
 };
 
-use crate::results;
 use crate::runner::Runner;
 use crate::QldbShellError;
+use crate::{results, runner::TickFlow};
 
 pub(crate) struct ShellTransaction {
     input: Sender<TransactionRequest>,
@@ -78,7 +78,7 @@ impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<bool> {
+    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<TickFlow> {
         if !self.deps.env.auto_commit.value {
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
@@ -94,7 +94,7 @@ where
             Err(e)?
         }
         self.handle_commit().await?;
-        Ok(true)
+        Ok(TickFlow::Again)
     }
 
     pub(crate) fn handle_start_transaction(&mut self) {
@@ -107,7 +107,7 @@ where
         self.current_transaction.replace(new_tx);
     }
 
-    pub(crate) async fn handle_partiql(&mut self, line: &str) -> Result<bool> {
+    pub(crate) async fn handle_partiql(&mut self, line: &str) -> Result<TickFlow> {
         let tx = self
             .current_transaction
             .as_mut()
@@ -168,7 +168,7 @@ where
             ));
         }
 
-        Ok(true)
+        Ok(TickFlow::Again)
     }
 
     pub(crate) async fn handle_abort(&mut self) -> Result<()> {
