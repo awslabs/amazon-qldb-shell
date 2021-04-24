@@ -47,6 +47,21 @@ fn is_special_command(line: &str) -> bool {
     }
 }
 
+fn set_prompt(env: &Environment, active_transaction: bool) -> String {
+    let active_transaction_marker = match active_transaction {
+        true => "*",
+        false => ""
+    };
+    let region = match &env.region.value {
+        Some(region) => region.as_str(),
+        None => "unknown-region"
+    };
+    return env.prompt.value.clone()
+        .replace("$ACTIVE_TRANSACTION", active_transaction_marker)
+        .replace("$REGION", region)
+        .replace("$LEDGER", env.ledger.value.as_str());
+}
+
 impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
@@ -71,13 +86,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
     #[instrument]
     pub(crate) async fn tick(&mut self) -> Result<bool> {
-        match self.current_transaction {
-            None => self
-                .deps
-                .ui
-                .set_prompt(format!("{} ", self.deps.env.prompt.value)),
-            Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
-        }
+    self.deps.ui.set_prompt(set_prompt(&self.deps.env, self.current_transaction.is_some()));
 
         let user_input = self.deps.ui.user_input();
         Ok(match user_input {

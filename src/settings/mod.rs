@@ -172,6 +172,10 @@ impl Environment {
 
         Ok(())
     }
+
+    pub fn set_region(&mut self, region: String, setter: Setter) {
+        self.region.apply_opt(&Some(region), setter)
+    }
 }
 
 #[derive(Debug, StructOpt, Default)]

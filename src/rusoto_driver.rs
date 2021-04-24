@@ -1,4 +1,4 @@
-use crate::settings::Environment;
+use crate::settings::{Environment, Setter};
 use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
 use anyhow::Result;
@@ -11,9 +11,9 @@ use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
 use tracing::warn;
 
-pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
+pub async fn build_driver(env: &mut Environment) -> Result<QldbDriver<QldbSessionClient>> {
     let provider = profile_provider(&env)?;
-    let region = rusoto_region(&env)?;
+    let region = rusoto_region(env)?;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Chain(ChainProvider::new()),
@@ -33,9 +33,9 @@ pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionCli
         .await
 }
 
-pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> {
+pub(crate) async fn health_check_start_session(env: &mut Environment) -> Result<()> {
     use rusoto_qldb_session::*;
-    let session_client = build_rusoto_client(&env).await?;
+    let session_client = build_rusoto_client(env).await?;
 
     session_client
         .send_command(SendCommandRequest {
@@ -49,9 +49,9 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> 
     Ok(())
 }
 
-async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
+async fn build_rusoto_client(env: &mut Environment) -> Result<QldbSessionClient> {
     let provider = profile_provider(&env)?;
-    let region = rusoto_region(&env)?;
+    let region = rusoto_region(env)?;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Chain(ChainProvider::new()),
@@ -101,7 +101,7 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-fn rusoto_region(env: &Environment) -> Result<Region> {
+fn rusoto_region(env: &mut Environment) -> Result<Region> {
     let it = match (&env.region.value, &env.qldb_session_endpoint.value) {
         (Some(r), Some(e)) => Region::Custom {
             name: r.to_owned(),
@@ -118,7 +118,11 @@ fn rusoto_region(env: &Environment) -> Result<Region> {
             name: Region::default().name().to_owned(),
             endpoint: e.to_owned(),
         },
-        (None, None) => Region::default(),
+        (None, None) => {
+            let region = Region::default();
+            env.set_region(region.name().to_string(), Setter::Environment);
+            region
+        }
     };
 
     Ok(it)
