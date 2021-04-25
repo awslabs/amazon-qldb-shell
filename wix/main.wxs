@@ -104,9 +104,9 @@
 						<Component Id='batch0' Guid='eea8b60c-39e1-454f-b394-f9668caa9b7f' Win64='$(var.Win64)'>
                             <File
                                 Id='bat0'
-                                Name='qldb_start.bat'
+                                Name='start_cmd_qldb.bat'
                                 DiskId='1'
-                                Source='qldb_start.bat'
+                                Source='start_cmd_qldb.bat'
                                 KeyPath='yes'/>
                         </Component>
                     </Directory>
