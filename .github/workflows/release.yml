@@ -116,11 +116,8 @@ jobs:
           cargo install cargo-wix
           
           # create folder in `target/wix`
-          cargo wix init 
-          
-          # at this point edit wxs file (with a Python script) to include 
-          # the logo, license
-          
+          # do not do this as we now have a wix/main.wxs   #cargo wix init 
+               
           # Then create MSI
           cargo wix 
           
@@ -132,9 +129,7 @@ jobs:
           for file in *.msi; do
               mv $file ../../qldb.msi
           done
-          cd ../..
-          #cp README.md 
-          #cd LICENSE
+          
         
           echo "AFTER UPDATING FILE"
           ls
@@ -146,7 +141,7 @@ jobs:
         with:
           draft: true
           prerelease: true
-          files: "qldb*; README.md; LICENSE"
+          files: "qldb*"
           body_path: TAG-COMMENT.txt
 
         env:
