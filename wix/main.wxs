@@ -229,8 +229,10 @@
           removing the following `WixVariable` tag.
 
           The banner BMP dimensions are 493 x 58 pixels.
-        -->
-        <WixVariable Id='WixUIBannerBmp' Value='AWS_Banner.jpg'/>
+		-->
+		<WixVariable Id='WixUIBannerBmp' Value='AWS_Banner.jpg'/>
+        
+        
         
         <!--
           Disabling the dialog image in the installer requires commenting out or
