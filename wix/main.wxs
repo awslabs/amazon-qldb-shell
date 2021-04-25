@@ -171,11 +171,6 @@
         <Icon Id='ProductICO' SourceFile='QLDBShell.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
 		
-		<!--
-		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
-		-->
-
-        
         
         <!--
           Adding a URL to Add/Remove Programs control panel listing for the
@@ -189,15 +184,15 @@
         <!--<Property Id='ARPHELPLINK' Value='ChangeMe'/>-->
 
         <UI>
+				
+			<!--
 			<UIRef Id="WixUI_Mondo" />
 			<UIRef Id="WixUI_ErrorProgressText" />
+			-->			
 			
-			<!--
             <UIRef Id='WixUI_FeatureTree'/>
-			
 			<UIRef Id="WixUI_ErrorProgressText" />
-			-->
-            
+			          
             <!--
               Enabling the EULA dialog in the installer is a three step process:
 
@@ -231,16 +226,14 @@
           The banner BMP dimensions are 493 x 58 pixels.
 		-->
 		<WixVariable Id='WixUIBannerBmp' Value='AWS_Banner.jpg'/>
-        
-        
-        
+               
         <!--
           Disabling the dialog image in the installer requires commenting out or
           removing the following `WixVariable` tag.
 
           The dialog BMP dimensions are 493 x 312 pixels.
         -->
-        <WixVariable Id='WixUIDialogBmp' Value='aws-QLDB.jpg'/>
+        <WixVariable Id='WixUIDialogBmp' Value='aws-QLDB.jpg'/>		
         
     </Product>
 
