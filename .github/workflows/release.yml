@@ -109,15 +109,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |        
           # Return a qldb.exe
-          cargo fetch && cargo build --release  
-          
+          cargo fetch && cargo build --release            
           strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
           cargo install cargo-wix
           
           # We have now a file in `target/wix/main.wxs`
-          # that has the script for making an MSI installe
-               
+          # that has the script for making an MSI installe               
           # Create MSI based on target/wix/main.wxs
           cargo wix 
           
