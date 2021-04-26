@@ -216,9 +216,9 @@
           Enabling the EULA dialog in the installer requires uncommenting
           the following `WixUILicenseRTF` tag and changing the `Value`
           attribute.
-        -->
+        
         <WixVariable Id='WixUILicenseRtf' Value='AWS_Sample_EULA.rtf'/>
-
+        -->   
         <!--
           Disabling the banner in the installer requires commenting out or
           removing the following `WixVariable` tag.
