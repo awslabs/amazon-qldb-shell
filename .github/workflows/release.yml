@@ -122,16 +122,11 @@ jobs:
           cargo wix 
           
           cd target/wix
-          echo "Before Updating"
-          ls
           
           # rename msi file to "qldb.msi"
           for file in *.msi; do
               mv $file ../../qldb.msi
-          done
-             
-          echo "After updating file"
-          ls          
+          done     
         
       - name: Publish
         uses: softprops/action-gh-release@v1
