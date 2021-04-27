@@ -96,7 +96,6 @@ jobs:
           tar czvf "$release_tar" "$release_name"
           rm -r "$release_name"         
           echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
-          fi
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
       - name: MSI
