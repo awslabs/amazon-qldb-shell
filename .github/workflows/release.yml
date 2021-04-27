@@ -112,19 +112,15 @@ jobs:
           cargo fetch && cargo build --release            
           strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
+          # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
-          
-          # We have now a file in `target/wix/main.wxs`
-          # that has the script for making an MSI installe               
+                      
           # Create MSI based on target/wix/main.wxs
           cargo wix 
           
           cd target/wix
-          
           # rename msi file to "qldb.msi"
-          for file in *.msi; do
-              mv $file ../../qldb.msi
-          done     
+          mv amazon_qldb_shell-0.1.0-x86_64.msi ../../qldb.msi
         
       - name: Publish
         uses: softprops/action-gh-release@v1
