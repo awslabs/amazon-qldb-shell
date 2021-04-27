@@ -94,13 +94,8 @@ jobs:
           cp "target/release/${{ matrix.bin }}" "$release_name/"
           cp README.md LICENSE "$release_name/"
           tar czvf "$release_tar" "$release_name"
-          rm -r "$release_name"
-          # Windows environments in github actions don't have the gnu coreutils installed,
-          # which includes the shasum exe, so we just use powershell instead
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            echo "(Get-FileHash \"${release_tar}\" -Algorithm SHA256).Hash | Out-File -Encoding ASCII -NoNewline \"${release_tar}.sha256\"" | pwsh -c -
-          else
-            echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
+          rm -r "$release_name"         
+          echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
           fi
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
@@ -108,7 +103,10 @@ jobs:
         shell: bash
         if: matrix.os == 'windows-latest'
         run: |        
-          # Return a qldb.exe
+          name=qldb
+          tag=$(git describe --tags --abbrev=0)
+          release_name="$name-$tag-${{ matrix.variant }}"
+          
           cargo fetch && cargo build --release            
           strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
@@ -119,8 +117,7 @@ jobs:
           cargo wix 
           
           cd target/wix
-          # rename msi file to "qldb.msi"
-          mv amazon_qldb_shell-0.1.0-x86_64.msi ../../qldb.msi
+          mv amazon_qldb_shell*.msi ../../${release_name}
         
       - name: Publish
         uses: softprops/action-gh-release@v1
