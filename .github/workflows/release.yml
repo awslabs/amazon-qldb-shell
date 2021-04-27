@@ -116,7 +116,7 @@ jobs:
           cargo wix 
           
           cd target/wix
-          mv amazon_qldb_shell*.msi ../../${release_name}
+          mv amazon_qldb_shell*.msi ../../${release_name}.msi
         
       - name: Publish
         uses: softprops/action-gh-release@v1
