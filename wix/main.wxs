@@ -35,14 +35,14 @@
         Id='*'
         Name='Amazon QLDB Shell'
         UpgradeCode='84F8D807-9709-40A0-A8BA-ED5CBE94A74F'
-        Manufacturer='Marc Bowes'
+        Manufacturer='Amazon' 
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
 
         <Package Id='*'
             Keywords='Installer'
-            Manufacturer='Marc Bowes'
+            Manufacturer='Amazon'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
