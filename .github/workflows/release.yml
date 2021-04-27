@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Package
         shell: bash
-        if: matrix.os == 'ubuntu-latest' ||  matrix.os == 'macos-latest' 
+        if: matrix.os == 'ubuntu-18.04' ||  matrix.os == 'macos-latest' 
         run: |
           name=qldb
           tag=$(git describe --tags --abbrev=0)
