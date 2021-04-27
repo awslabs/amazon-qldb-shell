@@ -168,7 +168,7 @@
           Add/Remove Programs control panel requires commenting out or
           removing the following `Icon` and `Property` tags.
         -->
-        <Icon Id='ProductICO' SourceFile='AWS_QLDB.ico'/>
+        <Icon Id='ProductICO' SourceFile='wix\assets\AWS_QLDB.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
 		
         
@@ -244,7 +244,7 @@
 
           The banner BMP dimensions are 493 x 58 pixels.
 		-->
-		<WixVariable Id='WixUIBannerBmp' Value='AWS_Banner.jpg'/>
+		<WixVariable Id='WixUIBannerBmp' Value='wix\assets\AWS_Banner.jpg'/>
                
         <!--
           Disabling the dialog image in the installer requires commenting out or
@@ -252,7 +252,7 @@
 
           The dialog BMP dimensions are 493 x 312 pixels.
         -->
-        <WixVariable Id='WixUIDialogBmp' Value='AWS_Front.jpg'/>		
+        <WixVariable Id='WixUIDialogBmp' Value='wix\assets\AWS_Front.jpg'/>		
         
     </Product>
 
