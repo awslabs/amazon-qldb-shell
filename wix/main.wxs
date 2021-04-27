@@ -35,14 +35,14 @@
         Id='*'
         Name='Amazon QLDB Shell'
         UpgradeCode='84F8D807-9709-40A0-A8BA-ED5CBE94A74F'
-        Manufacturer='Amazon' 
+        Manufacturer='Amazon Web Services' 
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
 
         <Package Id='*'
             Keywords='Installer'
-            Manufacturer='Amazon'
+            Manufacturer='Amazon Web Services'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
@@ -168,7 +168,7 @@
           Add/Remove Programs control panel requires commenting out or
           removing the following `Icon` and `Property` tags.
         -->
-        <Icon Id='ProductICO' SourceFile='QLDBShell.ico'/>
+        <Icon Id='ProductICO' SourceFile='AWS_QLDB.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
 		
         
@@ -252,7 +252,7 @@
 
           The dialog BMP dimensions are 493 x 312 pixels.
         -->
-        <WixVariable Id='WixUIDialogBmp' Value='aws-QLDB.jpg'/>		
+        <WixVariable Id='WixUIDialogBmp' Value='AWS_Front.jpg'/>		
         
     </Product>
 
