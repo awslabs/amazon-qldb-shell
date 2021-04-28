@@ -93,7 +93,7 @@ impl Deps<QldbSessionClient> {
                 };
                 ConsoleUi::new_for_script(&reader[..])?
             }
-            None => ConsoleUi::new(env.terminator_required.value),
+            None => ConsoleUi::new(env.terminator_required().value),
         };
 
         Ok(Deps {
@@ -116,7 +116,7 @@ where
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(&env.ledger.value.clone())
+            .ledger_name(env.ledger().value.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;

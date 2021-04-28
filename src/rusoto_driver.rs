@@ -25,7 +25,7 @@ pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionCli
     // again, as individual statements may be derived from values seen from
     // yet other statements.
     QldbDriverBuilder::new()
-        .ledger_name(&env.ledger.value)
+        .ledger_name(env.ledger().value)
         .region(region)
         .credentials_provider(creds)
         .transaction_retry_policy(retry::never())
@@ -40,7 +40,7 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> 
     session_client
         .send_command(SendCommandRequest {
             start_session: Some(StartSessionRequest {
-                ledger_name: env.ledger.value.clone(),
+                ledger_name: env.ledger().value,
             }),
             ..Default::default()
         })
@@ -88,7 +88,7 @@ impl ProvideAwsCredentials for CredentialProvider {
 }
 
 fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
-    let it = match &env.profile.value {
+    let it = match env.profile().value {
         Some(p) => {
             let mut prof = ProfileProvider::new()?;
             prof.set_profile(p);
@@ -102,10 +102,10 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 
 // FIXME: Default region should consider what is set in the Profile.
 fn rusoto_region(env: &Environment) -> Result<Region> {
-    let it = match (&env.region.value, &env.qldb_session_endpoint.value) {
+    let it = match (env.region().value, env.qldb_session_endpoint().value) {
         (Some(r), Some(e)) => Region::Custom {
-            name: r.to_owned(),
-            endpoint: e.to_owned(),
+            name: r,
+            endpoint: e,
         },
         (Some(r), None) => match Region::from_str(&r) {
             Ok(it) => it,
@@ -116,7 +116,7 @@ fn rusoto_region(env: &Environment) -> Result<Region> {
         },
         (None, Some(e)) => Region::Custom {
             name: Region::default().name().to_owned(),
-            endpoint: e.to_owned(),
+            endpoint: e,
         },
         (None, None) => Region::default(),
     };

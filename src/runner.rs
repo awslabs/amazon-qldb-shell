@@ -86,7 +86,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             None => self
                 .deps
                 .ui
-                .set_prompt(format!("{} ", self.deps.env.prompt.value)),
+                .set_prompt(format!("{} ", self.deps.env.prompt().value)),
             Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
@@ -149,7 +149,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) fn handle_env(&self) {
-        self.deps.ui.println(&format!("{:#?}", self.deps.env));
+        self.deps.ui.println(&format!("{}", self.deps.env));
     }
 
     pub(crate) async fn handle_show_tables(&self) -> Result<()> {
