@@ -1,6 +1,6 @@
 use crate::repl_helper::QldbHelper;
 use dirs;
-use rustyline::error::ReadlineError;
+use rustyline::{error::ReadlineError, Cmd, KeyCode, KeyEvent, Modifiers};
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
 use std::{io, path::PathBuf};
@@ -163,7 +163,28 @@ fn create_editor(terminator_required: bool) -> Editor<QldbHelper> {
         .build();
     let mut editor = Editor::with_config(config);
     editor.set_helper(Some(QldbHelper::new(terminator_required)));
+    editor.bind_sequence(force_newline_event_seq(), Cmd::Newline);
     editor
+}
+
+#[cfg(not(windows))]
+fn force_newline_event_seq() -> KeyEvent {
+    KeyEvent(KeyCode::Enter, Modifiers::ALT)
+}
+
+// On Windows, `ESC ENTER` is the key sequence for forcing a newline. This is
+// because `ALT ENTER` typically maximizes the window.
+#[cfg(windows)]
+fn force_newline_event_seq() -> KeyEvent {
+    use rustyline::Event;
+    use smallvec::smallvec;
+
+    let seq = smallvec![
+        KeyEvent(KeyCode::Esc, Modifiers::NONE),
+        KeyEvent(KeyCode::Enter, Modifiers::NONE)
+    ];
+    let event = Event::KeySeq(seq);
+    KeyEvent(event, Modifiers::NONE)
 }
 
 impl Ui for ConsoleUi {
