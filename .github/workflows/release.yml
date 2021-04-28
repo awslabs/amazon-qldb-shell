@@ -113,7 +113,7 @@ jobs:
           cargo install cargo-wix
                       
           # Create MSI based on target/wix/main.wxs
-          cargo wix 
+          cargo wix --nocapture
           
           cd target/wix
           mv amazon_qldb_shell*.msi ../../${release_name}.msi
