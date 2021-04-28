@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#0f57681610858ead48c29ddc4ff5d59d202aed94"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#39c6151cc23f2c4930de3d4b077673d171cde0bb"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -862,9 +862,9 @@ dependencies = [
 
 [[package]]
 name = "ion-c-sys"
-version = "0.4.6"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2814b8b180136aaf6d4145a3b736cd1b79762261e3cb5fcde807ab5ea4beb377"
+checksum = "8d5be1c647863bfa7d317f11ae738cf82b1565e6f1a7900044f44377712d4487"
 dependencies = [
  "bigdecimal",
  "bindgen",
@@ -876,9 +876,9 @@ dependencies = [
 
 [[package]]
 name = "ion-rs"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbaa005065411451e3a7e6d59059577b23361bc8065bb140e03deac5e8cb325d"
+checksum = "27ac9a2b487834680826193250ec154071438d49898b8c68623606bec03ea9c9"
 dependencies = [
  "base64 0.12.3",
  "bigdecimal",

@@ -121,7 +121,7 @@ fn format_element_for_cell(elem: Option<&OwnedElement>) -> Result<String> {
             let decimal = elem.as_decimal().unwrap();
             match BigDecimal::try_from(decimal.clone()) {
                 Ok(big) => format!("{}", big),
-                Err(()) => format!("-0"),
+                Err(_) => format!("-0"),
             }
         }
         IonType::Timestamp => Err(anyhow!("timestamps are not yet supported"))?,
