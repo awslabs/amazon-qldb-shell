@@ -11,10 +11,9 @@ use tokio::{
     task::{self, JoinHandle},
 };
 
-use crate::results;
 use crate::runner::Runner;
-use crate::settings::AutoCommitMode;
 use crate::QldbShellError;
+use crate::{results, runner::TickFlow};
 
 pub(crate) struct ShellTransaction {
     input: Sender<TransactionRequest>,
@@ -79,8 +78,8 @@ impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<bool> {
-        if self.deps.opt.auto_commit == AutoCommitMode::Off {
+    pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<TickFlow> {
+        if !self.deps.env.auto_commit.value {
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
@@ -95,7 +94,7 @@ where
             Err(e)?
         }
         self.handle_commit().await?;
-        Ok(true)
+        Ok(TickFlow::Again)
     }
 
     pub(crate) fn handle_start_transaction(&mut self) {
@@ -108,7 +107,7 @@ where
         self.current_transaction.replace(new_tx);
     }
 
-    pub(crate) async fn handle_partiql(&mut self, line: &str) -> Result<bool> {
+    pub(crate) async fn handle_partiql(&mut self, line: &str) -> Result<TickFlow> {
         let tx = self
             .current_transaction
             .as_mut()
@@ -149,9 +148,9 @@ where
             }
         };
 
-        results::display_results(&results, &self.deps.opt.format, &self.deps.ui);
+        results::display_results(&results, &self.deps.env.format.value, &self.deps.ui);
 
-        if !self.deps.opt.no_query_metrics {
+        if self.deps.env.show_query_metrics.value {
             let noun = match results.len() {
                 1 => "document",
                 _ => "documents",
@@ -169,7 +168,7 @@ where
             ));
         }
 
-        Ok(true)
+        Ok(TickFlow::Again)
     }
 
     pub(crate) async fn handle_abort(&mut self) -> Result<()> {

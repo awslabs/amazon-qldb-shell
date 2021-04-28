@@ -1,11 +1,24 @@
 use anyhow::Result;
+use core::fmt;
 use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
+use tracing::instrument;
 
-use crate::settings::{Environment, Opt};
+use crate::settings::{Environment, ExecuteStatementOpt};
 use crate::transaction::ShellTransaction;
 use crate::{Deps, QldbShellError};
+
+pub(crate) enum ProgramFlow {
+    Exit,
+    Restart,
+}
+
+pub(crate) enum TickFlow {
+    Again,
+    Restart,
+    Exit,
+}
 
 pub(crate) const HELP_TEXT: &'static str = r"To start a transaction, enter '\start transaction' or '\begin'. To exit, enter '\exit' or press CTRL-D.";
 
@@ -17,13 +30,22 @@ where
     pub(crate) current_transaction: Option<ShellTransaction>,
 }
 
+impl<C> fmt::Debug for Runner<C>
+where
+    C: QldbSession + Send + Sync + Clone + 'static,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Runner")
+    }
+}
+
 impl Runner<QldbSessionClient> {
-    pub(crate) async fn new_with_opt(
-        opt: Opt,
+    pub(crate) async fn new_with_env(
         env: Environment,
+        execute: &Option<ExecuteStatementOpt>,
     ) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new_with_opt(opt, env).await?,
+            deps: Deps::new_with_env(env, execute).await?,
             current_transaction: None,
         })
     }
@@ -32,7 +54,7 @@ impl Runner<QldbSessionClient> {
 fn is_special_command(line: &str) -> bool {
     match &line.to_lowercase()[..] {
         "help" | "quit" | "exit" | "start transaction" | "begin" | "abort" | "commit" => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -40,27 +62,31 @@ impl<C> Runner<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    pub(crate) async fn start(&mut self) -> Result<()> {
+    pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
         self.deps.ui.println(
             r#"Welcome to the Amazon QLDB Shell!
 
-To start a transaction type '\start transaction', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter '\commit' or '\abort' as appropriate."#,
+To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
+When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         );
 
         loop {
             match self.tick().await {
-                Ok(false) => break,
+                Ok(TickFlow::Again) => {}
+                Ok(TickFlow::Exit) => return Ok(ProgramFlow::Exit),
+                Ok(TickFlow::Restart) => return Ok(ProgramFlow::Restart),
                 Err(e) => self.deps.ui.println(&format!("{}", e)),
-                _ => {}
             }
         }
-        Ok(())
     }
 
-    pub(crate) async fn tick(&mut self) -> Result<bool> {
+    #[instrument]
+    pub(crate) async fn tick(&mut self) -> Result<TickFlow> {
         match self.current_transaction {
-            None => self.deps.ui.set_prompt(format!("{} ", self.deps.env.prompt.value)),
+            None => self
+                .deps
+                .ui
+                .set_prompt(format!("{} ", self.deps.env.prompt.value)),
             Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
@@ -68,7 +94,7 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
         Ok(match user_input {
             Ok(line) => {
                 if line.is_empty() {
-                    true
+                    TickFlow::Again
                 } else {
                     match &line[0..1] {
                         r"\" => self.handle_command(&line[1..]).await?,
@@ -82,43 +108,44 @@ When your transaction is complete, enter '\commit' or '\abort' as appropriate."#
             }
             Err(ReadlineError::Interrupted) => {
                 self.deps.ui.println("CTRL-C");
-                true
+                TickFlow::Again
             }
             Err(ReadlineError::Eof) => self.handle_break().await?,
             Err(err) => {
                 self.deps.ui.warn(&format!("Error: {:?}", err));
-                false
+                TickFlow::Exit
             }
         })
     }
 
-    pub(crate) async fn handle_break(&mut self) -> Result<bool> {
+    pub(crate) async fn handle_break(&mut self) -> Result<TickFlow> {
         self.deps.ui.println("CTRL-D");
         Ok(if let Some(_) = self.current_transaction {
             self.handle_abort().await?;
-            true
+            TickFlow::Again
         } else {
-            false
+            TickFlow::Exit
         })
     }
 
-    pub(crate) async fn handle_command(&mut self, line: &str) -> Result<bool> {
+    pub(crate) async fn handle_command(&mut self, line: &str) -> Result<TickFlow> {
         match &line.to_lowercase()[..] {
             "help" | "?" => {
                 self.deps.ui.println(HELP_TEXT);
             }
             "quit" | "exit" => {
-                return Ok(false);
+                return Ok(TickFlow::Exit);
             }
             "start transaction" | "begin" => self.handle_start_transaction(),
             "abort" => self.handle_abort().await?,
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
+            "use" => return Ok(TickFlow::Restart), // TODO: implement
             _ => Err(QldbShellError::UnknownCommand)?,
         }
 
-        Ok(true)
+        Ok(TickFlow::Again)
     }
 
     pub(crate) fn handle_env(&self) {

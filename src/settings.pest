@@ -1,6 +1,0 @@
-WHITESPACE = _{ " " }
-
-char = { ASCII_ALPHA | "_" }
-assignment = { name ~ "="? ~ value }
-name = @{ char+ }
-value = @{ char* }

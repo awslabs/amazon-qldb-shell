@@ -1,12 +1,11 @@
 use amazon_qldb_driver::QldbDriver;
 use anyhow::Result;
+use runner::ProgramFlow;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt};
 use structopt::StructOpt;
 use thiserror::Error;
-
-#[macro_use]
-extern crate log;
+use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
 
 use crate::runner::Runner;
 use crate::settings::{Config, Opt};
@@ -23,35 +22,49 @@ mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
-    configure_logging(&opt)?;
-    let config = Config::load_default()?;
+    configure_tracing(&opt)?;
+    let config = match opt.config {
+        None => Config::load_default()?,
+        Some(ref path) => Config::load(path)?,
+    };
     let mut env = Environment::new();
     env.apply_config(&config);
-    env.apply_cli(&opt);
-    rusoto_driver::health_check_start_session(&opt).await?;
-    let mut runner = Runner::new_with_opt(opt, env).await?;
-    runner.start().await
+    env.apply_cli(&opt)?;
+
+    //loop {
+    rusoto_driver::health_check_start_session(&env).await?;
+    let mut runner = Runner::new_with_env(env, &opt.execute).await?;
+    if let ProgramFlow::Exit = runner.start().await? {
+        return Ok(());
+    } else {
+        unreachable!() // Restart not yet implemented
+    }
+    //}
 }
 
-fn configure_logging(opt: &Opt) -> Result<(), log::SetLoggerError> {
+fn configure_tracing(opt: &Opt) -> Result<()> {
+    let subscriber = SubscriberBuilder::default();
+
     let level = match opt.verbose {
-        true => log::LevelFilter::Debug,
-        false => log::LevelFilter::Info,
+        0 => "error",
+        1 => "info",
+        2 => "debug",
+        _ => "trace",
     };
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                record.target(),
-                record.level(),
-                message
-            ))
-        })
-        .level(level)
-        .chain(std::io::stdout())
-        .filter(|metadata| metadata.target() != "rustyline")
-        .apply()
+
+    let filter = EnvFilter::from_default_env()
+        .add_directive("rustyline=off".parse()?)
+        .add_directive(level.parse()?);
+
+    let subscriber = subscriber.with_env_filter(filter);
+
+    if opt.verbose == 3 {
+        subscriber.pretty().init()
+    } else {
+        subscriber.compact().init()
+    };
+
+    Ok(())
 }
 
 struct Deps<C: QldbSession>
@@ -59,7 +72,6 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     env: Environment,
-    opt: Opt,
     driver: QldbDriver<C>,
     ui: Box<dyn Ui>,
 }
@@ -67,10 +79,13 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    async fn new_with_opt(opt: Opt, env: Environment) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(&opt).await?;
+    async fn new_with_env(
+        env: Environment,
+        execute: &Option<ExecuteStatementOpt>,
+    ) -> Result<Deps<QldbSessionClient>> {
+        let driver = rusoto_driver::build_driver(&env).await?;
 
-        let ui = match opt.execute {
+        let ui = match execute {
             Some(ref e) => {
                 let reader = match e {
                     ExecuteStatementOpt::SingleStatement(statement) => statement,
@@ -78,12 +93,11 @@ impl Deps<QldbSessionClient> {
                 };
                 ConsoleUi::new_for_script(&reader[..])?
             }
-            None => ConsoleUi::new(opt.terminator_required),
+            None => ConsoleUi::new(env.terminator_required.value),
         };
 
         Ok(Deps {
             env,
-            opt,
             driver,
             ui: Box::new(ui),
         })
@@ -95,21 +109,20 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     #[cfg(test)]
-    async fn new_with<U>(env: Environment, opt: Opt, client: C, ui: U) -> Result<Deps<C>>
+    async fn new_with<U>(env: Environment, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(&opt.ledger)
+            .ledger_name(&env.ledger.value.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;
 
         Ok(Deps {
             env,
-            opt,
             driver,
             ui: Box::new(ui),
         })
@@ -166,8 +179,10 @@ mod tests {
         let client = TodoClient {};
         let ui = TestUi::default();
 
+        let mut env = Environment::new();
+        env.apply_cli(&opt)?;
         let mut runner = Runner {
-            deps: Deps::new_with(Environment::new(), opt, client, ui.clone()).await?,
+            deps: Deps::new_with(env, client, ui.clone()).await?,
             current_transaction: None,
         };
         ui.inner().pending.push("help".to_string());
