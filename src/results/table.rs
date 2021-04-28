@@ -134,7 +134,16 @@ fn format_element_for_cell(elem: Option<&OwnedElement>) -> Result<String> {
         IonType::String => elem.as_str().unwrap().to_string(),
         IonType::Clob | IonType::Blob => {
             let bytes = elem.as_bytes().unwrap();
-            format!("{} bytes", bytes.len())
+            // 32 is a somewhat random number, but also happens to be the length
+            // of a QldbHash (e.g. the result of `select metadata.hash from
+            // _ql_committed_foo`). If you pick a number < 32, we won't render
+            // QldbHashes (which is a shame). Too wide, and tables aren't
+            // practically useful since they won't fit on a screen.
+            if bytes.len() <= 32 {
+                format!("{:02X?}", bytes)
+            } else {
+                format!("{} bytes", bytes.len())
+            }
         }
         IonType::List | IonType::SExpression => {
             let seq = elem.as_sequence().unwrap();

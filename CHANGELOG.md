@@ -5,6 +5,7 @@
 ### Added
 
   * Timestamps now render in `--format table`
+  * Byte arrays <= 32 bytes are rendered in `--format table`
 
 ## [2.0.0-alpha5] - 2021-04-23
 
