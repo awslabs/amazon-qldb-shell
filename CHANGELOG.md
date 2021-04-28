@@ -6,9 +6,9 @@
 
   * Timestamps now render in `--format table`
   * Byte arrays <= 32 bytes are rendered in `--format table`
-  * ALT/ESC + ENTER forces a newline
-    - on Windows the sequence is 'ESC ENTER'
-    - otherwise, 'ALT ENTER' (which would maximize the window on Windows)
+  * ALT/SHIFT + ENTER forces a newline
+    - on Windows the sequence is SHIFT+ENTER
+    - otherwise, ALT+ENTER (which would maximize the window on Windows)
 
 ## [2.0.0-alpha5] - 2021-04-23
 

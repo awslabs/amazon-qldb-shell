@@ -172,19 +172,11 @@ fn force_newline_event_seq() -> KeyEvent {
     KeyEvent(KeyCode::Enter, Modifiers::ALT)
 }
 
-// On Windows, `ESC ENTER` is the key sequence for forcing a newline. This is
-// because `ALT ENTER` typically maximizes the window.
+// On Windows, `SHIFT+ENTER` is the key sequence for forcing a newline. This is
+// because `ALT+ENTER` typically maximizes the window.
 #[cfg(windows)]
 fn force_newline_event_seq() -> KeyEvent {
-    use rustyline::Event;
-    use smallvec::smallvec;
-
-    let seq = smallvec![
-        KeyEvent(KeyCode::Esc, Modifiers::NONE),
-        KeyEvent(KeyCode::Enter, Modifiers::NONE)
-    ];
-    let event = Event::KeySeq(seq);
-    KeyEvent(event, Modifiers::NONE)
+    KeyEvent(KeyCode::Enter, Modifiers::SHIFT)
 }
 
 impl Ui for ConsoleUi {
