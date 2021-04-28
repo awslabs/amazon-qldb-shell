@@ -12,12 +12,7 @@ use std::str::FromStr;
 use tracing::warn;
 
 pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
-    let provider = profile_provider(&env)?;
-    let region = rusoto_region(&env)?;
-    let creds = match provider {
-        Some(p) => CredentialProvider::Profile(p),
-        None => CredentialProvider::Chain(ChainProvider::new()),
-    };
+    let client = build_rusoto_client(env).await?;
 
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
@@ -26,10 +21,8 @@ pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionCli
     // yet other statements.
     QldbDriverBuilder::new()
         .ledger_name(env.ledger().value)
-        .region(region)
-        .credentials_provider(creds)
         .transaction_retry_policy(retry::never())
-        .build()
+        .build_with_client(client)
         .await
 }
 
@@ -59,7 +52,8 @@ async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
 
     let mut hyper = HttpClient::new()?;
     hyper.local_agent(format!(
-        "QLDB Driver for Rust v{}",
+        "QLDB Driver for Rust v{}/QLDB Shell for Rust v{}",
+        amazon_qldb_driver::version(),
         env!("CARGO_PKG_VERSION")
     ));
 

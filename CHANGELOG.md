@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0-alpha6] - [Unreleased]
+## [2.0.0-alpha6] - 2021-04-28
 
 ### Added
 
@@ -9,6 +9,10 @@
   * ALT/SHIFT + ENTER forces a newline
     - on Windows the sequence is SHIFT+ENTER
     - otherwise, ALT+ENTER (which would maximize the window on Windows)
+    
+### Changed
+
+  * User agent now includes both the driver and shell versions
 
 ## [2.0.0-alpha5] - 2021-04-23
 
