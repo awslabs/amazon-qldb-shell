@@ -5,8 +5,11 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
 use tracing::instrument;
 
-use crate::settings::{Environment, ExecuteStatementOpt};
 use crate::transaction::ShellTransaction;
+use crate::{
+    command,
+    settings::{Environment, ExecuteStatementOpt},
+};
 use crate::{Deps, QldbShellError};
 
 pub(crate) enum ProgramFlow {
@@ -106,15 +109,17 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                     }
                 }
             }
-            Err(ReadlineError::Interrupted) => {
-                self.deps.ui.println("CTRL-C");
-                TickFlow::Again
-            }
-            Err(ReadlineError::Eof) => self.handle_break().await?,
-            Err(err) => {
-                self.deps.ui.warn(&format!("Error: {:?}", err));
-                TickFlow::Exit
-            }
+            Err(err) => match err.downcast::<ReadlineError>() {
+                Ok(ReadlineError::Interrupted) => {
+                    self.deps.ui.println("CTRL-C");
+                    TickFlow::Again
+                }
+                Ok(ReadlineError::Eof) => self.handle_break().await?,
+                err => {
+                    self.deps.ui.warn(&format!("Error: {:?}", err));
+                    TickFlow::Exit
+                }
+            },
         })
     }
 
@@ -142,7 +147,17 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
             "use" => return Ok(TickFlow::Restart), // TODO: implement
-            _ => Err(QldbShellError::UnknownCommand)?,
+            _ => {
+                let iter = line.split_ascii_whitespace();
+                let backslash = match command::backslash(iter) {
+                    Ok(b) => b,
+                    Err(_) => Err(QldbShellError::UnknownCommand)?,
+                };
+
+                if let command::Backslash::Set(set) = backslash {
+                    self.deps.ui.handle_env_set(&set)?;
+                }
+            }
         }
 
         Ok(TickFlow::Again)

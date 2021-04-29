@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0-alpha7] - [Unreleased]
+
+### Added
+
+   * `\set input-mode [emacs|vi]` can now be used to toggle between Emacs/Vi keybindings
+
 ## [2.0.0-alpha6] - 2021-04-28
 
 ### Added

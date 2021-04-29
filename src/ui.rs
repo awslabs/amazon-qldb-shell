@@ -1,6 +1,10 @@
-use crate::repl_helper::QldbHelper;
+use crate::{command::InputMode, repl_helper::QldbHelper};
+use crate::{command::SetCommand, settings::Environment};
+use anyhow::Result;
 use dirs;
-use rustyline::{error::ReadlineError, Cmd, KeyCode, KeyEvent, Modifiers};
+use rustyline::{
+    config::Builder, error::ReadlineError, Cmd, EditMode, KeyCode, KeyEvent, Modifiers,
+};
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
 use std::{io, path::PathBuf};
@@ -9,7 +13,7 @@ use tracing::{debug, warn};
 pub(crate) trait Ui {
     fn set_prompt(&self, prompt: String);
 
-    fn user_input(&self) -> Result<String, ReadlineError>;
+    fn user_input(&self) -> Result<String>;
 
     fn clear_pending(&self);
 
@@ -22,6 +26,8 @@ pub(crate) trait Ui {
     fn warn(&self, str: &str);
 
     fn debug(&self, str: &str);
+
+    fn handle_env_set(&self, set: &SetCommand) -> Result<()>;
 }
 
 #[cfg(test)]
@@ -55,7 +61,7 @@ pub mod testing {
             self.inner.borrow_mut().prompt = prompt;
         }
 
-        fn user_input(&self) -> Result<String, ReadlineError> {
+        fn user_input(&self) -> Result<String> {
             let mut inner = self.inner.borrow_mut();
             if inner.pending.is_empty() {
                 panic!("mock is not ready for user input");
@@ -89,10 +95,15 @@ pub mod testing {
         fn debug(&self, str: &str) {
             self.inner.borrow_mut().debug.push(str.to_string());
         }
+
+        fn handle_env_set(&self, _set: &SetCommand) -> Result<()> {
+            unimplemented!()
+        }
     }
 }
 
 struct UiInner {
+    env: Environment,
     editor: Editor<QldbHelper>,
     prompt: String,
     pending_actions: Vec<String>,
@@ -112,8 +123,8 @@ pub(crate) struct ConsoleUi {
 }
 
 impl ConsoleUi {
-    pub(crate) fn new(terminator_required: bool) -> ConsoleUi {
-        let mut editor = create_editor(terminator_required);
+    pub(crate) fn new(env: Environment) -> ConsoleUi {
+        let mut editor = create_editor(create_config(&env), env.clone());
 
         if let Some(p) = history_path() {
             editor.load_history(&p).keep_going();
@@ -121,6 +132,7 @@ impl ConsoleUi {
 
         ConsoleUi {
             inner: RefCell::new(UiInner {
+                env,
                 editor,
                 prompt: "> ".to_owned(),
                 pending_actions: vec![],
@@ -134,8 +146,8 @@ impl ConsoleUi {
     // 2. Really don't need all the readline stuff here
     // 3. Also don't want to load/persist history
     // 4. exit is awful
-    pub(crate) fn new_for_script(script: &str) -> io::Result<ConsoleUi> {
-        let editor = create_editor(false);
+    pub(crate) fn new_for_script(script: &str, env: Environment) -> io::Result<ConsoleUi> {
+        let editor = create_editor(create_config(&env), env.clone());
 
         // We start the pending actions by reading the input, splitting it up
         // into new lines..
@@ -150,6 +162,7 @@ impl ConsoleUi {
 
         Ok(ConsoleUi {
             inner: RefCell::new(UiInner {
+                env,
                 editor,
                 prompt: "".to_owned(),
                 pending_actions,
@@ -158,11 +171,13 @@ impl ConsoleUi {
     }
 }
 
-fn create_editor(terminator_required: bool) -> Editor<QldbHelper> {
-    let config = Config::builder() // FIXME: customize :)
-        .build();
-    let mut editor = Editor::with_config(config);
-    editor.set_helper(Some(QldbHelper::new(terminator_required)));
+fn create_config(_env: &Environment) -> Builder {
+    Config::builder()
+}
+
+fn create_editor(builder: Builder, env: Environment) -> Editor<QldbHelper> {
+    let mut editor = Editor::with_config(builder.build());
+    editor.set_helper(Some(QldbHelper::new(env)));
     editor.bind_sequence(force_newline_event_seq(), Cmd::Newline);
     editor
 }
@@ -194,7 +209,7 @@ impl Ui for ConsoleUi {
     /// 'foo' & 'bar'). Similarly, we trim the strings such that 'foo;bar' and
     /// 'foo; bar' are treated identically (but the history will have the raw
     /// input).
-    fn user_input(&self) -> Result<String, ReadlineError> {
+    fn user_input(&self) -> Result<String> {
         let mut inner = self.inner.borrow_mut();
 
         if !inner.pending_actions.is_empty() {
@@ -213,7 +228,7 @@ impl Ui for ConsoleUi {
                 drop(inner);
                 self.user_input()
             }
-            err => err,
+            Err(e) => Err(e)?,
         }
     }
 
@@ -240,6 +255,25 @@ impl Ui for ConsoleUi {
 
     fn debug(&self, str: &str) {
         debug!("{}", str);
+    }
+
+    fn handle_env_set(&self, set: &SetCommand) -> Result<()> {
+        let mut inner = self.inner.borrow_mut();
+
+        match set {
+            SetCommand::InputMode(mode) => {
+                let builder = create_config(&inner.env);
+                let builder = builder.edit_mode(match mode {
+                    InputMode::Emacs => EditMode::Emacs,
+                    InputMode::Vi => EditMode::Vi,
+                });
+
+                let editor = create_editor(builder, inner.env.clone());
+                inner.editor = editor;
+            }
+        }
+
+        Ok(())
     }
 }
 
