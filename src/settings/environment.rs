@@ -11,11 +11,12 @@ use super::{config::EditMode, Opt};
 
 #[derive(Clone)]
 pub struct Environment {
-    inner: Arc<Mutex<EnvironmentInner>>,
+    pub(crate) inner: Arc<Mutex<EnvironmentInner>>, // FIXME: priv
 }
 
 #[derive(Debug)]
-struct EnvironmentInner {
+pub(crate) struct EnvironmentInner {
+    // FIXME: priv
     display_welcome: Setting<bool>,
     display_ctrl_signals: Setting<bool>,
     auto_commit: Setting<bool>,
@@ -26,8 +27,8 @@ struct EnvironmentInner {
     qldb_session_endpoint: Setting<Option<String>>,
     region: Setting<Option<String>>,
     show_query_metrics: Setting<bool>,
-    terminator_required: Setting<bool>,
-    edit_mode: Setting<EditMode>,
+    pub(crate) terminator_required: Setting<bool>,
+    pub(crate) edit_mode: Setting<EditMode>,
 }
 
 impl Environment {

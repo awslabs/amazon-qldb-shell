@@ -11,6 +11,7 @@
      [ui]
      edit_mode = "Emacs" # or Vi
      ```
+   * Add `\set terminator-required [true|false]`
 
 ### Changed
 

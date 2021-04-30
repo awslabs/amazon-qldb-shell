@@ -5,11 +5,11 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
 use tracing::instrument;
 
-use crate::transaction::ShellTransaction;
 use crate::{
     command,
     settings::{Environment, ExecuteStatementOpt},
 };
+use crate::{settings::Setter, transaction::ShellTransaction};
 use crate::{Deps, QldbShellError};
 
 pub(crate) enum ProgramFlow {
@@ -153,20 +153,41 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
             "use" => return Ok(TickFlow::Restart), // TODO: implement
-            _ => {
-                let iter = line.split_ascii_whitespace();
-                let backslash = match command::backslash(iter) {
-                    Ok(b) => b,
-                    Err(_) => Err(QldbShellError::UnknownCommand)?,
-                };
-
-                if let command::Backslash::Set(set) = backslash {
-                    self.deps.ui.handle_env_set(&set)?;
-                }
-            }
+            _ => self.handle_complex_command(line)?,
         }
 
         Ok(TickFlow::Again)
+    }
+
+    pub(crate) fn handle_complex_command(&mut self, line: &str) -> Result<()> {
+        let iter = line.split_ascii_whitespace();
+        let backslash = match command::backslash(iter) {
+            Ok(b) => b,
+            Err(_) => Err(QldbShellError::UnknownCommand)?,
+        };
+
+        if let command::Backslash::Set(set) = backslash {
+            // FIXME: Hack
+            let mut inner = self.deps.env.inner.lock().unwrap();
+            match set {
+                command::SetCommand::EditMode(ref mode) => {
+                    inner.edit_mode.apply_value(mode, Setter::Environment)
+                }
+                command::SetCommand::TerminatorRequired(ref tf) => {
+                    inner.terminator_required.apply_value(
+                        &match tf {
+                            command::TrueFalse::True => true,
+                            command::TrueFalse::False => false,
+                        },
+                        Setter::Environment,
+                    )
+                }
+            }
+            drop(inner); // FIXME: end hack
+            self.deps.ui.handle_env_set(&set)?;
+        }
+
+        Ok(())
     }
 
     pub(crate) fn handle_env(&self) {

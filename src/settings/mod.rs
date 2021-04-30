@@ -25,7 +25,7 @@ impl<T> Setting<T>
 where
     T: Clone,
 {
-    fn apply_value(&mut self, other: &T, setter: Setter) {
+    pub(crate) fn apply_value(&mut self, other: &T, setter: Setter) {
         self.modified = true;
         self.setter = setter;
         self.value = other.clone();

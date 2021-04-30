@@ -22,9 +22,16 @@ pub enum Backslash {
     Set(SetCommand),
 }
 
+#[derive(StructOpt, Debug, Clone)]
+pub enum TrueFalse {
+    True,
+    False,
+}
+
 #[derive(StructOpt, Debug)]
 pub enum SetCommand {
     EditMode(EditMode),
+    TerminatorRequired(TrueFalse),
 }
 
 #[cfg(test)]

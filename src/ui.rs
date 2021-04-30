@@ -265,7 +265,7 @@ impl Ui for ConsoleUi {
         let mut inner = self.inner.borrow_mut();
 
         match set {
-            SetCommand::EditMode(_) => {
+            SetCommand::EditMode(_) | SetCommand::TerminatorRequired(_) => {
                 let editor = create_editor(create_config(&inner.env), inner.env.clone());
                 inner.editor = editor;
             }
