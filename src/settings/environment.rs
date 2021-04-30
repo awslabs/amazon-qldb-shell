@@ -32,19 +32,24 @@ struct EnvironmentInner {
 
 impl Environment {
     pub fn new() -> Environment {
+        // Certain properties default differently based on whether stdin is a
+        // tty or not. For example, certain messages are suppressed when running
+        // `echo ... | qldb`.
+        let stdin_tty = atty::is(atty::Stream::Stdin);
+
         Environment {
             inner: Arc::new(Mutex::new(EnvironmentInner {
                 display_welcome: Setting {
                     name: "display_welcome".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: atty::is(atty::Stream::Stdin),
+                    value: stdin_tty,
                 },
                 display_ctrl_signals: Setting {
                     name: "display_ctrl_signals".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: atty::is(atty::Stream::Stdin),
+                    value: stdin_tty,
                 },
                 auto_commit: Setting {
                     name: "auto_commit".to_string(),
@@ -93,7 +98,7 @@ impl Environment {
                     name: "show_query_metrics".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: true,
+                    value: stdin_tty,
                 },
                 terminator_required: Setting {
                     name: "terminator_required".to_string(),
@@ -204,7 +209,7 @@ impl EnvironmentInner {
         self.format.apply_value(&opt.format, Setter::CommandLine);
         self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
         self.show_query_metrics
-            .apply_value(&!opt.no_query_metrics, Setter::CommandLine);
+            .apply_value_opt(&opt.no_query_metrics, Setter::CommandLine);
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);

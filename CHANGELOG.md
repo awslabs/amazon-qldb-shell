@@ -14,9 +14,10 @@
 
 ### Changed
 
-  * When running without a tty, certain UI messages are suppressed.
+  * When running without a tty, the UI changes to be quieter
      - For example, the welcome message and CTRL-C or CTRL-D is suppressed
      - This is useful for `echo select * from foo|qldb --ledger example`
+     - Query metrics are disabled by default
 
 ## [2.0.0-alpha6] - 2021-04-28
 
