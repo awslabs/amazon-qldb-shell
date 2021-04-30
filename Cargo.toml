@@ -31,6 +31,7 @@ tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
 comfy-table = "2.1.0"
 bigdecimal = "0.2.0"
 smallvec = "1.6.1"
+atty = "0.2.14"
 
 [dev-dependencies]
 tempdir = "0.3"

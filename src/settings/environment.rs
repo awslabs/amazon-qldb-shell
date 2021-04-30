@@ -16,6 +16,8 @@ pub struct Environment {
 
 #[derive(Debug)]
 struct EnvironmentInner {
+    display_welcome: Setting<bool>,
+    display_ctrl_signals: Setting<bool>,
     auto_commit: Setting<bool>,
     format: Setting<FormatMode>,
     ledger: Setting<String>,
@@ -32,6 +34,18 @@ impl Environment {
     pub fn new() -> Environment {
         Environment {
             inner: Arc::new(Mutex::new(EnvironmentInner {
+                display_welcome: Setting {
+                    name: "display_welcome".to_string(),
+                    modified: false,
+                    setter: Setter::Environment,
+                    value: atty::is(atty::Stream::Stdin),
+                },
+                display_ctrl_signals: Setting {
+                    name: "display_ctrl_signals".to_string(),
+                    modified: false,
+                    setter: Setter::Environment,
+                    value: atty::is(atty::Stream::Stdin),
+                },
                 auto_commit: Setting {
                     name: "auto_commit".to_string(),
                     modified: false,
@@ -105,6 +119,16 @@ impl Environment {
     pub(crate) fn apply_cli(&mut self, opt: &Opt) -> Result<()> {
         let mut inner = self.inner.lock().unwrap();
         inner.apply_cli(opt)
+    }
+
+    pub(crate) fn display_welcome(&self) -> Setting<bool> {
+        let inner = self.inner.lock().unwrap();
+        inner.display_welcome.clone()
+    }
+
+    pub(crate) fn display_ctrl_signals(&self) -> Setting<bool> {
+        let inner = self.inner.lock().unwrap();
+        inner.display_ctrl_signals.clone()
     }
 
     pub(crate) fn auto_commit(&self) -> Setting<bool> {

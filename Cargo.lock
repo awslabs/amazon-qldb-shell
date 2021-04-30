@@ -37,6 +37,7 @@ dependencies = [
  "amazon-qldb-driver",
  "anyhow",
  "async-trait",
+ "atty",
  "bigdecimal",
  "chrono",
  "comfy-table",

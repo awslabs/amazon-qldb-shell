@@ -66,12 +66,14 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
-        self.deps.ui.println(
-            r#"Welcome to the Amazon QLDB Shell!
+        if self.deps.env.display_welcome().value {
+            self.deps.ui.println(
+                r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
-        );
+            );
+        }
 
         loop {
             match self.tick().await {
@@ -111,7 +113,9 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             }
             Err(err) => match err.downcast::<ReadlineError>() {
                 Ok(ReadlineError::Interrupted) => {
-                    self.deps.ui.println("CTRL-C");
+                    if self.deps.env.display_ctrl_signals().value {
+                        self.deps.ui.println("CTRL-C");
+                    }
                     TickFlow::Again
                 }
                 Ok(ReadlineError::Eof) => self.handle_break().await?,
@@ -124,7 +128,9 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) async fn handle_break(&mut self) -> Result<TickFlow> {
-        self.deps.ui.println("CTRL-D");
+        if self.deps.env.display_ctrl_signals().value {
+            self.deps.ui.println("CTRL-D");
+        }
         Ok(if let Some(_) = self.current_transaction {
             self.handle_abort().await?;
             TickFlow::Again
