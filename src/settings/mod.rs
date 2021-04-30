@@ -3,7 +3,7 @@ pub use config::Config;
 pub use environment::Environment;
 
 mod command_line;
-mod config;
+pub mod config;
 mod environment;
 
 #[derive(Clone, Debug)]

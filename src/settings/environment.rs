@@ -7,7 +7,7 @@ use std::{
 use crate::settings::{command_line::CommandLineOptionParser, FormatMode};
 use crate::settings::{Config, Setter, Setting};
 
-use super::Opt;
+use super::{config::EditMode, Opt};
 
 #[derive(Clone)]
 pub struct Environment {
@@ -25,6 +25,7 @@ struct EnvironmentInner {
     region: Setting<Option<String>>,
     show_query_metrics: Setting<bool>,
     terminator_required: Setting<bool>,
+    edit_mode: Setting<EditMode>,
 }
 
 impl Environment {
@@ -86,6 +87,12 @@ impl Environment {
                     setter: Setter::Environment,
                     value: false,
                 },
+                edit_mode: Setting {
+                    name: "edit_mode".to_string(),
+                    modified: false,
+                    setter: Setter::Environment,
+                    value: EditMode::Emacs,
+                },
             })),
         }
     }
@@ -144,6 +151,11 @@ impl Environment {
         let inner = self.inner.lock().unwrap();
         inner.terminator_required.clone()
     }
+
+    pub(crate) fn edit_mode(&self) -> Setting<EditMode> {
+        let inner = self.inner.lock().unwrap();
+        inner.edit_mode.clone()
+    }
 }
 
 impl fmt::Display for Environment {
@@ -159,6 +171,8 @@ impl EnvironmentInner {
             .apply_value_opt(&config.auto_commit, Setter::Config);
         if let Some(ref ui) = config.ui {
             self.prompt.apply_value_opt(&ui.prompt, Setter::Config);
+            self.edit_mode
+                .apply_value_opt(&ui.edit_mode, Setter::Config);
         }
     }
 

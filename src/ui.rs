@@ -1,10 +1,9 @@
-use crate::{command::InputMode, repl_helper::QldbHelper};
+use crate::repl_helper::QldbHelper;
+use crate::settings::config::EditMode;
 use crate::{command::SetCommand, settings::Environment};
 use anyhow::Result;
 use dirs;
-use rustyline::{
-    config::Builder, error::ReadlineError, Cmd, EditMode, KeyCode, KeyEvent, Modifiers,
-};
+use rustyline::{config::Builder, error::ReadlineError, Cmd, KeyCode, KeyEvent, Modifiers};
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
 use std::{io, path::PathBuf};
@@ -171,8 +170,13 @@ impl ConsoleUi {
     }
 }
 
-fn create_config(_env: &Environment) -> Builder {
-    Config::builder()
+fn create_config(env: &Environment) -> Builder {
+    let builder = Config::builder();
+    let builder = builder.edit_mode(match env.edit_mode().value {
+        EditMode::Emacs => rustyline::EditMode::Emacs,
+        EditMode::Vi => rustyline::EditMode::Vi,
+    });
+    builder
 }
 
 fn create_editor(builder: Builder, env: Environment) -> Editor<QldbHelper> {
@@ -261,14 +265,8 @@ impl Ui for ConsoleUi {
         let mut inner = self.inner.borrow_mut();
 
         match set {
-            SetCommand::InputMode(mode) => {
-                let builder = create_config(&inner.env);
-                let builder = builder.edit_mode(match mode {
-                    InputMode::Emacs => EditMode::Emacs,
-                    InputMode::Vi => EditMode::Vi,
-                });
-
-                let editor = create_editor(builder, inner.env.clone());
+            SetCommand::EditMode(_) => {
+                let editor = create_editor(create_config(&inner.env), inner.env.clone());
                 inner.editor = editor;
             }
         }

@@ -3,6 +3,8 @@ use std::ffi::OsString;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+use crate::settings::config::EditMode;
+
 pub fn backslash<I>(iter: I) -> Result<Backslash>
 where
     I: IntoIterator,
@@ -22,13 +24,7 @@ pub enum Backslash {
 
 #[derive(StructOpt, Debug)]
 pub enum SetCommand {
-    InputMode(InputMode),
-}
-
-#[derive(StructOpt, Debug)]
-pub enum InputMode {
-    Emacs,
-    Vi,
+    EditMode(EditMode),
 }
 
 #[cfg(test)]
@@ -38,9 +34,9 @@ mod command_tests {
 
     #[test]
     fn set_input_mode() -> Result<()> {
-        let backslash = super::backslash(&["set", "input-mode", "emacs"])?;
-        if let Backslash::Set(SetCommand::InputMode(mode)) = backslash {
-            assert!(matches!(mode, InputMode::Emacs));
+        let backslash = super::backslash(&["set", "edit-mode", "emacs"])?;
+        if let Backslash::Set(SetCommand::EditMode(mode)) = backslash {
+            assert!(matches!(mode, EditMode::Emacs));
         } else {
             panic!("failure, parsed to: {:?}", backslash);
         }

@@ -5,6 +5,12 @@
 ### Added
 
    * `\set input-mode [emacs|vi]` can now be used to toggle between Emacs/Vi keybindings
+   * Edit mode can be configured in the config file, e.g.:
+
+     ```toml
+     [ui]
+     edit_mode = "Emacs" # or Vi
+     ```
 
 ## [2.0.0-alpha6] - 2021-04-28
 
