@@ -244,7 +244,7 @@
 
           The banner BMP dimensions are 493 x 58 pixels.
 		-->
-		<WixVariable Id='WixUIBannerBmp' Value='wix\assets\AWS_Banner.jpg'/>
+		<WixVariable Id='WixUIBannerBmp' Value='wix\assets\AWS_Banner.png'/>
                
         <!--
           Disabling the dialog image in the installer requires commenting out or
@@ -252,7 +252,7 @@
 
           The dialog BMP dimensions are 493 x 312 pixels.
         -->
-        <WixVariable Id='WixUIDialogBmp' Value='wix\assets\AWS_Front.jpg'/>		
+        <WixVariable Id='WixUIDialogBmp' Value='wix\assets\AWS_Splash.png'/>		
         
     </Product>
 
