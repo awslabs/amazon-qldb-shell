@@ -13,6 +13,7 @@ use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
 mod command;
+pub mod error;
 mod repl_helper;
 mod results;
 mod runner;

@@ -1,3 +1,4 @@
+use crate::error;
 use crate::settings::Environment;
 use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
@@ -9,7 +10,6 @@ use rusoto_core::{
 };
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
-use tracing::warn;
 
 pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
     let client = build_rusoto_client(env).await?;
@@ -37,7 +37,26 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> 
             }),
             ..Default::default()
         })
-        .await?;
+        .await
+        .map_err(|e| {
+            error::usage_error(
+                format!(
+                    r#"Unable to connect to ledger `{}`.
+
+Please check the following:
+
+- That you have specified a ledger that exists and is active
+- That the AWS region you are targeting is correct
+- That your AWS credentials are setup
+- That your AWS credentials grant access on this ledger
+
+The following error chain may have more information:
+"#,
+                    env.ledger().value
+                ),
+                e,
+            )
+        })?;
 
     Ok(())
 }
@@ -84,7 +103,8 @@ impl ProvideAwsCredentials for CredentialProvider {
 fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
     let it = match env.profile().value {
         Some(p) => {
-            let mut prof = ProfileProvider::new()?;
+            let mut prof = ProfileProvider::new()
+                .map_err(|e| error::usage_error("Unable to create profile provider", e))?;
             prof.set_profile(p);
             Some(prof)
         }
@@ -103,10 +123,7 @@ fn rusoto_region(env: &Environment) -> Result<Region> {
         },
         (Some(r), None) => match Region::from_str(&r) {
             Ok(it) => it,
-            Err(e) => {
-                warn!("Unknown region {}: {}. If you know the endpoint, you can specify it and try again.", r, e);
-                return Err(e)?;
-            }
+            Err(e) => Err(error::usage_error(format!("Invalid region {}", r), e))?,
         },
         (None, Some(e)) => Region::Custom {
             name: Region::default().name().to_owned(),
