@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use std::{
     fmt,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
@@ -29,6 +30,7 @@ pub(crate) struct EnvironmentInner {
     show_query_metrics: Setting<bool>,
     pub(crate) terminator_required: Setting<bool>,
     pub(crate) edit_mode: Setting<EditMode>,
+    log_file: Setting<Option<PathBuf>>,
 }
 
 impl Environment {
@@ -113,6 +115,12 @@ impl Environment {
                     setter: Setter::Environment,
                     value: EditMode::Emacs,
                 },
+                log_file: Setting {
+                    name: "log_file".to_string(),
+                    modified: false,
+                    setter: Setter::Environment,
+                    value: None,
+                },
             })),
         }
     }
@@ -186,6 +194,11 @@ impl Environment {
         let inner = self.inner.lock().unwrap();
         inner.edit_mode.clone()
     }
+
+    pub(crate) fn log_file(&self) -> Setting<Option<PathBuf>> {
+        let inner = self.inner.lock().unwrap();
+        inner.log_file.clone()
+    }
 }
 
 impl fmt::Display for Environment {
@@ -203,6 +216,10 @@ impl EnvironmentInner {
             self.prompt.apply_value_opt(&ui.prompt, Setter::Config);
             self.edit_mode
                 .apply_value_opt(&ui.edit_mode, Setter::Config);
+        }
+
+        if let Some(ref debug) = config.debug {
+            self.log_file.apply_opt(&debug.log, Setter::Config);
         }
     }
 

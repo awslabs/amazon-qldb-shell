@@ -12,6 +12,7 @@
      edit_mode = "Emacs" # or Vi
      ```
    * Add `\set terminator-required [true|false]`
+   * Add `debug.log` in config files to enable logging to a file.
 
 ### Changed
 
