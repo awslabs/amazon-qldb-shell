@@ -1,0 +1,259 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<!--
+  Copyright (C) 2017 Christopher R. Field.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+  Please do not remove these pre-processor If-Else blocks. These are used with
+  the `cargo wix` subcommand to automatically determine the installation
+  destination for 32-bit versus 64-bit installers. Removal of these lines will
+  cause installation errors.
+-->
+<?if $(var.Platform) = x64 ?>
+    <?define Win64 = "yes" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+  <?define Win64 = "no" ?>
+  <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+
+    <Product
+        Id='*'
+        Name='Amazon QLDB Shell'
+        UpgradeCode='84F8D807-9709-40A0-A8BA-ED5CBE94A74F'
+        Manufacturer='Amazon Web Services' 
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.Version)'>
+
+        <Package Id='*'
+            Keywords='Installer'
+            Manufacturer='Amazon Web Services'
+            InstallerVersion='450'
+            Languages='1033'
+            Compressed='yes'
+            InstallScope='perMachine'
+            SummaryCodepage='1252'
+            Platform='$(var.Platform)'/>
+
+        <MajorUpgrade
+            Schedule='afterInstallInitialize'
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='Amazon QLDB Shell Installation'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+                <Directory Id='APPLICATIONFOLDER' Name='Amazon QLDB Shell'>
+                    <!--
+                      Disabling the license sidecar file in the installer is a two step process:
+
+                      1. Comment out or remove the `Component` tag along with its contents.
+                      2. Comment out or remove the `ComponentRef` tag with the "License" Id
+                         attribute value further down in this file.
+                    -->
+                    <Component Id='License' Guid='210d8d8c-4b98-4d23-8ef4-3eec27f8d25a' Win64='$(var.Win64)'>
+                        <File Id='LicenseFile'
+                            Name='LICENSE'
+                            DiskId='1'
+                            Source='LICENSE'
+                            KeyPath='yes'/>
+                    </Component>
+					<Component Id='Readme' Guid='28878c9a-3d3c-48da-86e2-9d4bc9ac89ad' Win64='$(var.Win64)'>
+                        <File Id='ReadmeFile'
+                            Name='README.md'
+                            DiskId='1'
+                            Source='README.md'
+                            KeyPath='yes'/>
+                    </Component>
+                    
+                    <Directory Id='Bin' Name='bin'>
+                        <Component Id='Path' Guid='3406C0E0-29E3-4C2E-94FA-FB8F84981877' Win64='$(var.Win64)' KeyPath='yes'>
+                            <Environment
+                                Id='PATH'
+                                Name='PATH'
+                                Value='[Bin]'
+                                Permanent='no'
+                                Part='last'
+                                Action='set'
+                                System='yes'/>
+                        </Component>
+                        <Component Id='binary0' Guid='f24296d5-648a-4717-b559-22cc127e0b22' Win64='$(var.Win64)'>
+                            <File
+                                Id='exe0'
+                                Name='qldb.exe'
+                                DiskId='1'
+                                Source='target\$(var.Profile)\qldb.exe'
+                                KeyPath='yes'/>
+                        </Component>
+						<Component Id='batch0' Guid='eea8b60c-39e1-454f-b394-f9668caa9b7f' Win64='$(var.Win64)'>
+                            <File
+                                Id='bat0'
+                                Name='start_cmd_qldb.bat'
+                                DiskId='1'
+                                Source='start_cmd_qldb.bat'
+                                KeyPath='yes'/>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+			
+			<Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="AWS"/>
+            </Directory>
+			
+        </Directory>
+		
+		<DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut" Guid='d6071f27-a37c-4d94-a452-5491a8eb8ea9'>
+                <Shortcut Id="ApplicationStartMenuShortcut"
+                          Name="Amazon QLDB Shell" 
+                          Target="[#bat0]"
+                          WorkingDirectory="APPLICATIONROOTDIRECTORY"
+						  Icon="ProductICO"
+						  IconIndex="0"/>
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+                <RegistryValue Root="HKCU" Key="Software\Amazon\Amazon QLDB Shell" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+           </Component>
+        </DirectoryRef>
+
+        <Feature  
+            Id='Binaries'
+            Title='Application'
+            Description='Installs all binaries and the license.'
+            Level='1'
+            ConfigurableDirectory='APPLICATIONFOLDER'
+            AllowAdvertise='no'
+            Display='expand'
+            Absent='disallow'>
+            <!--
+              Comment out or remove the following `ComponentRef` tag to remove
+              the license sidecar file from the installer.
+            -->
+            <ComponentRef Id='License'/>
+			<ComponentRef Id='batch0'/>            
+            <ComponentRef Id='binary0'/>
+			<ComponentRef Id="ApplicationShortcut"/>
+			<ComponentRef Id="Readme"/>
+
+            <Feature
+                Id='Environment'
+                Title='PATH Environment Variable'
+                Description='Add the install location of the [ProductName] executable to the PATH system environment variable. This allows the [ProductName] executable to be called from any location.'
+                Level='1'
+                Absent='allow'>
+                <ComponentRef Id='Path'/>
+            </Feature>
+        </Feature>
+
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
+
+        <!--
+          Disabling the custom product icon for the application in the
+          Add/Remove Programs control panel requires commenting out or
+          removing the following `Icon` and `Property` tags.
+        -->
+        <Icon Id='ProductICO' SourceFile='wix\assets\AWS_QLDB.ico'/>
+        <Property Id='ARPPRODUCTICON' Value='ProductICO' />
+		
+        
+        <!--
+          Adding a URL to Add/Remove Programs control panel listing for the
+          application is a two step process:
+
+          1. Uncomment the following `Property` tag with the "ARPHELPLINK" Id
+             attribute value.
+          2. Change the value for `Value` attribute of the following
+             `Property` tag to a valid URL.
+        -->
+        <!--<Property Id='ARPHELPLINK' Value='ChangeMe'/>-->
+
+        <UI>
+			<UIRef Id="WixUI_InstallDir" />
+			<UIRef Id="WixUI_ErrorProgressText" />
+		
+			<!--	
+			<UIRef Id="WixUI_Minimal" />
+			<UIRef Id="WixUI_ErrorProgressText" />
+			-->
+			
+			<!--
+			<UIRef Id="WixUI_Mondo" />
+			<UIRef Id="WixUI_ErrorProgressText" />
+			-->
+						
+			<!--
+            <UIRef Id='WixUI_FeatureTree'/>
+			<UIRef Id="WixUI_ErrorProgressText" />
+			-->          
+            <!--
+              Enabling the EULA dialog in the installer is a three step process:
+
+                1. Comment out or remove the two `Publish` tags that follow the
+                   `WixVariable` tag.
+                2. Uncomment the `<WixVariable Id='WixUILicenseRtf' Value='Path\to\Eula.rft'>` tag futher down
+                3. Replace the `Value` attribute of the `WixVariable` tag with
+                   the path to a RTF file that will be used as the EULA and
+                   displayed in the license agreement dialog.
+            
+            
+			<Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='CustomizeDlg' Order='99'>1</Publish>
+			<Publish Dialog='CustomizeDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg' Order='99'>1</Publish>
+			-->
+			
+			<Publish Dialog="WelcomeDlg" 
+				Control="Next" 
+				Event="NewDialog" 
+				Value="VerifyReadyDlg" 
+				Order="5">1</Publish>
+
+			<Publish Dialog="VerifyReadyDlg" 
+				Control="Back" 
+				Event="NewDialog" 
+				Value="WelcomeDlg" 
+				Order="5">1</Publish>
+
+        </UI>
+
+        
+        <!--
+          Enabling the EULA dialog in the installer requires uncommenting
+          the following `WixUILicenseRTF` tag and changing the `Value`
+          attribute.
+        
+        <WixVariable Id='WixUILicenseRtf' Value='AWS_Sample_EULA.rtf'/>
+        -->   
+        <!--
+          Disabling the banner in the installer requires commenting out or
+          removing the following `WixVariable` tag.
+
+          The banner BMP dimensions are 493 x 58 pixels.
+		-->
+		<WixVariable Id='WixUIBannerBmp' Value='wix\assets\AWS_Banner.png'/>
+               
+        <!--
+          Disabling the dialog image in the installer requires commenting out or
+          removing the following `WixVariable` tag.
+
+          The dialog BMP dimensions are 493 x 312 pixels.
+        -->
+        <WixVariable Id='WixUIDialogBmp' Value='wix\assets\AWS_Splash.png'/>		
+        
+    </Product>
+
+</Wix>

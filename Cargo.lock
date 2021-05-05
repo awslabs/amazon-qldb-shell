@@ -31,7 +31,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amazon_qldb_shell"
 version = "2.0.0-alpha7"
 dependencies = [
  "amazon-qldb-driver",
