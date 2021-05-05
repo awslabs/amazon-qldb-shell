@@ -1,6 +1,39 @@
 # Changelog
 
-## [2.0.0-alpha6] - [Unreleased]
+## [2.0.0-alpha7] - [Unreleased]
+
+### Added
+
+   * `\set input-mode [emacs|vi]` can now be used to toggle between Emacs/Vi keybindings
+   * Edit mode can be configured in the config file, e.g.:
+
+     ```toml
+     [ui]
+     edit_mode = "Emacs" # or Vi
+     ```
+   * Add `\set terminator-required [true|false]`
+
+### Changed
+
+  * When running without a tty, the UI changes to be quieter
+     - For example, the welcome message and CTRL-C or CTRL-D is suppressed
+     - This is useful for `echo select * from foo|qldb --ledger example`
+     - Query metrics are disabled by default
+  * Better error messages on connection fails
+
+## [2.0.0-alpha6] - 2021-04-28
+
+### Added
+
+  * Timestamps now render in `--format table`
+  * Byte arrays <= 32 bytes are rendered in `--format table`
+  * ALT/SHIFT + ENTER forces a newline
+    - on Windows the sequence is SHIFT+ENTER
+    - otherwise, ALT+ENTER (which would maximize the window on Windows)
+    
+### Changed
+
+  * User agent now includes both the driver and shell versions
 
 ## [2.0.0-alpha5] - 2021-04-23
 

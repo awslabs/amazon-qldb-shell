@@ -12,6 +12,8 @@ use crate::settings::{Config, Opt};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
+mod command;
+pub mod error;
 mod repl_helper;
 mod results;
 mod runner;
@@ -91,9 +93,9 @@ impl Deps<QldbSessionClient> {
                     ExecuteStatementOpt::SingleStatement(statement) => statement,
                     _ => todo!(),
                 };
-                ConsoleUi::new_for_script(&reader[..])?
+                ConsoleUi::new_for_script(&reader[..], env.clone())?
             }
-            None => ConsoleUi::new(env.terminator_required.value),
+            None => ConsoleUi::new(env.clone()),
         };
 
         Ok(Deps {
@@ -116,7 +118,7 @@ where
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(&env.ledger.value.clone())
+            .ledger_name(env.ledger().value.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;

@@ -1,27 +1,19 @@
-use amazon_qldb_shell::run;
+use amazon_qldb_shell::{error::ShellError, run};
 use anyhow::Result;
-use std::error::Error;
 use std::{env, process::exit};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     if let Err(e) = _main().await {
-        eprintln!("qldb shell error: {}", e);
-
-        fn recurse_source(source: Option<&dyn Error>) {
-            if let Some(err) = source {
-                eprintln!(" - caused by: {}", err);
-                recurse_source(err.source());
+        if let Some(shell) = e.downcast_ref::<ShellError>() {
+            match shell {
+                ShellError::UsageError { message, source } => handle_usage_error(message, source),
+                ShellError::Bug(message) => handle_bug(message),
             }
+        } else {
+            eprintln!("qldb shell error: {:#}", e);
         }
 
-        recurse_source(e.source());
-
-        eprintln!(
-            r#"
-The QLDB shell has encountered an unhandled error and will now exit.
-Please consider reporting this at: https://github.com/awslabs/amazon-qldb-shell/issues/new?template=bug_report.md"#
-        );
         exit(1);
     }
 }
@@ -34,4 +26,21 @@ async fn _main() -> Result<()> {
     }
 
     run().await
+}
+
+fn handle_usage_error(message: impl AsRef<str>, source: &anyhow::Error) {
+    eprintln!("usage error: {}", message.as_ref());
+
+    for error in source.chain().skip(1) {
+        eprintln!(" caused by: {}", error);
+    }
+}
+
+fn handle_bug(message: impl AsRef<str>) {
+    eprintln!("qldb shell bug: {}", message.as_ref());
+    eprintln!(
+        r#"
+The QLDB shell has encountered an unhandled error and will now exit.
+Please consider reporting this at: https://github.com/awslabs/amazon-qldb-shell/issues/new?template=bug_report.md"#
+    );
 }
