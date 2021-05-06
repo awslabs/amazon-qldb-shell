@@ -11,12 +11,18 @@ use tracing::debug;
 pub struct Config {
     pub auto_commit: Option<bool>,
     pub ui: Option<UiTomlTable>,
+    pub debug: Option<DebugSettings>,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct UiTomlTable {
     pub prompt: Option<String>,
     pub edit_mode: Option<EditMode>,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct DebugSettings {
+    pub log: Option<PathBuf>,
 }
 
 #[derive(StructOpt, Serialize, Deserialize, Clone, Debug)]

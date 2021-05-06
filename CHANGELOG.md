@@ -1,6 +1,8 @@
 # Changelog
 
-## [2.0.0-alpha7] - [Unreleased]
+## [2.0.0-alpha8] - [Unreleased]
+
+## [2.0.0-alpha7] - 2021-05-05
 
 ### Added
 
@@ -12,6 +14,10 @@
      edit_mode = "Emacs" # or Vi
      ```
    * Add `\set terminator-required [true|false]`
+   * Add `debug.log` in config files to enable logging to a file.
+     - When this is set, the `-v` flag configures how much is logged. Nothing
+       goes to stdout. This means you can use it to get lots of debugging
+       without lots of stdout noise!
 
 ### Changed
 

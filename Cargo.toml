@@ -28,6 +28,7 @@ pest = "2.1.3"
 pest_derive = "2.1.0"
 tracing = { version = "0.1.25" }
 tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
+tracing-appender = "0.1.2"
 comfy-table = "2.1.0"
 bigdecimal = "0.2.0"
 smallvec = "1.6.1"
