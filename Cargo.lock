@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#0f57681610858ead48c29ddc4ff5d59d202aed94"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#69b37dce0c750ca4bd3a473a9083d2a909d2ec26"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -37,6 +37,7 @@ dependencies = [
  "amazon-qldb-driver",
  "anyhow",
  "async-trait",
+ "atty",
  "bigdecimal",
  "chrono",
  "comfy-table",
@@ -51,12 +52,14 @@ dependencies = [
  "rustyline",
  "rustyline-derive",
  "serde",
+ "smallvec",
  "structopt",
  "tempdir",
  "thiserror",
  "tokio",
  "toml",
  "tracing",
+ "tracing-appender",
  "tracing-subscriber",
 ]
 
@@ -404,6 +407,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81156fece84ab6a9f2afdb109ce3ae577e42b1228441eded99bd77f627953b1a"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -862,9 +875,9 @@ dependencies = [
 
 [[package]]
 name = "ion-c-sys"
-version = "0.4.6"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2814b8b180136aaf6d4145a3b736cd1b79762261e3cb5fcde807ab5ea4beb377"
+checksum = "8d5be1c647863bfa7d317f11ae738cf82b1565e6f1a7900044f44377712d4487"
 dependencies = [
  "bigdecimal",
  "bindgen",
@@ -876,9 +889,9 @@ dependencies = [
 
 [[package]]
 name = "ion-rs"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbaa005065411451e3a7e6d59059577b23361bc8065bb140e03deac5e8cb325d"
+checksum = "27ac9a2b487834680826193250ec154071438d49898b8c68623606bec03ea9c9"
 dependencies = [
  "base64 0.12.3",
  "bigdecimal",
@@ -2224,6 +2237,17 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-appender"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9965507e507f12c8901432a33e31131222abac31edd90cabbcf85cf544b7127a"
+dependencies = [
+ "chrono",
+ "crossbeam-channel",
+ "tracing-subscriber",
 ]
 
 [[package]]
