@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::settings::{command_line::CommandLineOptionParser, FormatMode};
+use crate::{rusoto_driver, settings::{command_line::CommandLineOptionParser, FormatMode}};
 use crate::settings::{Config, Setter, Setting};
 
 use super::{config::EditMode, Opt};
@@ -35,7 +35,7 @@ pub(crate) struct EnvironmentInner {
 }
 
 impl Environment {
-    pub fn new(region: Region) -> Environment {
+    pub fn new() -> Environment {
         // Certain properties default differently based on whether stdin is a
         // tty or not. For example, certain messages are suppressed when running
         // `echo ... | qldb`.
@@ -96,7 +96,7 @@ impl Environment {
                     name: "region".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: region,
+                    value: Region::default(),
                 },
                 show_query_metrics: Setting {
                     name: "show_query_metrics".to_string(),
@@ -171,7 +171,7 @@ impl Environment {
         inner.profile.clone()
     }
 
-    pub(crate) fn qldb_session_endpoint(&self) -> Setting<Option<String>> {
+    fn _qldb_session_endpoint(&self) -> Setting<Option<String>> {
         let inner = self.inner.lock().unwrap();
         inner.qldb_session_endpoint.clone()
     }
@@ -232,6 +232,10 @@ impl EnvironmentInner {
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
+        self.region.apply_value(
+            &rusoto_driver::rusoto_region(opt.region.clone(), opt.qldb_session_endpoint.clone())?,
+            Setter::CommandLine);
+
         self.terminator_required
             .apply_value(&opt.terminator_required, Setter::CommandLine);
 
