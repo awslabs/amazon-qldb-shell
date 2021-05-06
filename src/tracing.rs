@@ -11,8 +11,8 @@ use tracing_appender::{
 };
 use tracing_subscriber::{
     fmt::{self, MakeWriter},
-    layer::SubscriberExt,
-    EnvFilter,
+    prelude::*,
+    EnvFilter, Registry,
 };
 
 use crate::{
@@ -32,43 +32,29 @@ pub(crate) fn configure(opt: &Opt, env: &Environment) -> Result<Option<WorkerGua
         .add_directive("rustyline=off".parse()?)
         .add_directive(level.parse()?);
 
-    let mut file_writer = FileWriter::new(env.log_file().value)?;
-    let guard = file_writer.take_guard();
+    let mut writer = ShellWriter::new(env.log_file().value)?;
+    let guard = writer.take_guard();
 
-    let subscriber = fmt::Subscriber::builder().with_env_filter(filter);
-
-    // FIXME: Remove duplication caused by generics.
-    if opt.verbose == 3 {
-        let subscriber = subscriber
-            .pretty()
-            .finish()
-            .with(fmt::Layer::default().with_writer(std::io::stdout))
-            .with(fmt::Layer::default().with_writer(file_writer));
-        subscriber::set_global_default(subscriber)?;
-    } else {
-        let subscriber = subscriber
-            .compact()
-            .finish()
-            .with(fmt::Layer::default().with_writer(std::io::stdout))
-            .with(fmt::Layer::default().with_writer(file_writer));
-        subscriber::set_global_default(subscriber)?;
-    };
+    let subscriber = Registry::default()
+        .with(filter)
+        .with(fmt::Layer::default().with_writer(writer));
+    subscriber::set_global_default(subscriber)?;
 
     Ok(guard)
 }
 
-enum FileWriter {
-    Disabled,
-    Enabled {
+enum ShellWriter {
+    Stdout(io::Stdout),
+    FileWriter {
         non_blocking: NonBlocking,
         guard: Option<WorkerGuard>,
     },
 }
 
-impl FileWriter {
-    fn new(p: Option<impl AsRef<Path>>) -> Result<FileWriter> {
+impl ShellWriter {
+    fn new(p: Option<impl AsRef<Path>>) -> Result<ShellWriter> {
         Ok(match p {
-            None => FileWriter::Disabled,
+            None => ShellWriter::Stdout(io::stdout()),
             Some(p) => {
                 let p = p.as_ref();
                 let dirname = p.parent().ok_or(error::usage_error(
@@ -81,7 +67,7 @@ impl FileWriter {
                 ))?;
                 let file_appender = rolling::hourly(dirname, prefix);
                 let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-                FileWriter::Enabled {
+                ShellWriter::FileWriter {
                     non_blocking,
                     guard: Some(guard),
                 }
@@ -91,17 +77,17 @@ impl FileWriter {
 
     fn take_guard(&mut self) -> Option<WorkerGuard> {
         match self {
-            FileWriter::Disabled => None,
-            FileWriter::Enabled { guard, .. } => guard.take(),
+            ShellWriter::Stdout(_) => None,
+            ShellWriter::FileWriter { guard, .. } => guard.take(),
         }
     }
 }
 
-impl Write for FileWriter {
+impl Write for ShellWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match self {
-            FileWriter::Disabled => Ok(buf.len()),
-            FileWriter::Enabled {
+            ShellWriter::Stdout(stdout) => stdout.write(buf),
+            ShellWriter::FileWriter {
                 non_blocking: inner,
                 ..
             } => inner.write(buf),
@@ -110,8 +96,8 @@ impl Write for FileWriter {
 
     fn flush(&mut self) -> io::Result<()> {
         match self {
-            FileWriter::Disabled => Ok(()),
-            FileWriter::Enabled {
+            ShellWriter::Stdout(stdout) => stdout.flush(),
+            ShellWriter::FileWriter {
                 non_blocking: inner,
                 ..
             } => inner.flush(),
@@ -121,8 +107,8 @@ impl Write for FileWriter {
     #[inline]
     fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
         match self {
-            FileWriter::Disabled => Ok(()),
-            FileWriter::Enabled {
+            ShellWriter::Stdout(stdout) => stdout.write_all(buf),
+            ShellWriter::FileWriter {
                 non_blocking: inner,
                 ..
             } => inner.write_all(buf),
@@ -130,11 +116,11 @@ impl Write for FileWriter {
     }
 }
 
-impl Clone for FileWriter {
+impl Clone for ShellWriter {
     fn clone(&self) -> Self {
         match self {
-            FileWriter::Disabled => FileWriter::Disabled,
-            FileWriter::Enabled { non_blocking, .. } => FileWriter::Enabled {
+            ShellWriter::Stdout(_) => ShellWriter::Stdout(io::stdout()),
+            ShellWriter::FileWriter { non_blocking, .. } => ShellWriter::FileWriter {
                 non_blocking: non_blocking.clone(),
                 guard: None,
             },
@@ -142,8 +128,8 @@ impl Clone for FileWriter {
     }
 }
 
-impl MakeWriter for FileWriter {
-    type Writer = FileWriter;
+impl MakeWriter for ShellWriter {
+    type Writer = ShellWriter;
 
     fn make_writer(&self) -> Self::Writer {
         self.clone()

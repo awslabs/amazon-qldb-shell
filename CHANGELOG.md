@@ -13,6 +13,9 @@
      ```
    * Add `\set terminator-required [true|false]`
    * Add `debug.log` in config files to enable logging to a file.
+     - When this is set, the `-v` flag configures how much is logged. Nothing
+       goes to stdout. This means you can use it to get lots of debugging
+       without lots of stdout noise!
 
 ### Changed
 
