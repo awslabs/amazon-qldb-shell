@@ -6,8 +6,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{rusoto_driver, settings::{command_line::CommandLineOptionParser, FormatMode}};
 use crate::settings::{Config, Setter, Setting};
+use crate::{
+    rusoto_driver,
+    settings::{command_line::CommandLineOptionParser, FormatMode},
+};
 
 use super::{config::EditMode, Opt};
 
@@ -232,9 +235,15 @@ impl EnvironmentInner {
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
-        self.region.apply_value(
-            &rusoto_driver::rusoto_region(opt.region.clone(), opt.qldb_session_endpoint.clone())?,
-            Setter::CommandLine);
+
+        // Conditional to avoid changing the setter unnecessarily
+        if opt.region.is_some() {
+            let region = rusoto_driver::rusoto_region(
+                opt.region.clone(),
+                opt.qldb_session_endpoint.clone(),
+            )?;
+            self.region.apply_value(&region, Setter::CommandLine);
+        }
 
         self.terminator_required
             .apply_value(&opt.terminator_required, Setter::CommandLine);
