@@ -30,7 +30,8 @@
 <?endif ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-
+	# This file includes the variable for the semantic version
+	<?include $(sys.CURRENTDIR)Includes\wixvariables.wxi ?>
     <Product
         Id='*'
         Name='Amazon QLDB Shell'
@@ -38,7 +39,7 @@
         Manufacturer='Amazon Web Services' 
         Language='1033'
         Codepage='1252'
-        Version='$(var.Version)'>
+        Version='$(var.semanticversion)'>
 
         <Package Id='*'
             Keywords='Installer'

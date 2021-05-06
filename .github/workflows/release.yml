@@ -119,7 +119,7 @@ jobs:
           $semantic = 'semantic' + $version.Matches[0].Value + '"'
           
           # write the semantic version in the wix variable file
-          Set-Content -Path ./WixVar.variable $semantic
+          Set-Content -Path ./wixvariables.wxi '<?xml version="1.0" encoding="utf-8"?> <Include>   <?define ' + $semantic + ' ?> </Include>'
           
           # Create MSI based on target/wix/main.wxs
           cargo wix --nocapture
