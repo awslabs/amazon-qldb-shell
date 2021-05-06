@@ -1,137 +1,75 @@
-use std::{
-    io::{self, Write},
-    path::Path,
-};
-
 use anyhow::{anyhow, Result};
 use tracing::subscriber;
-use tracing_appender::{
-    non_blocking::{NonBlocking, WorkerGuard},
-    rolling,
-};
-use tracing_subscriber::{
-    fmt::{self, MakeWriter},
-    prelude::*,
-    EnvFilter, Registry,
-};
+use tracing_appender::{non_blocking::WorkerGuard, rolling};
+use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
 
 use crate::{
     error,
     settings::{Environment, Opt},
 };
 
+/// Configures tracing.
+///
+/// By default, tracing writes to stdout using the `fmt` subscriber which
+/// produces log-like output. The CLI supports a repeting `--verbose` flag to
+/// change the filter level from error .. trace (achieved with `-vvv`).
+///
+/// If logging is enabled (via `debug.log` in config files), all events (no
+/// filter) will be written to an hourly file in [bunyan][bunyan] format. You
+/// can then use the CLI to work with the data.
+///
+/// When logging is enabled, no events are written to stdout. This is because to
+/// get useful logs we need a debug/trace level filter. At that level, stdout is
+/// far too noisy. It would be great if we could decouple filtering in the
+/// stdout vs file writer, but this is not yet supported in tracing
+/// (https://github.com/tokio-rs/tracing/issues/302).
+///
+/// [bunyan]: https://www.npmjs.com/package/bunyan#cli-usage
 pub(crate) fn configure(opt: &Opt, env: &Environment) -> Result<Option<WorkerGuard>> {
-    let level = match opt.verbose {
-        0 => "error",
-        1 => "info",
-        2 => "debug",
-        _ => "trace",
+    let (non_blocking, guard) = match env.log_file().value {
+        Some(path) => {
+            let dirname = path.parent().ok_or(error::usage_error(
+                format!("{} is not in a directory", path.display()),
+                anyhow!("file logging was enabled"),
+            ))?;
+            let prefix = path.file_name().ok_or(error::usage_error(
+                format!("{} does not have a filename", path.display()),
+                anyhow!("file logging was enabled"),
+            ))?;
+            let file_appender = rolling::hourly(dirname, prefix);
+            let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+            (Some(non_blocking), Some(guard))
+        }
+        None => (None, None),
     };
 
-    let filter = EnvFilter::from_default_env()
-        .add_directive("rustyline=off".parse()?)
-        .add_directive(level.parse()?);
+    match non_blocking {
+        Some(non_blocking) => {
+            let formatting_layer = BunyanFormattingLayer::new("qldb".into(), non_blocking);
+            let subscriber = Registry::default()
+                .with(JsonStorageLayer)
+                .with(formatting_layer);
 
-    let mut writer = ShellWriter::new(env.log_file().value)?;
-    let guard = writer.take_guard();
+            subscriber::set_global_default(subscriber)?;
+        }
+        None => {
+            let level = match opt.verbose {
+                0 => "error",
+                1 => "info",
+                2 => "debug",
+                _ => "trace",
+            };
 
-    let subscriber = Registry::default()
-        .with(filter)
-        .with(fmt::Layer::default().with_writer(writer));
-    subscriber::set_global_default(subscriber)?;
+            let filter = EnvFilter::from_default_env()
+                .add_directive("rustyline=off".parse()?)
+                .add_directive(level.parse()?);
+
+            let subscriber = fmt::Subscriber::builder().with_env_filter(filter).finish();
+
+            subscriber::set_global_default(subscriber)?;
+        }
+    };
 
     Ok(guard)
-}
-
-enum ShellWriter {
-    Stdout(io::Stdout),
-    FileWriter {
-        non_blocking: NonBlocking,
-        guard: Option<WorkerGuard>,
-    },
-}
-
-impl ShellWriter {
-    fn new(p: Option<impl AsRef<Path>>) -> Result<ShellWriter> {
-        Ok(match p {
-            None => ShellWriter::Stdout(io::stdout()),
-            Some(p) => {
-                let p = p.as_ref();
-                let dirname = p.parent().ok_or(error::usage_error(
-                    format!("{} is not in a directory", p.display()),
-                    anyhow!("file logging was enabled"),
-                ))?;
-                let prefix = p.file_name().ok_or(error::usage_error(
-                    format!("{} does not have a filename", p.display()),
-                    anyhow!("file logging was enabled"),
-                ))?;
-                let file_appender = rolling::hourly(dirname, prefix);
-                let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-                ShellWriter::FileWriter {
-                    non_blocking,
-                    guard: Some(guard),
-                }
-            }
-        })
-    }
-
-    fn take_guard(&mut self) -> Option<WorkerGuard> {
-        match self {
-            ShellWriter::Stdout(_) => None,
-            ShellWriter::FileWriter { guard, .. } => guard.take(),
-        }
-    }
-}
-
-impl Write for ShellWriter {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match self {
-            ShellWriter::Stdout(stdout) => stdout.write(buf),
-            ShellWriter::FileWriter {
-                non_blocking: inner,
-                ..
-            } => inner.write(buf),
-        }
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        match self {
-            ShellWriter::Stdout(stdout) => stdout.flush(),
-            ShellWriter::FileWriter {
-                non_blocking: inner,
-                ..
-            } => inner.flush(),
-        }
-    }
-
-    #[inline]
-    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
-        match self {
-            ShellWriter::Stdout(stdout) => stdout.write_all(buf),
-            ShellWriter::FileWriter {
-                non_blocking: inner,
-                ..
-            } => inner.write_all(buf),
-        }
-    }
-}
-
-impl Clone for ShellWriter {
-    fn clone(&self) -> Self {
-        match self {
-            ShellWriter::Stdout(_) => ShellWriter::Stdout(io::stdout()),
-            ShellWriter::FileWriter { non_blocking, .. } => ShellWriter::FileWriter {
-                non_blocking: non_blocking.clone(),
-                guard: None,
-            },
-        }
-    }
-}
-
-impl MakeWriter for ShellWriter {
-    type Writer = ShellWriter;
-
-    fn make_writer(&self) -> Self::Writer {
-        self.clone()
-    }
 }

@@ -9,6 +9,10 @@
         - $REGION: the name of the AWS region
         - $LEDGER: the name of the ledger
         - $ACTIVE_TRANSACTION: the string " *" if a transaction is open
+        
+### Changed
+  
+  * File logging now uses bunyan at maximum log level. 
 
 ## [2.0.0-alpha7] - 2021-05-05
 
