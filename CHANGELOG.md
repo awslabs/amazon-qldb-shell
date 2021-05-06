@@ -2,6 +2,14 @@
 
 ## [2.0.0-alpha8] - [Unreleased]
 
+### Added
+  
+  * The prompt can now be customed with `ui.prompt` in the config file.
+    - The following values can be interpolated:
+        - $REGION: the name of the AWS region
+        - $LEDGER: the name of the ledger
+        - $ACTIVE_TRANSACTION: the string " *" if a transaction is open
+
 ## [2.0.0-alpha7] - 2021-05-05
 
 ### Added

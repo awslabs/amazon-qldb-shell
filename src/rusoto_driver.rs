@@ -63,7 +63,7 @@ The following error chain may have more information:
 
 async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
     let provider = profile_provider(&env)?;
-    let region = rusoto_region(&env)?;
+    let region = env.region().value;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Chain(ChainProvider::new()),
@@ -115,22 +115,32 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-fn rusoto_region(env: &Environment) -> Result<Region> {
-    let it = match (env.region().value, env.qldb_session_endpoint().value) {
+pub fn rusoto_region<S>(user_specified: Option<S>, custom_endpoint: Option<S>) -> Result<Region>
+where
+    S: Into<String>,
+{
+    let it = match (user_specified, custom_endpoint) {
         (Some(r), Some(e)) => Region::Custom {
-            name: r,
-            endpoint: e,
+            name: r.into(),
+            endpoint: e.into(),
         },
-        (Some(r), None) => match Region::from_str(&r) {
-            Ok(it) => it,
-            Err(e) => Err(error::usage_error(format!("Invalid region {}", r), e))?,
-        },
+        (Some(r), None) => parse_region(r.into())?,
         (None, Some(e)) => Region::Custom {
             name: Region::default().name().to_owned(),
-            endpoint: e,
+            endpoint: e.into(),
         },
         (None, None) => Region::default(),
     };
 
     Ok(it)
+}
+
+pub fn parse_region(r: impl AsRef<str>) -> Result<Region> {
+    Ok(match Region::from_str(r.as_ref()) {
+        Ok(it) => it,
+        Err(e) => Err(error::usage_error(
+            format!("Invalid region {}", r.as_ref()),
+            e,
+        ))?,
+    })
 }

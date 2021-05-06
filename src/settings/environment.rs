@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use rusoto_core::Region;
 use std::{
     fmt,
     path::PathBuf,
@@ -26,7 +27,7 @@ pub(crate) struct EnvironmentInner {
     prompt: Setting<String>,
     profile: Setting<Option<String>>,
     qldb_session_endpoint: Setting<Option<String>>,
-    region: Setting<Option<String>>,
+    region: Setting<Region>,
     show_query_metrics: Setting<bool>,
     pub(crate) terminator_required: Setting<bool>,
     pub(crate) edit_mode: Setting<EditMode>,
@@ -34,7 +35,7 @@ pub(crate) struct EnvironmentInner {
 }
 
 impl Environment {
-    pub fn new() -> Environment {
+    pub fn new(region: Region) -> Environment {
         // Certain properties default differently based on whether stdin is a
         // tty or not. For example, certain messages are suppressed when running
         // `echo ... | qldb`.
@@ -77,7 +78,7 @@ impl Environment {
                     name: "prompt".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: "qldb>".to_string(),
+                    value: "qldb$ACTIVE_TRANSACTION> ".to_string(),
                 },
                 profile: Setting {
                     name: "profile".to_string(),
@@ -95,7 +96,7 @@ impl Environment {
                     name: "region".to_string(),
                     modified: false,
                     setter: Setter::Environment,
-                    value: None,
+                    value: region,
                 },
                 show_query_metrics: Setting {
                     name: "show_query_metrics".to_string(),
@@ -175,7 +176,7 @@ impl Environment {
         inner.qldb_session_endpoint.clone()
     }
 
-    pub(crate) fn region(&self) -> Setting<Option<String>> {
+    pub(crate) fn region(&self) -> Setting<Region> {
         let inner = self.inner.lock().unwrap();
         inner.region.clone()
     }
@@ -231,7 +232,6 @@ impl EnvironmentInner {
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
-        self.region.apply_opt(&opt.region, Setter::CommandLine);
         self.terminator_required
             .apply_value(&opt.terminator_required, Setter::CommandLine);
 

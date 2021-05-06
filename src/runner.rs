@@ -62,10 +62,17 @@ fn is_special_command(line: &str) -> bool {
 }
 
 fn create_prompt(env: &Environment, transaction_active: bool) -> String {
-     match transaction_active {
-            false => format!("{} ",env.prompt().value),
-            true => format!("qldb *> "),
-        }
+    env.prompt()
+        .value
+        .replace("$REGION", &env.region().value.name()[..])
+        .replace("$LEDGER", &env.ledger().value[..])
+        .replace(
+            "$ACTIVE_TRANSACTION",
+            match transaction_active {
+                true => " *",
+                false => "",
+            },
+        )
 }
 
 impl<C> Runner<C>
@@ -94,7 +101,10 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
     #[instrument]
     pub(crate) async fn tick(&mut self) -> Result<TickFlow> {
-        self.deps.ui.set_prompt(create_prompt(&self.deps.env, self.current_transaction.is_some()));
+        self.deps.ui.set_prompt(create_prompt(
+            &self.deps.env,
+            self.current_transaction.is_some(),
+        ));
 
         let user_input = self.deps.ui.user_input();
         Ok(match user_input {

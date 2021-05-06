@@ -28,7 +28,12 @@ pub async fn run() -> Result<()> {
         None => Config::load_default()?,
         Some(ref path) => Config::load(path)?,
     };
-    let mut env = Environment::new();
+
+    // FIXME: Not quite right because it doesn't use the environment
+    // modification code paths..
+    let region =
+        rusoto_driver::rusoto_region(opt.region.clone(), opt.qldb_session_endpoint.clone())?;
+    let mut env = Environment::new(region);
     env.apply_config(&config);
     env.apply_cli(&opt)?;
 
@@ -125,6 +130,7 @@ mod tests {
     use crate::ui::testing::*;
     use anyhow::Result;
     use async_trait::async_trait;
+    use rusoto_core::Region;
     use rusoto_qldb_session::*;
 
     // TODO: Find something better.
@@ -160,7 +166,7 @@ mod tests {
         let client = TodoClient {};
         let ui = TestUi::default();
 
-        let mut env = Environment::new();
+        let mut env = Environment::new(Region::default());
         env.apply_cli(&opt)?;
         let mut runner = Runner {
             deps: Deps::new_with(env, client, ui.clone()).await?,
