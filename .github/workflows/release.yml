@@ -99,7 +99,7 @@ jobs:
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
       - name: MSI
-        shell: bash
+        shell: powershell
         if: matrix.os == 'windows-latest'
         run: |        
           name=qldb
@@ -111,7 +111,16 @@ jobs:
           
           # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
-                      
+          
+          # read the shell version from the cargo.toml file
+          $version = Get-Content .\Cargo.toml | Select-String -Pattern '^version\s*=\s*\"\d*\.\d*\.\d*'
+          
+          # convert $version to semantic version (removing characters at the end)
+          $semantic = 'semantic' + $version.Matches[0].Value + '"'
+          
+          # write the semantic version in the wix variable file
+          Set-Content -Path ./WixVar.variable $semantic
+          
           # Create MSI based on target/wix/main.wxs
           cargo wix --nocapture
           
