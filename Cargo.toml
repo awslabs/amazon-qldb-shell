@@ -1,6 +1,6 @@
 [package]
 name = "amazon_qldb_shell"
-version = "2.0.0"
+version = "2.0.0-alpha8"
 authors = ["Amazon Web Services"]
 edition = "2018"
 
@@ -37,3 +37,8 @@ tempdir = "0.3"
 [[bin]]
 name = "qldb"
 path = "src/main.rs"
+
+[package.metadata.wix]
+# This will be the MSI friendly version instead of the version in the [package] section.
+# Please update this according to the version in the [package] section, but without the alphabetic characters.
+version = "2.0.0"
