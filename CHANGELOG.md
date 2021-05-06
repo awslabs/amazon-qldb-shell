@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0-alpha7] - [Unreleased]
+## [2.0.0-alpha7] - 2021-05-05
 
 ### Added
 
