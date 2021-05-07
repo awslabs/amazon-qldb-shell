@@ -111,7 +111,7 @@ jobs:
           
           # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
-                      
+
           # Create MSI based on target/wix/main.wxs
           cargo wix --nocapture
           
