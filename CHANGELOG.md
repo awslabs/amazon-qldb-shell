@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0-alpha9] - [Unreleased]
+## [2.0.0-alpha9] - 2021-05-06
 
 ### Changed
 
