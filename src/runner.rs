@@ -5,11 +5,8 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
 use tracing::instrument;
 
-use crate::{
-    command,
-    settings::{Environment, ExecuteStatementOpt},
-};
-use crate::{settings::Setter, transaction::ShellTransaction};
+use crate::settings::{Environment, ExecuteStatementOpt};
+use crate::transaction::ShellTransaction;
 use crate::{Deps, QldbShellError};
 
 pub(crate) enum ProgramFlow {
@@ -66,14 +63,12 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
-        if self.deps.env.display_welcome().value {
-            self.deps.ui.println(
-                r#"Welcome to the Amazon QLDB Shell!
+        self.deps.ui.println(
+            r#"Welcome to the Amazon QLDB Shell!
 
 To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
 When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
-            );
-        }
+        );
 
         loop {
             match self.tick().await {
@@ -91,7 +86,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             None => self
                 .deps
                 .ui
-                .set_prompt(format!("{} ", self.deps.env.prompt().value)),
+                .set_prompt(format!("{} ", self.deps.env.prompt.value)),
             Some(_) => self.deps.ui.set_prompt(format!("qldb *> ")),
         }
 
@@ -111,26 +106,20 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                     }
                 }
             }
-            Err(err) => match err.downcast::<ReadlineError>() {
-                Ok(ReadlineError::Interrupted) => {
-                    if self.deps.env.display_ctrl_signals().value {
-                        self.deps.ui.println("CTRL-C");
-                    }
-                    TickFlow::Again
-                }
-                Ok(ReadlineError::Eof) => self.handle_break().await?,
-                err => {
-                    self.deps.ui.warn(&format!("Error: {:?}", err));
-                    TickFlow::Exit
-                }
-            },
+            Err(ReadlineError::Interrupted) => {
+                self.deps.ui.println("CTRL-C");
+                TickFlow::Again
+            }
+            Err(ReadlineError::Eof) => self.handle_break().await?,
+            Err(err) => {
+                self.deps.ui.warn(&format!("Error: {:?}", err));
+                TickFlow::Exit
+            }
         })
     }
 
     pub(crate) async fn handle_break(&mut self) -> Result<TickFlow> {
-        if self.deps.env.display_ctrl_signals().value {
-            self.deps.ui.println("CTRL-D");
-        }
+        self.deps.ui.println("CTRL-D");
         Ok(if let Some(_) = self.current_transaction {
             self.handle_abort().await?;
             TickFlow::Again
@@ -153,45 +142,14 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
             "use" => return Ok(TickFlow::Restart), // TODO: implement
-            _ => self.handle_complex_command(line)?,
+            _ => Err(QldbShellError::UnknownCommand)?,
         }
 
         Ok(TickFlow::Again)
     }
 
-    pub(crate) fn handle_complex_command(&mut self, line: &str) -> Result<()> {
-        let iter = line.split_ascii_whitespace();
-        let backslash = match command::backslash(iter) {
-            Ok(b) => b,
-            Err(_) => Err(QldbShellError::UnknownCommand)?,
-        };
-
-        if let command::Backslash::Set(set) = backslash {
-            // FIXME: Hack
-            let mut inner = self.deps.env.inner.lock().unwrap();
-            match set {
-                command::SetCommand::EditMode(ref mode) => {
-                    inner.edit_mode.apply_value(mode, Setter::Environment)
-                }
-                command::SetCommand::TerminatorRequired(ref tf) => {
-                    inner.terminator_required.apply_value(
-                        &match tf {
-                            command::TrueFalse::True => true,
-                            command::TrueFalse::False => false,
-                        },
-                        Setter::Environment,
-                    )
-                }
-            }
-            drop(inner); // FIXME: end hack
-            self.deps.ui.handle_env_set(&set)?;
-        }
-
-        Ok(())
-    }
-
     pub(crate) fn handle_env(&self) {
-        self.deps.ui.println(&format!("{}", self.deps.env));
+        self.deps.ui.println(&format!("{:#?}", self.deps.env));
     }
 
     pub(crate) async fn handle_show_tables(&self) -> Result<()> {

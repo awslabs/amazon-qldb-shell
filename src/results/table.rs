@@ -3,15 +3,14 @@ use amazon_qldb_driver::transaction::StatementResults;
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
 use comfy_table::Table;
-use ion_c_sys::timestamp::IonDateTime;
 use ion_rs::value::*;
 use ion_rs::value::{
     loader::{loader, Loader},
     owned::OwnedElement,
 };
 use ion_rs::IonType;
+use std::collections::HashSet;
 use std::convert::TryFrom;
-use std::{collections::HashSet, convert::TryInto};
 
 pub(crate) fn display_results_table(results: &StatementResults, ui: &Box<dyn Ui>) -> Result<()> {
     let loader = loader();
@@ -122,28 +121,15 @@ fn format_element_for_cell(elem: Option<&OwnedElement>) -> Result<String> {
             let decimal = elem.as_decimal().unwrap();
             match BigDecimal::try_from(decimal.clone()) {
                 Ok(big) => format!("{}", big),
-                Err(_) => format!("-0"),
+                Err(()) => format!("-0"),
             }
         }
-        IonType::Timestamp => {
-            let ts = elem.as_timestamp().unwrap().clone();
-            let ct: IonDateTime = ts.try_into()?;
-            ct.as_datetime().to_rfc3339()
-        }
+        IonType::Timestamp => Err(anyhow!("timestamps are not yet supported"))?,
         IonType::Symbol => elem.as_sym().unwrap().text().unwrap().to_string(),
         IonType::String => elem.as_str().unwrap().to_string(),
         IonType::Clob | IonType::Blob => {
             let bytes = elem.as_bytes().unwrap();
-            // 32 is a somewhat random number, but also happens to be the length
-            // of a QldbHash (e.g. the result of `select metadata.hash from
-            // _ql_committed_foo`). If you pick a number < 32, we won't render
-            // QldbHashes (which is a shame). Too wide, and tables aren't
-            // practically useful since they won't fit on a screen.
-            if bytes.len() <= 32 {
-                format!("{:02X?}", bytes)
-            } else {
-                format!("{} bytes", bytes.len())
-            }
+            format!("{} bytes", bytes.len())
         }
         IonType::List | IonType::SExpression => {
             let seq = elem.as_sequence().unwrap();

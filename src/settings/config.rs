@@ -3,32 +3,18 @@ use dirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 use toml;
 use tracing::debug;
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Config {
     pub auto_commit: Option<bool>,
     pub ui: Option<UiTomlTable>,
-    pub debug: Option<DebugSettings>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct UiTomlTable {
     pub prompt: Option<String>,
-    pub edit_mode: Option<EditMode>,
-}
-
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct DebugSettings {
-    pub log: Option<PathBuf>,
-}
-
-#[derive(StructOpt, Serialize, Deserialize, Clone, Debug)]
-pub enum EditMode {
-    Emacs,
-    Vi,
 }
 
 impl Config {
@@ -56,10 +42,6 @@ impl Config {
             );
             Ok(Config::default())
         } else {
-            debug!(
-                path = config_file.display().to_string().as_str(),
-                "Loading config"
-            );
             Config::load(&config_file)
         }
     }

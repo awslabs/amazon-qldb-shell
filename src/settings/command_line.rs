@@ -48,7 +48,7 @@ pub struct Opt {
     pub terminator_required: bool,
 
     #[structopt(long = "--no-query-metrics")]
-    pub no_query_metrics: Option<bool>,
+    pub no_query_metrics: bool,
 }
 
 #[derive(Debug, Clone)]

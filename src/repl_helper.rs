@@ -14,8 +14,6 @@ use std::{
     fmt::Display,
 };
 
-use crate::settings::Environment;
-
 #[derive(Helper)]
 pub(crate) struct QldbHelper {
     completer: FilenameCompleter,
@@ -25,11 +23,11 @@ pub(crate) struct QldbHelper {
 }
 
 impl QldbHelper {
-    pub fn new(environment: Environment) -> QldbHelper {
+    pub fn new(terminator_required: bool) -> QldbHelper {
         QldbHelper {
             completer: FilenameCompleter::new(),
             highlighter: MatchingBracketHighlighter::new(),
-            validator: InputValidator::new(environment),
+            validator: InputValidator::new(terminator_required),
             hinter: (),
         }
     }
@@ -102,18 +100,20 @@ impl Validator for QldbHelper {
 /// Mostly MatchingBracketHighlighter but with support for PartiQL bags. This
 /// allows, primarily, for multi-line input of bags.
 struct InputValidator {
-    environment: Environment,
+    terminator_required: bool,
 }
 
 impl InputValidator {
-    fn new(environment: Environment) -> InputValidator {
-        InputValidator { environment }
+    fn new(terminator_required: bool) -> InputValidator {
+        InputValidator {
+            terminator_required,
+        }
     }
 }
 
 impl Validator for InputValidator {
     fn validate(&self, ctx: &mut ValidationContext) -> RustylineResult<ValidationResult> {
-        if self.environment.terminator_required().value {
+        if self.terminator_required {
             if !ctx.input().ends_with(";") {
                 return Ok(ValidationResult::Incomplete);
             }

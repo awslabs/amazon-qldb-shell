@@ -5,25 +5,24 @@ use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use settings::{Environment, ExecuteStatementOpt};
 use structopt::StructOpt;
 use thiserror::Error;
+use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
 
 use crate::runner::Runner;
 use crate::settings::{Config, Opt};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
-mod command;
-pub mod error;
 mod repl_helper;
 mod results;
 mod runner;
 mod rusoto_driver;
 mod settings;
-mod tracing;
 mod transaction;
 mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
+    configure_tracing(&opt)?;
     let config = match opt.config {
         None => Config::load_default()?,
         Some(ref path) => Config::load(path)?,
@@ -31,11 +30,6 @@ pub async fn run() -> Result<()> {
     let mut env = Environment::new();
     env.apply_config(&config);
     env.apply_cli(&opt)?;
-
-    // FIXME:
-    // 1. Decouple tracing from Opt
-    // 2. Enable debugging of config load fails (which can't use tracing)
-    let _guard = tracing::configure(&opt, &env)?;
 
     //loop {
     rusoto_driver::health_check_start_session(&env).await?;
@@ -46,6 +40,31 @@ pub async fn run() -> Result<()> {
         unreachable!() // Restart not yet implemented
     }
     //}
+}
+
+fn configure_tracing(opt: &Opt) -> Result<()> {
+    let subscriber = SubscriberBuilder::default();
+
+    let level = match opt.verbose {
+        0 => "error",
+        1 => "info",
+        2 => "debug",
+        _ => "trace",
+    };
+
+    let filter = EnvFilter::from_default_env()
+        .add_directive("rustyline=off".parse()?)
+        .add_directive(level.parse()?);
+
+    let subscriber = subscriber.with_env_filter(filter);
+
+    if opt.verbose == 3 {
+        subscriber.pretty().init()
+    } else {
+        subscriber.compact().init()
+    };
+
+    Ok(())
 }
 
 struct Deps<C: QldbSession>
@@ -72,9 +91,9 @@ impl Deps<QldbSessionClient> {
                     ExecuteStatementOpt::SingleStatement(statement) => statement,
                     _ => todo!(),
                 };
-                ConsoleUi::new_for_script(&reader[..], env.clone())?
+                ConsoleUi::new_for_script(&reader[..])?
             }
-            None => ConsoleUi::new(env.clone()),
+            None => ConsoleUi::new(env.terminator_required.value),
         };
 
         Ok(Deps {
@@ -97,7 +116,7 @@ where
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(env.ledger().value.clone())
+            .ledger_name(&env.ledger.value.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;

@@ -1,4 +1,3 @@
-use crate::error;
 use crate::settings::Environment;
 use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
@@ -10,9 +9,15 @@ use rusoto_core::{
 };
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
+use tracing::warn;
 
 pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
-    let client = build_rusoto_client(env).await?;
+    let provider = profile_provider(&env)?;
+    let region = rusoto_region(&env)?;
+    let creds = match provider {
+        Some(p) => CredentialProvider::Profile(p),
+        None => CredentialProvider::Chain(ChainProvider::new()),
+    };
 
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
@@ -20,9 +25,11 @@ pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionCli
     // again, as individual statements may be derived from values seen from
     // yet other statements.
     QldbDriverBuilder::new()
-        .ledger_name(env.ledger().value)
+        .ledger_name(&env.ledger.value)
+        .region(region)
+        .credentials_provider(creds)
         .transaction_retry_policy(retry::never())
-        .build_with_client(client)
+        .build()
         .await
 }
 
@@ -33,30 +40,11 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> 
     session_client
         .send_command(SendCommandRequest {
             start_session: Some(StartSessionRequest {
-                ledger_name: env.ledger().value,
+                ledger_name: env.ledger.value.clone(),
             }),
             ..Default::default()
         })
-        .await
-        .map_err(|e| {
-            error::usage_error(
-                format!(
-                    r#"Unable to connect to ledger `{}`.
-
-Please check the following:
-
-- That you have specified a ledger that exists and is active
-- That the AWS region you are targeting is correct
-- That your AWS credentials are setup
-- That your AWS credentials grant access on this ledger
-
-The following error chain may have more information:
-"#,
-                    env.ledger().value
-                ),
-                e,
-            )
-        })?;
+        .await?;
 
     Ok(())
 }
@@ -71,8 +59,7 @@ async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
 
     let mut hyper = HttpClient::new()?;
     hyper.local_agent(format!(
-        "QLDB Driver for Rust v{}/QLDB Shell for Rust v{}",
-        amazon_qldb_driver::version(),
+        "QLDB Driver for Rust v{}",
         env!("CARGO_PKG_VERSION")
     ));
 
@@ -101,10 +88,9 @@ impl ProvideAwsCredentials for CredentialProvider {
 }
 
 fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
-    let it = match env.profile().value {
+    let it = match &env.profile.value {
         Some(p) => {
-            let mut prof = ProfileProvider::new()
-                .map_err(|e| error::usage_error("Unable to create profile provider", e))?;
+            let mut prof = ProfileProvider::new()?;
             prof.set_profile(p);
             Some(prof)
         }
@@ -116,18 +102,21 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 
 // FIXME: Default region should consider what is set in the Profile.
 fn rusoto_region(env: &Environment) -> Result<Region> {
-    let it = match (env.region().value, env.qldb_session_endpoint().value) {
+    let it = match (&env.region.value, &env.qldb_session_endpoint.value) {
         (Some(r), Some(e)) => Region::Custom {
-            name: r,
-            endpoint: e,
+            name: r.to_owned(),
+            endpoint: e.to_owned(),
         },
         (Some(r), None) => match Region::from_str(&r) {
             Ok(it) => it,
-            Err(e) => Err(error::usage_error(format!("Invalid region {}", r), e))?,
+            Err(e) => {
+                warn!("Unknown region {}: {}. If you know the endpoint, you can specify it and try again.", r, e);
+                return Err(e)?;
+            }
         },
         (None, Some(e)) => Region::Custom {
             name: Region::default().name().to_owned(),
-            endpoint: e,
+            endpoint: e.to_owned(),
         },
         (None, None) => Region::default(),
     };
