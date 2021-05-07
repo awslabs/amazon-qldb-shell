@@ -73,36 +73,47 @@ jobs:
         if: matrix.os == 'ubuntu-18.04'
         run: |
           sudo apt-get install -y musl-tools pkg-config libssl-dev
-
       - name: Checkout
         uses: actions/checkout@v2
       - name: Package
         shell: bash
+        if: matrix.os == 'ubuntu-18.04' ||  matrix.os == 'macos-latest' 
         run: |
           name=qldb
           tag=$(git describe --tags --abbrev=0)
           release_name="$name-$tag-${{ matrix.variant }}"
           release_tar="${release_name}.tar.gz"
           mkdir "$release_name"
-
           cargo fetch && cargo build --release
-
           if [ "${{ matrix.os }}" != "windows-latest" ]; then
               strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           fi
           cp "target/release/${{ matrix.bin }}" "$release_name/"
           cp README.md LICENSE CHANGELOG.md "$release_name/"
           tar czvf "$release_tar" "$release_name"
-          rm -r "$release_name"
-          # Windows environments in github actions don't have the gnu coreutils installed,
-          # which includes the shasum exe, so we just use powershell instead
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            echo "(Get-FileHash \"${release_tar}\" -Algorithm SHA256).Hash | Out-File -Encoding ASCII -NoNewline \"${release_tar}.sha256\"" | pwsh -c -
-          else
-            echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
-          fi
+          rm -r "$release_name"         
+          echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
-
+      - name: MSI
+        shell: bash
+        if: matrix.os == 'windows-latest'
+        run: |        
+          name=qldb
+          tag=$(git describe --tags --abbrev=0)
+          release_name="$name-$tag-${{ matrix.variant }}"
+          
+          cargo fetch && cargo build --release            
+          strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          
+          # Install cargo-wix to compile main.wxs
+          cargo install cargo-wix
+                      
+          # Create MSI based on target/wix/main.wxs
+          cargo wix --nocapture
+          
+          cd target/wix
+          mv amazon_qldb_shell*.msi ../../${release_name}.msi
+        
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
