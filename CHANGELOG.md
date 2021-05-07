@@ -13,6 +13,8 @@
 ### Changed
   
   * File logging now uses bunyan at maximum log level. 
+  * The initial healthcheck client becomes the driver.
+    - This means the initial HTTPS connection and credential loads can be reused.
 
 ## [2.0.0-alpha7] - 2021-05-05
 
