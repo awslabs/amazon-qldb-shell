@@ -2,6 +2,11 @@
 
 ## [2.0.0-alpha9] - [Unreleased]
 
+### Changed
+
+  * TLS is now provided by rustls
+    - This removes the need to install openssl libs on the end system.
+
 ## [2.0.0-alpha8] - 2021-05-06
 
 ### Added
