@@ -30,7 +30,7 @@
 <?endif ?>
 
 <!-- This file includes the variable for the semantic version -->
-<?include $(sys.CURRENTDIR)Includes\wixvariables.wxi ?>
+<?include $(sys.CURRENTDIR)wixvariables.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
     <Product
