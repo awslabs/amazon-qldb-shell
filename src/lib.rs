@@ -41,8 +41,8 @@ pub async fn run() -> Result<()> {
     let _guard = tracing::configure(&opt, &env)?;
 
     //loop {
-    rusoto_driver::health_check_start_session(&env).await?;
-    let mut runner = Runner::new_with_env(env, &opt.execute).await?;
+    let client = rusoto_driver::health_check_start_session(&env).await?;
+    let mut runner = Runner::new(client, env, &opt.execute).await?;
     if let ProgramFlow::Exit = runner.start().await? {
         return Ok(());
     } else {
@@ -63,11 +63,12 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    async fn new_with_env(
+    async fn new(
+        client: QldbSessionClient,
         env: Environment,
         execute: &Option<ExecuteStatementOpt>,
     ) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(&env).await?;
+        let driver = rusoto_driver::build_driver(client, env.ledger().value).await?;
 
         let ui = match execute {
             Some(ref e) => {

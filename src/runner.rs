@@ -43,12 +43,13 @@ where
 }
 
 impl Runner<QldbSessionClient> {
-    pub(crate) async fn new_with_env(
+    pub(crate) async fn new(
+        client: QldbSessionClient,
         env: Environment,
         execute: &Option<ExecuteStatementOpt>,
     ) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new_with_env(env, execute).await?,
+            deps: Deps::new(client, env, execute).await?,
             current_transaction: None,
         })
     }

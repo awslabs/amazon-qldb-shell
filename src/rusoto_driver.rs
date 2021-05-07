@@ -11,26 +11,34 @@ use rusoto_core::{
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
 
-pub async fn build_driver(env: &Environment) -> Result<QldbDriver<QldbSessionClient>> {
-    let client = build_rusoto_client(env).await?;
-
+pub async fn build_driver(
+    client: QldbSessionClient,
+    ledger: String,
+) -> Result<QldbDriver<QldbSessionClient>> {
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
     // enter them again! We can't simply remember their inputs and try
     // again, as individual statements may be derived from values seen from
     // yet other statements.
     QldbDriverBuilder::new()
-        .ledger_name(env.ledger().value)
+        .ledger_name(ledger)
         .transaction_retry_policy(retry::never())
         .build_with_client(client)
         .await
 }
 
-pub(crate) async fn health_check_start_session(env: &Environment) -> Result<()> {
+/// Tries to start a session on the given ledger (via `env`). Fails with a
+/// `usage_error` otherwise.
+///
+/// If a connection is formed, the new session is discarded and the client is
+/// returned. The cleanup is just good manners, but the client is important
+/// because it means future commands can reuse that same initial connection,
+/// credentials, etc.
+pub(crate) async fn health_check_start_session(env: &Environment) -> Result<QldbSessionClient> {
     use rusoto_qldb_session::*;
     let session_client = build_rusoto_client(&env).await?;
 
-    session_client
+    let session_token = session_client
         .send_command(SendCommandRequest {
             start_session: Some(StartSessionRequest {
                 ledger_name: env.ledger().value,
@@ -56,9 +64,21 @@ The following error chain may have more information:
                 ),
                 e,
             )
-        })?;
+        })?
+        .start_session
+        .and_then(|s| s.session_token);
 
-    Ok(())
+    // Try be a good citizen, but don't fail if the new session can't be
+    // released.
+    let _ = session_client
+        .send_command(SendCommandRequest {
+            session_token,
+            end_session: Some(EndSessionRequest {}),
+            ..Default::default()
+        })
+        .await;
+
+    Ok(session_client)
 }
 
 async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
