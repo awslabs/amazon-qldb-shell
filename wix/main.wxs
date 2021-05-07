@@ -29,9 +29,10 @@
   <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
 <?endif ?>
 
+# This file includes the variable for the semantic version
+<?include $(sys.CURRENTDIR)Includes\wixvariables.wxi ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-	# This file includes the variable for the semantic version
-	<?include $(sys.CURRENTDIR)Includes\wixvariables.wxi ?>
     <Product
         Id='*'
         Name='Amazon QLDB Shell'
