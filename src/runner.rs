@@ -3,7 +3,7 @@ use core::fmt;
 use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
-use tracing::{instrument, span, Instrument, Level};
+use tracing::{instrument, span, trace, Instrument, Level};
 
 use crate::{
     command,
@@ -111,6 +111,8 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         let user_input = self.deps.ui.user_input();
         Ok(match user_input {
             Ok(line) => {
+                trace!(line = &line[..], "user input");
+
                 if line.is_empty() {
                     TickFlow::Again
                 } else {
