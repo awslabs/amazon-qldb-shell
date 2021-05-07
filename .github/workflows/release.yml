@@ -10,36 +10,36 @@ on:
 
 jobs:
 
-  test:
-    name: Test
-    if: startsWith(github.ref, 'refs/tags/')
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, macOS-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Env Variable Setup
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Git Checkout
-        uses: actions/checkout@v2
-      - name: Rust Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Cargo Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose
-      - name: Cargo Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --verbose
+  #test:
+  #  name: Test
+  #  if: startsWith(github.ref, 'refs/tags/')
+  #  strategy:
+  #    matrix:
+  #      os: [ubuntu-18.04, macOS-latest, windows-latest]
+  #  runs-on: ${{ matrix.os }}
+    # steps:
+      # - name: Env Variable Setup
+        # if: matrix.os == 'windows-latest'
+        # run: |
+          # echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      # - name: Git Checkout
+        # uses: actions/checkout@v2
+      # - name: Rust Toolchain
+        # uses: actions-rs/toolchain@v1
+        # with:
+          # profile: minimal
+          # toolchain: stable
+          # override: true
+      # - name: Cargo Build
+        # uses: actions-rs/cargo@v1
+        # with:
+          # command: build
+          # args: --verbose
+      # - name: Cargo Test
+        # uses: actions-rs/cargo@v1
+        # with:
+          # command: test
+          # args: --verbose
 
   release:
     name: Release
@@ -59,44 +59,44 @@ jobs:
             bin: qldb
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Env Variable Setup
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Install ubuntu tools
-        if: matrix.os == 'ubuntu-18.04'
-        run: |
-          sudo apt-get install -y musl-tools pkg-config libssl-dev
+      # - name: Env Variable Setup
+        # if: matrix.os == 'windows-latest'
+        # run: |
+          # echo "LIBCLANG_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\Llvm\x64\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      # - name: Install stable toolchain
+        # uses: actions-rs/toolchain@v1
+        # with:
+          # profile: minimal
+          # toolchain: stable
+          # override: true
+      # - name: Install ubuntu tools
+        # if: matrix.os == 'ubuntu-18.04'
+        # run: |
+          # sudo apt-get install -y musl-tools pkg-config libssl-dev
 
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Package
-        shell: bash
-        if: matrix.os == 'ubuntu-18.04' ||  matrix.os == 'macos-latest' 
-        run: |
-          name=qldb
-          tag=$(git describe --tags --abbrev=0)
-          release_name="$name-$tag-${{ matrix.variant }}"
-          release_tar="${release_name}.tar.gz"
-          mkdir "$release_name"
+      # - name: Checkout
+        # uses: actions/checkout@v2
+      # - name: Package
+        # shell: bash
+        # if: matrix.os == 'ubuntu-18.04' ||  matrix.os == 'macos-latest' 
+        # run: |
+          # name=qldb
+          # tag=$(git describe --tags --abbrev=0)
+          # release_name="$name-$tag-${{ matrix.variant }}"
+          # release_tar="${release_name}.tar.gz"
+          # mkdir "$release_name"
 
-          cargo fetch && cargo build --release
+          # cargo fetch && cargo build --release
 
-          if [ "${{ matrix.os }}" != "windows-latest" ]; then
-              strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
-          fi
-          cp "target/release/${{ matrix.bin }}" "$release_name/"
-          cp README.md LICENSE CHANGELOG.md "$release_name/"
-          tar czvf "$release_tar" "$release_name"
-          rm -r "$release_name"         
-          echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
-          git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
+          # if [ "${{ matrix.os }}" != "windows-latest" ]; then
+              # strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          # fi
+          # cp "target/release/${{ matrix.bin }}" "$release_name/"
+          # cp README.md LICENSE CHANGELOG.md "$release_name/"
+          # tar czvf "$release_tar" "$release_name"
+          # rm -r "$release_name"         
+          # echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
+          # git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
 
       - name: MSI
         shell: powershell
@@ -120,7 +120,8 @@ jobs:
           $semantic = 'semantic' + $version.Matches[0].Value + '"'
           
           # write the semantic version in the wix variable file
-          Set-Content -Path ./wixvariables.wxi '<?xml version="1.0" encoding="utf-8"?> <Include>   <?define ' + $semantic + ' ?> </Include>'
+          $content = '<?xml version="1.0" encoding="utf-8"?> <Include>   <?define ' + $semantic + ' ?> </Include>'
+          Set-Content -Path ./wixvariables.wxi $content
           
           # Create MSI based on target/wix/main.wxs
           cargo wix --nocapture
