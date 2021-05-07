@@ -106,8 +106,9 @@ jobs:
           tag=$(git describe --tags --abbrev=0)
           release_name="$name-$tag-${{ matrix.variant }}"
           
-          cargo fetch && cargo build --release            
-          strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          cargo fetch 
+          cargo build --release            
+          #strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
           # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
