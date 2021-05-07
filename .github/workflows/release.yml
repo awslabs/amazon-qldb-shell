@@ -102,9 +102,9 @@ jobs:
         shell: powershell
         if: matrix.os == 'windows-latest'
         run: |        
-          name=qldb
-          tag=$(git describe --tags --abbrev=0)
-          release_name="$name-$tag-${{ matrix.variant }}"
+          $name='qldb'
+          $tag=git describe --tags --abbrev=0
+          $release_name="$name-$tag"
           
           cargo fetch 
           cargo build --release            
@@ -126,7 +126,7 @@ jobs:
           cargo wix --nocapture
           
           cd target/wix
-          mv amazon_qldb_shell*.msi ../../${release_name}.msi
+          mv amazon_qldb_shell*.msi ../../$release_name.msi
         
       - name: Publish
         uses: softprops/action-gh-release@v1
