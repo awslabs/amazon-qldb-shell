@@ -3,9 +3,23 @@
 [![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/awslabs/amazon-qldb-shell/blob/main/LICENSE)
 [![CI Build](https://github.com/awslabs/amazon-qldb-shell/workflows/CI%20Build/badge.svg)](https://github.com/awslabs/amazon-qldb-shell/actions?query=workflow%3A%22CI+Build%22)
 
-## For Customers
 
-* MacOS:
+## Installation
+
+[**v2.0.0.alpha9** is now available!](https://github.com/awslabs/amazon-qldb-shell/releases/tag/v2.0.0-alpha9)
+
+In general, see [releases][releases] for the latest and greatest. We provide
+prebuilt binaries for Linux, Windows and macOS. Find your platform, download,
+extract and run!
+
+If your platform is not supported, feel free to open an issue!
+
+[releases]: https://github.com/awslabs/amazon-qldb-shell/releases
+
+### macOS
+
+On macOS, we integrate with the `aws/tap` Homebrew tap:
+
    ```
    xcode-select --install # required to use Homebrew
    brew tap aws/tap # Add AWS as a Homebrew tap
@@ -13,85 +27,10 @@
    qldb --ledger <your-ledger>
    ```
 
-## For Developers
+### Building from source
 
-### Installing Rust
-
-Go to [Rustup](https://rustup.rs/) and follow the instructions to install rust. 
-
-Make sure you have the necessary dependencies installed with the following commands:
-
-* MacOS:
-    ```
-    brew install cmake
-    ```
-* Ubuntu/Mint Linux:
-    ```
-    sudo apt install libssl-dev cmake clang
-    ```
-* CentOs/Fedora Linux:
-    ```
-    sudo yum install -y openssl-devel cmake clang
-    ```
-* Debian Linux:
-    ```
-    sudo apt install libssl-dev pkg-config cmake clang
-    ```
-
-If you would like to modify the source code and work on the driver, after cloning the repo, simply run:
-
-```
-cargo test
-```
-
-To run the shell, use:
-
-```
-cargo run -- --ledger <ledger-name>
-```
-
-And to run the test using the release optimized compilation, use:
-
-```
-cargo run --release -- --ledger <ledger-name>
-```
-
-Note that the `"--"` indicates to Cargo that what follows are args for the shell.
-
-To install the shell on your system, use:
-
-```
-cargo install --path .
-```
-
-### Windows installation
-
-> Note: these instructions are relevant because of our dependency on ion-c-sys
-> which uses cmake/clang to build the underlying C library.
-
-CMake can be downloaded from https://cmake.org/download/. First, find the
-*latest release* and pick the installer for your platform. At the time of
-writing, the latest 64 bit installer was:
-https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-win64-x64.msi.
-
-When running the installer, take note at the prompt on `PATH`. The default
-option is to not modify the PATH, which means that after installing CMake it
-*will not be found* by `cargo`. If you have a single-user machine, you can
-select "for all users".
-
-After installing CMake, you must make a new terminal to receive the updated
-PATH.
-
-If you do not have Visual Studio, you can install it by downloading the
-community edition from https://visualstudio.microsoft.com/downloads/. After
-setting it up, you can install clang by going to
-https://releases.llvm.org/download.html and selecting a pre-built binary for
-your architecture. Once both these steps are done, you should be able to open a
-"native tools command prompt".
+See [HACKING.md][HACKING.md] for further instructions
 
 ## License
 
 This project is licensed under the Apache-2.0 License.
-
-
-[]: https://rustup.rs/]{Rustup}
