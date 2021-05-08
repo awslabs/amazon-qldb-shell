@@ -26,6 +26,9 @@
   <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
 <?endif ?>
 
+<!-- This file includes the variable for the semantic version -->
+<?include $(sys.CURRENTDIR)wixvariables.wxi ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
 
     <Product
@@ -35,7 +38,7 @@
         Manufacturer='Amazon Web Services' 
         Language='1033'
         Codepage='1252'
-        Version='$(var.Version)'>
+        Version='$(var.semanticversion)'>
 
         <Package Id='*'
             Keywords='Installer'
