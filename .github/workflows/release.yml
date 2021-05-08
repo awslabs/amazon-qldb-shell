@@ -95,24 +95,35 @@ jobs:
           echo -n "$(shasum -ba 256 "${release_tar}" | cut -d " " -f 1)" > "${release_tar}.sha256"
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
       - name: MSI
-        shell: bash
+        shell: powershell
         if: matrix.os == 'windows-latest'
         run: |        
-          name=qldb
-          tag=$(git describe --tags --abbrev=0)
-          release_name="$name-$tag-${{ matrix.variant }}"
+          $name='qldb'
+          $tag=git describe --tags --abbrev=0
+          $release_name="$name-$tag"
           
-          cargo fetch && cargo build --release            
-          strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          cargo fetch 
+          cargo build --release            
+          #strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
           # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
-                      
+
+          # read the shell version from the cargo.toml file
+          $version = Get-Content .\Cargo.toml | Select-String -Pattern '^version\s*=\s*\"\d*\.\d*\.\d*'
+          
+          # convert $version to semantic version (removing characters at the end)
+          $semantic = 'semantic' + $version.Matches[0].Value + '"'
+          
+          # write the semantic version in the wix variable file
+          $content = '<?xml version="1.0" encoding="utf-8"?><Include><?define ' + $semantic + ' ?></Include>'
+          Set-Content -Path ./wixvariables.wxi $content
+          
           # Create MSI based on target/wix/main.wxs
           cargo wix --nocapture
           
           cd target/wix
-          mv amazon_qldb_shell*.msi ../../${release_name}.msi
+          mv amazon_qldb_shell*.msi ../../$release_name.msi
         
       - name: Publish
         uses: softprops/action-gh-release@v1
