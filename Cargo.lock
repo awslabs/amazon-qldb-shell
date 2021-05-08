@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#3e7f1613fc7e03949634239f4032df9ea5b619f6"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#3de82c0580eba81cce71809e14915fe27535c484"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -32,7 +32,7 @@ dependencies = [
 
 [[package]]
 name = "amazon_qldb_shell"
-version = "2.0.0-alpha9"
+version = "2.0.0-alpha10"
 dependencies = [
  "amazon-qldb-driver",
  "anyhow",
@@ -786,9 +786,9 @@ dependencies = [
 
 [[package]]
 name = "http-body"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfb77c123b4e2f72a2069aeae0b4b4949cc7e966df277813fc16347e7549737"
+checksum = "60daa14be0e0786db0f03a9e57cb404c9d756eed2b6c62b9ea98ec5743ec75a9"
 dependencies = [
  "bytes 1.0.1",
  "http",
@@ -875,9 +875,9 @@ dependencies = [
 
 [[package]]
 name = "ion-c-sys"
-version = "0.4.9"
+version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a256497c03464922c0623da4a28660f057e3412e459247a52fee2009ecd50ff3"
+checksum = "6b0d8353a31a5ecc0a46fd8f8aa35d930f543e700c04f087d6c607a61b8a28e4"
 dependencies = [
  "bigdecimal",
  "bindgen",
@@ -889,9 +889,9 @@ dependencies = [
 
 [[package]]
 name = "ion-rs"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27ac9a2b487834680826193250ec154071438d49898b8c68623606bec03ea9c9"
+checksum = "f9b5511aa03f80ded9dd90d0244770cd7280a8eea1546fa25ea8f3e4dad0a541"
 dependencies = [
  "base64 0.12.3",
  "bigdecimal",
@@ -902,7 +902,6 @@ dependencies = [
  "nom 6.1.2",
  "num-bigint",
  "num-traits",
- "rstest",
  "thiserror",
 ]
 
@@ -1512,19 +1511,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rstest"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5056bc1e7cfd438570e8292ef9512774b1d0afc8a50d683fda0ebe74f6233cc6"
-dependencies = [
- "cfg-if",
- "proc-macro2",
- "quote",
- "rustc_version 0.3.3",
- "syn",
-]
-
-[[package]]
 name = "rusoto_core"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1542,7 +1528,7 @@ dependencies = [
  "log",
  "rusoto_credential",
  "rusoto_signature",
- "rustc_version 0.2.3",
+ "rustc_version",
  "serde",
  "serde_json",
  "tokio",
@@ -1599,7 +1585,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "rusoto_credential",
- "rustc_version 0.2.3",
+ "rustc_version",
  "serde",
  "sha2",
  "time 0.2.26",
@@ -1618,16 +1604,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 dependencies = [
- "semver 0.9.0",
-]
-
-[[package]]
-name = "rustc_version"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0dfe2087c51c460008730de8b57e6a320782fbfb312e1f4d520e6c6fae155ee"
-dependencies = [
- "semver 0.11.0",
+ "semver",
 ]
 
 [[package]]
@@ -1749,16 +1726,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 dependencies = [
- "semver-parser 0.7.0",
-]
-
-[[package]]
-name = "semver"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
-dependencies = [
- "semver-parser 0.10.2",
+ "semver-parser",
 ]
 
 [[package]]
@@ -1766,15 +1734,6 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-
-[[package]]
-name = "semver-parser"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0bef5b7f9e0df16536d3961cfb6e84331c065b4066afb39768d0e319411f7"
-dependencies = [
- "pest",
-]
 
 [[package]]
 name = "serde"
@@ -1929,7 +1888,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d022496b16281348b52d0e30ae99e01a73d737b2f45d38fed4edf79f9325a1d5"
 dependencies = [
  "discard",
- "rustc_version 0.2.3",
+ "rustc_version",
  "stdweb-derive",
  "stdweb-internal-macros",
  "stdweb-internal-runtime",

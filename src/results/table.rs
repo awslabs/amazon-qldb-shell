@@ -6,19 +6,19 @@ use comfy_table::Table;
 use ion_c_sys::timestamp::IonDateTime;
 use ion_rs::value::*;
 use ion_rs::value::{
-    loader::{loader, Loader},
     owned::OwnedElement,
+    reader::{element_reader, ElementReader},
 };
 use ion_rs::IonType;
 use std::convert::TryFrom;
 use std::{collections::HashSet, convert::TryInto};
 
 pub(crate) fn display_results_table(results: &StatementResults, ui: &Box<dyn Ui>) -> Result<()> {
-    let loader = loader();
+    let element_reader = element_reader();
 
     let elems: Vec<_> = results
         .raw_values()
-        .map(|data| match loader.iterate_over(data)?.next() {
+        .map(|data| match element_reader.iterate_over(data)?.next() {
             None => Err(anyhow!("found no value, which is unexpected"))?,
             Some(r) => Ok(r?),
         })
