@@ -5,6 +5,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use url::Url;
 
 use crate::settings::{Config, Setter, Setting};
 use crate::{
@@ -29,7 +30,7 @@ pub(crate) struct EnvironmentInner {
     ledger: Setting<String>,
     prompt: Setting<String>,
     profile: Setting<Option<String>>,
-    qldb_session_endpoint: Setting<Option<String>>,
+    qldb_session_endpoint: Setting<Option<Url>>,
     region: Setting<Region>,
     show_query_metrics: Setting<bool>,
     pub(crate) terminator_required: Setting<bool>,
@@ -174,7 +175,7 @@ impl Environment {
         inner.profile.clone()
     }
 
-    fn _qldb_session_endpoint(&self) -> Setting<Option<String>> {
+    fn _qldb_session_endpoint(&self) -> Setting<Option<Url>> {
         let inner = self.inner.lock().unwrap();
         inner.qldb_session_endpoint.clone()
     }
@@ -233,17 +234,14 @@ impl EnvironmentInner {
         self.show_query_metrics
             .apply_value_opt(&opt.no_query_metrics, Setter::CommandLine);
         self.profile.apply_opt(&opt.profile, Setter::CommandLine);
+
+        // FIXME: Tracking is broken here. Reconsider how this works. Should it really be part of the enviornment?
         self.qldb_session_endpoint
             .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
 
-        // Conditional to avoid changing the setter unnecessarily
-        if opt.region.is_some() {
-            let region = rusoto_driver::rusoto_region(
-                opt.region.clone(),
-                opt.qldb_session_endpoint.clone(),
-            )?;
-            self.region.apply_value(&region, Setter::CommandLine);
-        }
+        let region =
+            rusoto_driver::rusoto_region(opt.region.clone(), opt.qldb_session_endpoint.clone())?;
+        self.region.apply_value(&region, Setter::CommandLine);
 
         self.terminator_required
             .apply_value(&opt.terminator_required, Setter::CommandLine);

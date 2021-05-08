@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0-alpha10] - [Unreleased]
+
+### Fixed
+
+  * Custom endpoints now work even if there is a trailing slash 
+
 ## [2.0.0-alpha9] - 2021-05-06
 
 ### Changed

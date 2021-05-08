@@ -2,10 +2,12 @@ use crate::settings::{Setter, Setting};
 use anyhow::Result;
 use pest::Parser;
 use pest_derive::Parser;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
 use thiserror::Error;
+use url::Url;
 
 #[derive(Debug, StructOpt, Default)]
 #[structopt(
@@ -22,8 +24,8 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub config: Option<PathBuf>,
 
-    #[structopt(short = "-s", long = "--qldb-session-endpoint")]
-    pub qldb_session_endpoint: Option<String>,
+    #[structopt(short = "-s", long = "--qldb-session-endpoint", parse(try_from_str = Url::try_from))]
+    pub qldb_session_endpoint: Option<Url>,
 
     #[structopt(short, long = "--profile")]
     pub profile: Option<String>,

@@ -10,6 +10,7 @@ use rusoto_core::{
 };
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
+use url::Url;
 
 pub async fn build_driver(
     client: QldbSessionClient,
@@ -135,10 +136,18 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-pub fn rusoto_region<S>(user_specified: Option<S>, custom_endpoint: Option<S>) -> Result<Region>
+pub fn rusoto_region<S>(user_specified: Option<S>, custom_endpoint: Option<Url>) -> Result<Region>
 where
     S: Into<String>,
 {
+    // Strip a trailing slash, otherwise things go wrong in hyper. Specifically,
+    // it makes a POST request that looks like this:
+    //
+    //     POST // HTTP/1.1
+    let custom_endpoint = custom_endpoint.map(|url| {
+        url.to_string().trim_matches(|c| c == '/').to_string()
+    });
+
     let it = match (user_specified, custom_endpoint) {
         (Some(r), Some(e)) => Region::Custom {
             name: r.into(),
