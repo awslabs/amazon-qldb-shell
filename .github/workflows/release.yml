@@ -104,7 +104,7 @@ jobs:
           
           cargo fetch 
           cargo build --release            
-          #strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
+          strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           
           # Install cargo-wix to compile main.wxs
           cargo install cargo-wix
