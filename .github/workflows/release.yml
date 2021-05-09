@@ -73,6 +73,7 @@ jobs:
         if: matrix.os == 'ubuntu-18.04'
         run: |
           sudo apt-get install -y musl-tools pkg-config libssl-dev
+
       - name: Checkout
         uses: actions/checkout@v2
       - name: Package
@@ -84,7 +85,9 @@ jobs:
           release_name="$name-$tag-${{ matrix.variant }}"
           release_tar="${release_name}.tar.gz"
           mkdir "$release_name"
+
           cargo fetch && cargo build --release
+
           if [ "${{ matrix.os }}" != "windows-latest" ]; then
               strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           fi
