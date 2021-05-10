@@ -4,10 +4,7 @@ use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
 use anyhow::Result;
 use async_trait::async_trait;
-use rusoto_core::{
-    credential::{ChainProvider, ProfileProvider, ProvideAwsCredentials},
-    Client, HttpClient, Region,
-};
+use rusoto_core::{Client, HttpClient, Region, credential::{DefaultCredentialsProvider, ProfileProvider, ProvideAwsCredentials}};
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
 use url::Url;
@@ -87,7 +84,7 @@ async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
     let region = env.region().value;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
-        None => CredentialProvider::Chain(ChainProvider::new()),
+        None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
     };
 
     let mut hyper = HttpClient::new()?;
@@ -104,7 +101,7 @@ async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
 /// Required for static dispatch of [`QldbSessionClient::new_with`].
 enum CredentialProvider {
     Profile(ProfileProvider),
-    Chain(ChainProvider),
+    Default(DefaultCredentialsProvider),
 }
 
 #[async_trait]
@@ -116,7 +113,7 @@ impl ProvideAwsCredentials for CredentialProvider {
         use CredentialProvider::*;
         match self {
             Profile(p) => p.credentials().await,
-            Chain(c) => c.credentials().await,
+            Default(c) => c.credentials().await,
         }
     }
 }

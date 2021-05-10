@@ -4,150 +4,152 @@
 
 ### Fixed
 
-  * Custom endpoints now work even if there is a trailing slash 
+- Custom endpoints now work even if there is a trailing slash
+- Credentials are properly cached
 
 ## [2.0.0-alpha9] - 2021-05-06
 
 ### Changed
 
-  * TLS is now provided by rustls
-    - This removes the need to install openssl libs on the end system.
+- TLS is now provided by rustls
+  - This removes the need to install openssl libs on the end system.
 
 ## [2.0.0-alpha8] - 2021-05-06
 
 ### Added
-  
-  * The prompt can now be customed with `ui.prompt` in the config file.
-    - The following values can be interpolated:
-        - $REGION: the name of the AWS region
-        - $LEDGER: the name of the ledger
-        - $ACTIVE_TRANSACTION: the string " *" if a transaction is open
-        
+
+- The prompt can now be customed with `ui.prompt` in the config file.
+  - The following values can be interpolated:
+    - $REGION: the name of the AWS region
+    - $LEDGER: the name of the ledger
+    - $ACTIVE_TRANSACTION: the string " \*" if a transaction is open
+
 ### Changed
-  
-  * File logging now uses bunyan at maximum log level. 
-  * The initial healthcheck client becomes the driver.
-    - This means the initial HTTPS connection and credential loads can be reused.
+
+- File logging now uses bunyan at maximum log level.
+- The initial healthcheck client becomes the driver.
+  - This means the initial HTTPS connection and credential loads can be reused.
 
 ## [2.0.0-alpha7] - 2021-05-05
 
 ### Added
 
-   * `\set input-mode [emacs|vi]` can now be used to toggle between Emacs/Vi keybindings
-   * Edit mode can be configured in the config file, e.g.:
+- `\set input-mode [emacs|vi]` can now be used to toggle between Emacs/Vi keybindings
+- Edit mode can be configured in the config file, e.g.:
 
-     ```toml
-     [ui]
-     edit_mode = "Emacs" # or Vi
-     ```
-   * Add `\set terminator-required [true|false]`
-   * Add `debug.log` in config files to enable logging to a file.
-     - When this is set, the `-v` flag configures how much is logged. Nothing
-       goes to stdout. This means you can use it to get lots of debugging
-       without lots of stdout noise!
+  ```toml
+  [ui]
+  edit_mode = "Emacs" # or Vi
+  ```
+
+- Add `\set terminator-required [true|false]`
+- Add `debug.log` in config files to enable logging to a file.
+  - When this is set, the `-v` flag configures how much is logged. Nothing
+    goes to stdout. This means you can use it to get lots of debugging
+    without lots of stdout noise!
 
 ### Changed
 
-  * When running without a tty, the UI changes to be quieter
-     - For example, the welcome message and CTRL-C or CTRL-D is suppressed
-     - This is useful for `echo select * from foo|qldb --ledger example`
-     - Query metrics are disabled by default
-  * Better error messages on connection fails
+- When running without a tty, the UI changes to be quieter
+  - For example, the welcome message and CTRL-C or CTRL-D is suppressed
+  - This is useful for `echo select * from foo|qldb --ledger example`
+  - Query metrics are disabled by default
+- Better error messages on connection fails
 
 ## [2.0.0-alpha6] - 2021-04-28
 
 ### Added
 
-  * Timestamps now render in `--format table`
-  * Byte arrays <= 32 bytes are rendered in `--format table`
-  * ALT/SHIFT + ENTER forces a newline
-    - on Windows the sequence is SHIFT+ENTER
-    - otherwise, ALT+ENTER (which would maximize the window on Windows)
-    
+- Timestamps now render in `--format table`
+- Byte arrays <= 32 bytes are rendered in `--format table`
+- ALT/SHIFT + ENTER forces a newline
+  - on Windows the sequence is SHIFT+ENTER
+  - otherwise, ALT+ENTER (which would maximize the window on Windows)
+
 ### Changed
 
-  * User agent now includes both the driver and shell versions
+- User agent now includes both the driver and shell versions
 
 ## [2.0.0-alpha5] - 2021-04-23
 
 ### Changed
 
-  * Reworked verbose to be more useful.
-    - rustyline is completely removed
-    - at trace level, the pretty format is used
+- Reworked verbose to be more useful.
+  - rustyline is completely removed
+  - at trace level, the pretty format is used
 
 ### Fixed
 
-   * Linux builds now use the older 18.04 (fixes #59)
+- Linux builds now use the older 18.04 (fixes #59)
 
 ## [2.0.0-alpha4] - 2021-04-23
 
 ### Added
 
-  * Added `--config PATH` to customize where we load config from. 
-  * Improved table support.
-    - `--format table` is now mostly complete
-    - Includes support for nested content
-    - Includes support for `select VALUE`
-    - Timestamps are not yet supported
+- Added `--config PATH` to customize where we load config from.
+- Improved table support.
+  - `--format table` is now mostly complete
+  - Includes support for nested content
+  - Includes support for `select VALUE`
+  - Timestamps are not yet supported
 
 ### Changed
 
-  * Started decoupling the program from CLI opts. This will allow better and dynamic configuration.
-  * `--verbose` can be used repeatedly to increase the level of logging.
-    - We now use the `tracing` library instead of the `log` and `fern` libraries.
-  * Removed `--auto-commit` in favor of `--opt auto_commit=true`.
-    - This is part of an overall strategy to avoid having a million flags.
-  * Added this file (CHANGELOG.md) to the release tar file.
-  
+- Started decoupling the program from CLI opts. This will allow better and dynamic configuration.
+- `--verbose` can be used repeatedly to increase the level of logging.
+  - We now use the `tracing` library instead of the `log` and `fern` libraries.
+- Removed `--auto-commit` in favor of `--opt auto_commit=true`.
+  - This is part of an overall strategy to avoid having a million flags.
+- Added this file (CHANGELOG.md) to the release tar file.
+
 ### Fixed
 
-  * The version returned by `--version` or `-V` is now correct
-    - Going forward, alpha versions are separated by a hyphen not a period
+- The version returned by `--version` or `-V` is now correct
+  - Going forward, alpha versions are separated by a hyphen not a period
 
 ## [2.0.0.alpha3] - 2021-04-21
 
 ### Added
 
-  * Howbrew installation instructions
-  * Additional logging (when using `--verbose`)
-  * `--format table` as an option (this is not fully implemented)
-  * DESIGN.md as a vision document
-  * Connection issues (credentials, endpoints or invalid ledgers) fail faster
-  * Start to allow customization of the prompt 
+- Howbrew installation instructions
+- Additional logging (when using `--verbose`)
+- `--format table` as an option (this is not fully implemented)
+- DESIGN.md as a vision document
+- Connection issues (credentials, endpoints or invalid ledgers) fail faster
+- Start to allow customization of the prompt
 
 ### Changed
 
-  * There are now three tiers of commands (PartiQL, special and commands):
-    - The "special" commands are also commands but don't require a `\`.
-    - Special commands include `help`, `quit`, `begin`, `commit`, etc.
-  * `\show-tables` is now `\show tables`
+- There are now three tiers of commands (PartiQL, special and commands):
+  - The "special" commands are also commands but don't require a `\`.
+  - Special commands include `help`, `quit`, `begin`, `commit`, etc.
+- `\show-tables` is now `\show tables`
 
 ### Fixed
 
-  * Backtraces are on by default
-  * Any error prints a link to the bug tracker template (even if it's not a bug)
+- Backtraces are on by default
+- Any error prints a link to the bug tracker template (even if it's not a bug)
 
 ## [2.0.0.alpha2] - 2021-04-08
 
 ### Added
 
-  * Display query stats. The number of documents returned, read IOs usaged and timing information is now displayed for every query.
-  * Query stats can be disabled with `--no-query-metrics`
-  * Added `--terminator-required` which can be used to explicitly control sending commands to qldb (with `;`).
-  * Added abstractions around config and an environment. This will be used to make customization easy and DRY.
-  * Added `\show-tables`
+- Display query stats. The number of documents returned, read IOs usaged and timing information is now displayed for every query.
+- Query stats can be disabled with `--no-query-metrics`
+- Added `--terminator-required` which can be used to explicitly control sending commands to qldb (with `;`).
+- Added abstractions around config and an environment. This will be used to make customization easy and DRY.
+- Added `\show-tables`
 
 ### Changed
 
-  * `--auto-commit` now accepts `on|off`
-  * *Shell is now built using async-await
+- `--auto-commit` now accepts `on|off`
+- \*Shell is now built using async-await
 
 ### Fixed
 
-  * *Don't quit on errors
-  * *Allow some errors to leave a transaction open
-  * *Improved help text
+- \*Don't quit on errors
+- \*Allow some errors to leave a transaction open
+- \*Improved help text
 
 ## [2.0.0.alpha1] - 2021-03-16
 
