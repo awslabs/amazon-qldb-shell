@@ -4,7 +4,10 @@ use amazon_qldb_driver::QldbDriverBuilder;
 use amazon_qldb_driver::{retry, QldbDriver};
 use anyhow::Result;
 use async_trait::async_trait;
-use rusoto_core::{Client, HttpClient, Region, credential::{DefaultCredentialsProvider, ProfileProvider, ProvideAwsCredentials}};
+use rusoto_core::{
+    credential::{DefaultCredentialsProvider, ProfileProvider, ProvideAwsCredentials},
+    Client, HttpClient, Region,
+};
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
 use url::Url;
@@ -141,9 +144,8 @@ where
     // it makes a POST request that looks like this:
     //
     //     POST // HTTP/1.1
-    let custom_endpoint = custom_endpoint.map(|url| {
-        url.to_string().trim_matches(|c| c == '/').to_string()
-    });
+    let custom_endpoint =
+        custom_endpoint.map(|url| url.to_string().trim_matches(|c| c == '/').to_string());
 
     let it = match (user_specified, custom_endpoint) {
         (Some(r), Some(e)) => Region::Custom {
