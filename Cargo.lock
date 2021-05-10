@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#3de82c0580eba81cce71809e14915fe27535c484"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#8503c7a384cfe1e83b892de9a057d3b2da32949d"
 dependencies = [
  "anyhow",
  "async-trait",

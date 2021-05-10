@@ -1,17 +1,20 @@
 # Changelog
 
-## [2.0.0-alpha10] - [Unreleased]
+## [2.0.0-alpha10] - 2021-05-10
 
 ### Fixed
 
-- Custom endpoints now work even if there is a trailing slash
-- Credentials are properly cached
+- Custom endpoints now work even if there is a trailing slash.
+- Credentials are properly cached.
+- Underlying driver updated to fix #72.
+  - StartTransaction on a session with an open transaction would retry until the
+    transaction timed out on the serer.
 
 ## [2.0.0-alpha9] - 2021-05-06
 
 ### Changed
 
-- TLS is now provided by rustls
+- TLS is now provided by rustls.
   - This removes the need to install openssl libs on the end system.
 
 ## [2.0.0-alpha8] - 2021-05-06
