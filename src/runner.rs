@@ -11,6 +11,7 @@ use crate::{
 };
 use crate::{settings::Setter, transaction::ShellTransaction};
 use crate::{Deps, QldbShellError};
+use std::time::Instant;
 
 pub(crate) enum ProgramFlow {
     Exit,
@@ -167,6 +168,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
+            "status" => self.handle_status().await?,
             "use" => return Ok(TickFlow::Restart), // TODO: implement
             _ => self.handle_complex_command(line)?,
         }
@@ -221,6 +223,36 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             reader.next()?;
             let name = reader.read_string()?;
             self.deps.ui.println(&format!("- {}", name.as_str()));
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn handle_status(&self) -> Result<()> {
+        let start = Instant::now();
+
+        let result = self.deps.driver.transact(|mut tx| async {
+            let result = tx
+                .execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'")
+                .await?;
+            tx.commit(result).await
+        }).await;
+
+        match result {
+            Ok(statement_results) => {
+                let stats = statement_results.execution_stats();
+                let server_time = stats.timing_information.processing_time_milliseconds;
+                let total_time = Instant::now().duration_since(start).as_millis();
+                self.deps.ui.println(&format!(
+                    "Connection status: Connected, server-time: {}ms, roundtrip-time: {}ms",
+                    server_time,
+                    total_time
+                ));
+            }
+            Err(_e) => {
+                self.deps.ui.println(&format!(
+                    "Connection status: Unavailable"
+                ));
+            }
         }
         Ok(())
     }
