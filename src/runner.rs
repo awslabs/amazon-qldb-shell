@@ -253,7 +253,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             }
         }
 
-        self.deps.ui.println(&format!("Current Ledger: {}", self.deps.driver.ledger_name()));
+        self.deps.ui.println(&format!("Current ledger: {}", self.deps.driver.ledger_name()));
         self.deps.ui.println(&format!("Client version: {}", env!("CARGO_PKG_VERSION")));
         Ok(())
     }
