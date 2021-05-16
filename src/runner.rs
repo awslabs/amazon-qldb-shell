@@ -249,15 +249,12 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                 ));
             }
             Err(_e) => {
-                self.deps.ui.println(&format!(
-                    "Connection status: Unavailable"
-                ));
+                self.deps.ui.println(&format!("Connection status: Unavailable"));
             }
         }
 
-        self.deps.ui.println(&format!("Connected Ledger: {}", self.deps.driver.ledger_name()));
-        const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-        self.deps.ui.println(&format!("Client version: {}", VERSION));
+        self.deps.ui.println(&format!("Current Ledger: {}", self.deps.driver.ledger_name()));
+        self.deps.ui.println(&format!("Client version: {}", env!("CARGO_PKG_VERSION")));
         Ok(())
     }
 }
