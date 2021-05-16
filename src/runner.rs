@@ -254,6 +254,10 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                 ));
             }
         }
+
+        self.deps.ui.println(&format!("Connected Ledger: {}", self.deps.driver.ledger_name()));
+        const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+        self.deps.ui.println(&format!("Client version: {}", VERSION));
         Ok(())
     }
 }
