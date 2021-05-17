@@ -7,6 +7,11 @@
 - Added `\ping` which prints the round trip time.
 - Added `\status` which prints the current ledger/region/version.
 
+### Changed
+
+- `--execute` is removed in favor of using unix-style pipes.
+  - e.g. either `echo` or `cat` can be used to send PartiQL commands to the shell
+
 ## [2.0.0-alpha11] - 2021-05-18
 
 ### Fixed

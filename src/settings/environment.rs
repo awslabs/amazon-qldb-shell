@@ -1,266 +1,146 @@
+use super::{config::LedgerConfig, Opt};
+use crate::{error, rusoto_driver, settings::ShellConfig};
 use anyhow::{anyhow, Result};
 use rusoto_core::Region;
 use std::{
     fmt,
-    path::PathBuf,
-    sync::{Arc, Mutex},
+    ops::{Deref, DerefMut},
+    sync::{Arc, Mutex, MutexGuard},
 };
-use url::Url;
-
-use crate::settings::{Config, Setter, Setting};
-use crate::{
-    rusoto_driver,
-    settings::{command_line::CommandLineOptionParser, FormatMode},
-};
-
-use super::{config::EditMode, Opt};
 
 #[derive(Clone)]
 pub struct Environment {
-    pub(crate) inner: Arc<Mutex<EnvironmentInner>>, // FIXME: priv
+    inner: Arc<Mutex<EnvironmentInner>>,
 }
 
-#[derive(Debug)]
-pub(crate) struct EnvironmentInner {
-    // FIXME: priv
-    display_welcome: Setting<bool>,
-    display_ctrl_signals: Setting<bool>,
-    auto_commit: Setting<bool>,
-    format: Setting<FormatMode>,
-    ledger: Setting<String>,
-    prompt: Setting<String>,
-    profile: Setting<Option<String>>,
-    qldb_session_endpoint: Setting<Option<Url>>,
-    region: Setting<Region>,
-    show_query_metrics: Setting<bool>,
-    pub(crate) terminator_required: Setting<bool>,
-    pub(crate) edit_mode: Setting<EditMode>,
-    log_file: Setting<Option<PathBuf>>,
+struct EnvironmentInner {
+    current_ledger: LedgerConfig,
+    current_region: Region,
+    config: ShellConfig,
 }
 
 impl Environment {
-    pub fn new() -> Environment {
-        // Certain properties default differently based on whether stdin is a
-        // tty or not. For example, certain messages are suppressed when running
-        // `echo ... | qldb`.
-        let stdin_tty = atty::is(atty::Stream::Stdin);
+    pub fn new(mut config: ShellConfig, cli: Opt) -> Result<Environment> {
+        // First, update any config options based off `[cli]`.
+        config.ui.format = cli.format;
 
-        Environment {
-            inner: Arc::new(Mutex::new(EnvironmentInner {
-                display_welcome: Setting {
-                    name: "display_welcome".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: stdin_tty,
-                },
-                display_ctrl_signals: Setting {
-                    name: "display_ctrl_signals".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: stdin_tty,
-                },
-                auto_commit: Setting {
-                    name: "auto_commit".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: true,
-                },
-                format: Setting {
-                    name: "format".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: FormatMode::Ion,
-                },
-                ledger: Setting {
-                    name: "ledger".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    // FIXME: How to assert that there should be a ledger name specified
-                    value: "!!unknown".to_string(),
-                },
-                prompt: Setting {
-                    name: "prompt".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: "qldb$ACTIVE_TRANSACTION> ".to_string(),
-                },
-                profile: Setting {
-                    name: "profile".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: None,
-                },
-                qldb_session_endpoint: Setting {
-                    name: "qldb_session_endpoint".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: None,
-                },
-                region: Setting {
-                    name: "region".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: Region::default(),
-                },
-                show_query_metrics: Setting {
-                    name: "show_query_metrics".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: stdin_tty,
-                },
-                terminator_required: Setting {
-                    name: "terminator_required".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: false,
-                },
-                edit_mode: Setting {
-                    name: "edit_mode".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: EditMode::Emacs,
-                },
-                log_file: Setting {
-                    name: "log_file".to_string(),
-                    modified: false,
-                    setter: Setter::Environment,
-                    value: None,
-                },
-            })),
+        // Next, identify the current ledger and region.
+        let ledger_name = match (cli.ledger, &config.default_ledger) {
+            (None, None) => Err(error::usage_error(
+                "`--ledger` was not specified and there is no `default_ledger` in your config",
+                anyhow!("user error"),
+            ))?,
+            (None, Some(default)) => default.clone(),
+            (Some(cli), _) => cli,
+        };
+
+        let mut current_ledger = LedgerConfig {
+            name: ledger_name,
+            profile: cli.profile,
+            region: cli.region,
+            qldb_session_endpoint: cli.qldb_session_endpoint.map(|url| url.to_string()),
+        };
+
+        // If there is a preconfigured ledger by this name, copy over any
+        // default configuration not specified on the command line.
+        if let Some(ref all) = config.ledgers {
+            if let Some(preconfigured) = all.iter().find(|c| c.name == current_ledger.name) {
+                if current_ledger.profile.is_none() {
+                    current_ledger.profile = preconfigured.profile.clone();
+                }
+
+                if current_ledger.region.is_none() {
+                    current_ledger.region = preconfigured.region.clone();
+                }
+
+                if current_ledger.qldb_session_endpoint.is_none() {
+                    current_ledger.qldb_session_endpoint =
+                        preconfigured.qldb_session_endpoint.clone();
+                }
+            }
         }
+
+        let current_region = rusoto_driver::rusoto_region(
+            current_ledger.region.as_ref(),
+            current_ledger.qldb_session_endpoint.as_ref(),
+        )?;
+
+        let inner = EnvironmentInner {
+            current_ledger,
+            current_region,
+            config,
+        };
+
+        Ok(Environment {
+            inner: Arc::new(Mutex::new(inner)),
+        })
     }
 
-    pub(crate) fn apply_config(&mut self, config: &Config) {
+    pub(crate) fn config(&self) -> ShellConfigGuard {
+        let guard = self.inner.lock().unwrap();
+        ShellConfigGuard { guard }
+    }
+
+    pub(crate) fn current_ledger(&self) -> LedgerConfigGuard {
+        let guard = self.inner.lock().unwrap();
+        LedgerConfigGuard { guard }
+    }
+
+    pub(crate) fn current_region(&self) -> Region {
+        let guard = self.inner.lock().unwrap();
+        guard.current_region.clone()
+    }
+
+    pub(crate) fn update<F>(&self, update: F)
+    where
+        F: Fn(&mut LedgerConfig, &mut ShellConfig) -> (),
+    {
         let mut inner = self.inner.lock().unwrap();
-        inner.apply_config(config)
+        let EnvironmentInner {
+            current_ledger,
+            config,
+            ..
+        } = inner.deref_mut();
+        update(current_ledger, config)
     }
 
-    pub(crate) fn apply_cli(&mut self, opt: &Opt) -> Result<()> {
+    /// When running in non-iteractive mode (e.g. using unix pipes to process
+    /// data), when suppress chrome such as the welcome message.
+    pub(crate) fn apply_noninteractive_defaults(&mut self) {
         let mut inner = self.inner.lock().unwrap();
-        inner.apply_cli(opt)
+        let ui = &mut inner.deref_mut().config.ui;
+        ui.display_welcome = false;
+        ui.display_ctrl_signals = false;
     }
+}
 
-    pub(crate) fn display_welcome(&self) -> Setting<bool> {
-        let inner = self.inner.lock().unwrap();
-        inner.display_welcome.clone()
+pub(crate) struct ShellConfigGuard<'a> {
+    guard: MutexGuard<'a, EnvironmentInner>,
+}
+
+impl<'a> Deref for ShellConfigGuard<'a> {
+    type Target = ShellConfig;
+
+    fn deref(&self) -> &Self::Target {
+        &self.guard.config
     }
+}
 
-    pub(crate) fn display_ctrl_signals(&self) -> Setting<bool> {
-        let inner = self.inner.lock().unwrap();
-        inner.display_ctrl_signals.clone()
-    }
+pub(crate) struct LedgerConfigGuard<'a> {
+    guard: MutexGuard<'a, EnvironmentInner>,
+}
 
-    pub(crate) fn auto_commit(&self) -> Setting<bool> {
-        let inner = self.inner.lock().unwrap();
-        inner.auto_commit.clone()
-    }
+impl<'a> Deref for LedgerConfigGuard<'a> {
+    type Target = LedgerConfig;
 
-    pub(crate) fn format(&self) -> Setting<FormatMode> {
-        let inner = self.inner.lock().unwrap();
-        inner.format.clone()
-    }
-
-    pub(crate) fn ledger(&self) -> Setting<String> {
-        let inner = self.inner.lock().unwrap();
-        inner.ledger.clone()
-    }
-
-    pub(crate) fn prompt(&self) -> Setting<String> {
-        let inner = self.inner.lock().unwrap();
-        inner.prompt.clone()
-    }
-
-    pub(crate) fn profile(&self) -> Setting<Option<String>> {
-        let inner = self.inner.lock().unwrap();
-        inner.profile.clone()
-    }
-
-    pub(crate) fn qldb_session_endpoint(&self) -> Setting<Option<Url>> {
-        let inner = self.inner.lock().unwrap();
-        inner.qldb_session_endpoint.clone()
-    }
-
-    pub(crate) fn region(&self) -> Setting<Region> {
-        let inner = self.inner.lock().unwrap();
-        inner.region.clone()
-    }
-
-    pub(crate) fn show_query_metrics(&self) -> Setting<bool> {
-        let inner = self.inner.lock().unwrap();
-        inner.show_query_metrics.clone()
-    }
-
-    pub(crate) fn terminator_required(&self) -> Setting<bool> {
-        let inner = self.inner.lock().unwrap();
-        inner.terminator_required.clone()
-    }
-
-    pub(crate) fn edit_mode(&self) -> Setting<EditMode> {
-        let inner = self.inner.lock().unwrap();
-        inner.edit_mode.clone()
-    }
-
-    pub(crate) fn log_file(&self) -> Setting<Option<PathBuf>> {
-        let inner = self.inner.lock().unwrap();
-        inner.log_file.clone()
+    fn deref(&self) -> &Self::Target {
+        &self.guard.current_ledger
     }
 }
 
 impl fmt::Display for Environment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let inner = self.inner.lock().unwrap();
-        write!(f, "{:?}", inner)
-    }
-}
-
-impl EnvironmentInner {
-    fn apply_config(&mut self, config: &Config) {
-        self.auto_commit
-            .apply_value_opt(&config.auto_commit, Setter::Config);
-        if let Some(ref ui) = config.ui {
-            self.prompt.apply_value_opt(&ui.prompt, Setter::Config);
-            self.edit_mode
-                .apply_value_opt(&ui.edit_mode, Setter::Config);
-        }
-
-        if let Some(ref debug) = config.debug {
-            self.log_file.apply_opt(&debug.log, Setter::Config);
-        }
-    }
-
-    fn apply_cli(&mut self, opt: &Opt) -> Result<()> {
-        self.format.apply_value(&opt.format, Setter::CommandLine);
-        self.ledger.apply_value(&opt.ledger, Setter::CommandLine);
-        self.show_query_metrics
-            .apply_value_opt(&opt.no_query_metrics, Setter::CommandLine);
-        self.profile.apply_opt(&opt.profile, Setter::CommandLine);
-
-        // FIXME: Tracking is broken here. Reconsider how this works. Should it really be part of the enviornment?
-        self.qldb_session_endpoint
-            .apply_opt(&opt.qldb_session_endpoint, Setter::CommandLine);
-
-        let region =
-            rusoto_driver::rusoto_region(opt.region.clone(), opt.qldb_session_endpoint.clone())?;
-        self.region.apply_value(&region, Setter::CommandLine);
-
-        self.terminator_required
-            .apply_value(&opt.terminator_required, Setter::CommandLine);
-
-        let options = match opt.options {
-            Some(ref o) => o,
-            None => return Ok(()),
-        };
-
-        for unparsed in options {
-            let supplied = CommandLineOptionParser::parse_on_off(unparsed)?;
-            let existing = match &supplied.name[..] {
-                "auto_commit" => &mut self.auto_commit,
-                _ => Err(anyhow!("unknown option {}", supplied.name))?,
-            };
-
-            existing.apply_value(&supplied.value, Setter::CommandLine);
-        }
-
-        Ok(())
+        write!(f, "{:?}", inner.config)
     }
 }
