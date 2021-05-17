@@ -4,10 +4,7 @@ use tracing_appender::{non_blocking::WorkerGuard, rolling};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter, Registry};
 
-use crate::{
-    error,
-    settings::{Environment, Opt},
-};
+use crate::{error, settings::Environment};
 
 /// Configures tracing.
 ///
@@ -26,9 +23,9 @@ use crate::{
 /// (https://github.com/tokio-rs/tracing/issues/302).
 ///
 /// [bunyan]: https://www.npmjs.com/package/bunyan#cli-usage
-pub(crate) fn configure(opt: &Opt, env: &Environment) -> Result<Option<WorkerGuard>> {
-    let (non_blocking, guard) = match env.log_file().value {
-        Some(path) => {
+pub(crate) fn configure(verbose: u8, env: &Environment) -> Result<Option<WorkerGuard>> {
+    let (non_blocking, guard) = match env.config().debug.log {
+        Some(ref path) => {
             let dirname = path.parent().ok_or(error::usage_error(
                 format!("{} is not in a directory", path.display()),
                 anyhow!("file logging was enabled"),
@@ -54,7 +51,7 @@ pub(crate) fn configure(opt: &Opt, env: &Environment) -> Result<Option<WorkerGua
             subscriber::set_global_default(subscriber)?;
         }
         None => {
-            let level = match opt.verbose {
+            let level = match verbose {
                 0 => "error",
                 1 => "info",
                 2 => "debug",

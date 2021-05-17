@@ -1,6 +1,0 @@
-WHITESPACE = _{ " " }
-
-char = { ASCII_ALPHA | "_" }
-name = @{ char+ }
-on_off_assignment = { name ~ "="? ~ on_off_value }
-on_off_value = @{ ^"on" | ^"off" }

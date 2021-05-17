@@ -10,7 +10,6 @@ use rusoto_core::{
 };
 use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
-use url::Url;
 
 pub async fn build_driver(
     client: QldbSessionClient,
@@ -39,10 +38,11 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<Qldb
     use rusoto_qldb_session::*;
     let session_client = build_rusoto_client(&env).await?;
 
+    let current_ledger = env.current_ledger();
     let session_token = session_client
         .send_command(SendCommandRequest {
             start_session: Some(StartSessionRequest {
-                ledger_name: env.ledger().value,
+                ledger_name: current_ledger.name.clone(),
             }),
             ..Default::default()
         })
@@ -61,7 +61,7 @@ Please check the following:
 
 The following error chain may have more information:
 "#,
-                    env.ledger().value
+                    current_ledger.name.clone()
                 ),
                 e,
             )
@@ -84,7 +84,7 @@ The following error chain may have more information:
 
 async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
     let provider = profile_provider(&env)?;
-    let region = env.region().value;
+    let region = env.current_region();
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
@@ -122,8 +122,8 @@ impl ProvideAwsCredentials for CredentialProvider {
 }
 
 fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
-    let it = match env.profile().value {
-        Some(p) => {
+    let it = match env.current_ledger().profile {
+        Some(ref p) => {
             let mut prof = ProfileProvider::new()
                 .map_err(|e| error::usage_error("Unable to create profile provider", e))?;
             prof.set_profile(p);
@@ -136,7 +136,7 @@ fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-pub fn rusoto_region<S>(user_specified: Option<S>, custom_endpoint: Option<Url>) -> Result<Region>
+pub fn rusoto_region<S>(user_specified: Option<S>, custom_endpoint: Option<S>) -> Result<Region>
 where
     S: Into<String>,
 {
@@ -145,7 +145,7 @@ where
     //
     //     POST // HTTP/1.1
     let custom_endpoint =
-        custom_endpoint.map(|url| url.to_string().trim_matches(|c| c == '/').to_string());
+        custom_endpoint.map(|url| url.into().trim_matches(|c| c == '/').to_string());
 
     let it = match (user_specified, custom_endpoint) {
         (Some(r), Some(e)) => Region::Custom {

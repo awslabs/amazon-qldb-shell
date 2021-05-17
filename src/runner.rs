@@ -7,11 +7,8 @@ use std::time::Instant;
 use tracing::{instrument, span, trace, Instrument, Level};
 use url::Url;
 
-use crate::{
-    command,
-    settings::{Environment, ExecuteStatementOpt},
-};
-use crate::{settings::Setter, transaction::ShellTransaction};
+use crate::transaction::ShellTransaction;
+use crate::{command, settings::Environment};
 use crate::{Deps, QldbShellError};
 
 pub(crate) enum ProgramFlow {
@@ -48,10 +45,9 @@ impl Runner<QldbSessionClient> {
     pub(crate) async fn new(
         client: QldbSessionClient,
         env: Environment,
-        execute: &Option<ExecuteStatementOpt>,
     ) -> Result<Runner<QldbSessionClient>> {
         Ok(Runner {
-            deps: Deps::new(client, env, execute).await?,
+            deps: Deps::new(client, env).await?,
             current_transaction: None,
         })
     }
@@ -64,11 +60,14 @@ fn is_special_command(line: &str) -> bool {
     }
 }
 
-fn create_prompt(env: &Environment, transaction_active: bool) -> String {
-    env.prompt()
-        .value
-        .replace("$REGION", &env.region().value.name()[..])
-        .replace("$LEDGER", &env.ledger().value[..])
+fn build_prompt(env: &Environment, transaction_active: bool) -> String {
+    let prompt = env.config().ui.prompt.clone();
+    let current_region = env.current_region();
+    let current_ledger = env.current_ledger();
+
+    prompt
+        .replace("$REGION", &current_region.name()[..])
+        .replace("$LEDGER", &current_ledger.name[..])
         .replace(
             "$ACTIVE_TRANSACTION",
             match transaction_active {
@@ -83,7 +82,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
-        if self.deps.env.display_welcome().value {
+        if self.deps.env.config().ui.display_welcome {
             self.deps.ui.println(
                 r#"Welcome to the Amazon QLDB Shell!
 
@@ -105,7 +104,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
     #[instrument]
     pub(crate) async fn tick(&mut self) -> Result<TickFlow> {
-        self.deps.ui.set_prompt(create_prompt(
+        self.deps.ui.set_prompt(build_prompt(
             &self.deps.env,
             self.current_transaction.is_some(),
         ));
@@ -130,7 +129,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             }
             Err(err) => match err.downcast::<ReadlineError>() {
                 Ok(ReadlineError::Interrupted) => {
-                    if self.deps.env.display_ctrl_signals().value {
+                    if self.deps.env.config().ui.display_ctrl_signals {
                         self.deps.ui.println("CTRL-C");
                     }
                     TickFlow::Again
@@ -145,7 +144,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) async fn handle_break(&mut self) -> Result<TickFlow> {
-        if self.deps.env.display_ctrl_signals().value {
+        if self.deps.env.config().ui.display_ctrl_signals {
             self.deps.ui.println("CTRL-D");
         }
         Ok(if let Some(_) = self.current_transaction {
@@ -186,23 +185,14 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         };
 
         if let command::Backslash::Set(set) = backslash {
-            // FIXME: Hack
-            let mut inner = self.deps.env.inner.lock().unwrap();
-            match set {
+            self.deps.env.update(|_, mut config| match set {
                 command::SetCommand::EditMode(ref mode) => {
-                    inner.edit_mode.apply_value(mode, Setter::Environment)
+                    config.ui.edit_mode = mode.clone();
                 }
                 command::SetCommand::TerminatorRequired(ref tf) => {
-                    inner.terminator_required.apply_value(
-                        &match tf {
-                            command::TrueFalse::True => true,
-                            command::TrueFalse::False => false,
-                        },
-                        Setter::Environment,
-                    )
+                    config.ui.terminator_required = tf.into();
                 }
-            }
-            drop(inner); // FIXME: end hack
+            });
             self.deps.ui.handle_env_set(&set)?;
         }
 
@@ -233,7 +223,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         // TODO: Return latency information from recent commands if we're able to capture it.
         self.deps.ui.println(&format!(
             "Region: {}, Ledger: {}, Shell version: {}",
-            self.deps.env.region().value.name(),
+            self.deps.env.current_region().name(),
             self.deps.driver.ledger_name(),
             env!("CARGO_PKG_VERSION")
         ));
@@ -241,11 +231,12 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) async fn handle_ping(&self) -> Result<()> {
-        let region = self.deps.env.region().value.name().to_string();
-
-        let request_url = match self.deps.env.qldb_session_endpoint().value {
-            Some(url) => url.join("ping")?,
-            None => Url::parse(&format!("https://session.qldb.{}.amazonaws.com/ping", region))?
+        let request_url = match self.deps.env.current_ledger().qldb_session_endpoint {
+            Some(ref s) => Url::parse(s)?.join("ping")?,
+            None => Url::parse(&format!(
+                "https://session.qldb.{}.amazonaws.com/ping",
+                self.deps.env.current_region().name()
+            ))?,
         };
 
         let start = Instant::now();
@@ -260,7 +251,9 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                 total_time
             ));
         } else {
-            self.deps.ui.println(&format!("Connection status: Unavailable"));
+            self.deps
+                .ui
+                .println(&format!("Connection status: Unavailable"));
         }
         Ok(())
     }

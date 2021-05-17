@@ -79,7 +79,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<TickFlow> {
-        if !self.deps.env.auto_commit().value {
+        if !self.deps.env.config().ui.auto_commit {
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
@@ -148,9 +148,9 @@ where
             }
         };
 
-        results::display_results(&results, &self.deps.env.format().value, &self.deps.ui);
+        results::display_results(&results, &self.deps.env.config().ui.format, &self.deps.ui);
 
-        if self.deps.env.show_query_metrics().value {
+        if self.deps.env.config().ui.display_query_metrics {
             let noun = match results.len() {
                 1 => "document",
                 _ => "documents",

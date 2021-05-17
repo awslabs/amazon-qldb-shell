@@ -2,12 +2,12 @@ use amazon_qldb_driver::QldbDriver;
 use anyhow::Result;
 use runner::ProgramFlow;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
-use settings::{Environment, ExecuteStatementOpt};
+use settings::Environment;
 use structopt::StructOpt;
 use thiserror::Error;
 
 use crate::runner::Runner;
-use crate::settings::{Config, Opt};
+use crate::settings::{Opt, ShellConfig};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
@@ -24,25 +24,26 @@ mod ui;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
+    let verbose = opt.verbose.clone();
+
     let config = match opt.config {
-        None => Config::load_default()?,
-        Some(ref path) => Config::load(path)?,
+        None => ShellConfig::load_default()?,
+        Some(ref path) => ShellConfig::load(path)?,
     };
 
-    // FIXME: Not quite right because it doesn't use the environment
-    // modification code paths..
-    let mut env = Environment::new();
-    env.apply_config(&config);
-    env.apply_cli(&opt)?;
+    let mut env = Environment::new(config, opt)?;
+    // Certain properties default differently based on whether stdin is a
+    // tty or not. For example, certain messages are suppressed when running
+    // `echo ... | qldb`.
+    if !atty::is(atty::Stream::Stdin) {
+        env.apply_noninteractive_defaults();
+    }
 
-    // FIXME:
-    // 1. Decouple tracing from Opt
-    // 2. Enable debugging of config load fails (which can't use tracing)
-    let _guard = tracing::configure(&opt, &env)?;
+    let _guard = tracing::configure(verbose, &env)?;
 
     //loop {
     let client = rusoto_driver::health_check_start_session(&env).await?;
-    let mut runner = Runner::new(client, env, &opt.execute).await?;
+    let mut runner = Runner::new(client, env).await?;
     if let ProgramFlow::Exit = runner.start().await? {
         return Ok(());
     } else {
@@ -63,23 +64,10 @@ where
 impl Deps<QldbSessionClient> {
     // Production use: builds a real set of dependencies usign the Rusoto client
     // and ConsoleUi.
-    async fn new(
-        client: QldbSessionClient,
-        env: Environment,
-        execute: &Option<ExecuteStatementOpt>,
-    ) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(client, env.ledger().value).await?;
+    async fn new(client: QldbSessionClient, env: Environment) -> Result<Deps<QldbSessionClient>> {
+        let driver = rusoto_driver::build_driver(client, env.current_ledger().name.clone()).await?;
 
-        let ui = match execute {
-            Some(ref e) => {
-                let reader = match e {
-                    ExecuteStatementOpt::SingleStatement(statement) => statement,
-                    _ => todo!(),
-                };
-                ConsoleUi::new_for_script(&reader[..], env.clone())?
-            }
-            None => ConsoleUi::new(env.clone()),
-        };
+        let ui = ConsoleUi::new(env.clone());
 
         Ok(Deps {
             env,
@@ -101,7 +89,7 @@ where
         use amazon_qldb_driver::{retry, QldbDriverBuilder};
 
         let driver = QldbDriverBuilder::new()
-            .ledger_name(env.ledger().value.clone())
+            .ledger_name(env.current_ledger().name.clone())
             .transaction_retry_policy(retry::never())
             .build_with_client(client)
             .await?;
@@ -126,6 +114,7 @@ enum QldbShellError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::settings::config::ShellConfig;
     use crate::ui::testing::*;
     use anyhow::Result;
     use async_trait::async_trait;
@@ -157,15 +146,15 @@ mod tests {
     #[tokio::test]
     async fn start_help() -> Result<()> {
         let opt = Opt {
-            ledger: "test".to_string(),
+            ledger: Some("test".to_string()),
             ..Default::default()
         };
 
         let client = TodoClient {};
         let ui = TestUi::default();
 
-        let mut env = Environment::new();
-        env.apply_cli(&opt)?;
+        let config = ShellConfig::default();
+        let env = Environment::new(config, opt)?;
         let mut runner = Runner {
             deps: Deps::new_with(env, client, ui.clone()).await?,
             current_transaction: None,

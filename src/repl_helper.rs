@@ -102,18 +102,18 @@ impl Validator for QldbHelper {
 /// Mostly MatchingBracketHighlighter but with support for PartiQL bags. This
 /// allows, primarily, for multi-line input of bags.
 struct InputValidator {
-    environment: Environment,
+    env: Environment,
 }
 
 impl InputValidator {
-    fn new(environment: Environment) -> InputValidator {
-        InputValidator { environment }
+    fn new(env: Environment) -> InputValidator {
+        InputValidator { env }
     }
 }
 
 impl Validator for InputValidator {
     fn validate(&self, ctx: &mut ValidationContext) -> RustylineResult<ValidationResult> {
-        if self.environment.terminator_required().value {
+        if self.env.config().ui.terminator_required {
             if !ctx.input().ends_with(";") {
                 return Ok(ValidationResult::Incomplete);
             }

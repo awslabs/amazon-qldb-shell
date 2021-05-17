@@ -28,6 +28,15 @@ pub enum TrueFalse {
     False,
 }
 
+impl From<&TrueFalse> for bool {
+    fn from(tf: &TrueFalse) -> Self {
+        match tf {
+            TrueFalse::True => true,
+            TrueFalse::False => false,
+        }
+    }
+}
+
 #[derive(StructOpt, Debug)]
 pub enum SetCommand {
     EditMode(EditMode),

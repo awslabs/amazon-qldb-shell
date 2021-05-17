@@ -6,7 +6,7 @@ use dirs;
 use rustyline::{config::Builder, error::ReadlineError, Cmd, KeyCode, KeyEvent, Modifiers};
 use rustyline::{Config, Editor};
 use std::cell::RefCell;
-use std::{io, path::PathBuf};
+use std::path::PathBuf;
 use tracing::{debug, warn};
 
 pub(crate) trait Ui {
@@ -138,41 +138,11 @@ impl ConsoleUi {
             }),
         }
     }
-
-    // This is a big hack. Some open questions:
-    //
-    // 1. How to support single statement transactions
-    // 2. Really don't need all the readline stuff here
-    // 3. Also don't want to load/persist history
-    // 4. exit is awful
-    pub(crate) fn new_for_script(script: &str, env: Environment) -> io::Result<ConsoleUi> {
-        let editor = create_editor(create_config(&env), env.clone());
-
-        // We start the pending actions by reading the input, splitting it up
-        // into new lines..
-        let mut pending_actions: Vec<_> = script
-            .lines()
-            .map(|line| line.split(";").map(|it| it.trim().to_owned()))
-            .flatten()
-            .collect();
-        // ..and then adding an exit comment
-        pending_actions.push("exit".to_string()); // totally not a hack.
-        pending_actions.reverse(); // also not a hack
-
-        Ok(ConsoleUi {
-            inner: RefCell::new(UiInner {
-                env,
-                editor,
-                prompt: "".to_owned(),
-                pending_actions,
-            }),
-        })
-    }
 }
 
 fn create_config(env: &Environment) -> Builder {
     let builder = Config::builder();
-    let builder = builder.edit_mode(match env.edit_mode().value {
+    let builder = builder.edit_mode(match env.config().ui.edit_mode {
         EditMode::Emacs => rustyline::EditMode::Emacs,
         EditMode::Vi => rustyline::EditMode::Vi,
     });
