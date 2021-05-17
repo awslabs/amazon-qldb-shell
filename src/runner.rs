@@ -3,6 +3,7 @@ use core::fmt;
 use ion_c_sys::reader::IonCReader;
 use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use rustyline::error::ReadlineError;
+use std::time::Instant;
 use tracing::{instrument, span, trace, Instrument, Level};
 
 use crate::{
@@ -11,7 +12,6 @@ use crate::{
 };
 use crate::{settings::Setter, transaction::ShellTransaction};
 use crate::{Deps, QldbShellError};
-use std::time::Instant;
 
 pub(crate) enum ProgramFlow {
     Exit,
@@ -228,33 +228,27 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) async fn handle_status(&self) -> Result<()> {
+        let region = self.deps.env.region().value.name().to_string();
+        let request_url = &format!("https://session.qldb.{}.amazonaws.com/ping", region);
+
         let start = Instant::now();
+        let response = reqwest::get(request_url).await?;
+        let total_time = Instant::now().duration_since(start).as_millis();
+        let status_code = response.status();
+        let response_body = response.text().await?;
 
-        let result = self.deps.driver.transact(|mut tx| async {
-            let result = tx
-                .execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'")
-                .await?;
-            tx.commit(result).await
-        }).await;
-
-        match result {
-            Ok(statement_results) => {
-                let stats = statement_results.execution_stats();
-                let server_time = stats.timing_information.processing_time_milliseconds;
-                let total_time = Instant::now().duration_since(start).as_millis();
-                self.deps.ui.println(&format!(
-                    "Connection status: Connected, server-time: {}ms, roundtrip-time: {}ms",
-                    server_time,
-                    total_time
-                ));
-            }
-            Err(_e) => {
-                self.deps.ui.println(&format!("Connection status: Unavailable"));
-            }
+        if status_code == 200 && response_body == "healthy" {
+            self.deps.ui.println(&format!(
+                "Connection status: Connected, roundtrip-time: {}ms",
+                total_time
+            ));
+        } else {
+            self.deps.ui.println(&format!("Connection status: Unavailable"));
         }
 
+        self.deps.ui.println(&format!("Current region: {}", self.deps.env.region().value.name()));
         self.deps.ui.println(&format!("Current ledger: {}", self.deps.driver.ledger_name()));
-        self.deps.ui.println(&format!("Client version: {}", env!("CARGO_PKG_VERSION")));
+        self.deps.ui.println(&format!("Shell version: {}", env!("CARGO_PKG_VERSION")));
         Ok(())
     }
 }
