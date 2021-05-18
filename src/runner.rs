@@ -169,6 +169,7 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
+            "ping" => self.handle_ping().await?,
             "status" => self.handle_status().await?,
             "use" => return Ok(TickFlow::Restart), // TODO: implement
             _ => self.handle_complex_command(line)?,
@@ -229,6 +230,14 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     pub(crate) async fn handle_status(&self) -> Result<()> {
+        // TODO: Return latency information from recent commands if we're able to capture it.
+        self.deps.ui.println(&format!("Current region: {}", self.deps.env.region().value.name()));
+        self.deps.ui.println(&format!("Current ledger: {}", self.deps.driver.ledger_name()));
+        self.deps.ui.println(&format!("Shell version: {}", env!("CARGO_PKG_VERSION")));
+        Ok(())
+    }
+
+    pub(crate) async fn handle_ping(&self) -> Result<()> {
         let region = self.deps.env.region().value.name().to_string();
         let mut request_url = Url::parse(&format!("https://session.qldb.{}.amazonaws.com/ping", region))?;
 
@@ -251,10 +260,6 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
         } else {
             self.deps.ui.println(&format!("Connection status: Unavailable"));
         }
-
-        self.deps.ui.println(&format!("Current region: {}", self.deps.env.region().value.name()));
-        self.deps.ui.println(&format!("Current ledger: {}", self.deps.driver.ledger_name()));
-        self.deps.ui.println(&format!("Shell version: {}", env!("CARGO_PKG_VERSION")));
         Ok(())
     }
 }
