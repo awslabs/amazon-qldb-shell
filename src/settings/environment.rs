@@ -175,7 +175,7 @@ impl Environment {
         inner.profile.clone()
     }
 
-    fn _qldb_session_endpoint(&self) -> Setting<Option<Url>> {
+    pub(crate) fn qldb_session_endpoint(&self) -> Setting<Option<Url>> {
         let inner = self.inner.lock().unwrap();
         inner.qldb_session_endpoint.clone()
     }
