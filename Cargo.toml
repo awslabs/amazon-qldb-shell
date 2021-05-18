@@ -1,6 +1,6 @@
 [package]
 name = "amazon_qldb_shell"
-version = "2.0.0-alpha10"
+version = "2.0.0-alpha11"
 authors = ["Amazon Web Services"]
 edition = "2018"
 
@@ -10,7 +10,7 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", branch = "main" }
 rusoto_core = { version = "0.46.0", default_features = false, features = ["rustls"]}
 rusoto_qldb_session = { version = "0.46.0", default_features = false, features = ["rustls"]}
-rustyline = "8.0.0"
+rustyline = "8.1.0"
 dirs = "3.0.1"
 structopt = "0.3.21"
 ion-rs = "0.6"

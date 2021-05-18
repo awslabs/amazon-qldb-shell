@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0-alpha11] - 2021-05-18
+
+### Fixed
+
+- Copy-paste (CTRL-C + CTRL-V) should now work on Windows.
+
 ## [2.0.0-alpha10] - 2021-05-10
 
 ### Fixed
