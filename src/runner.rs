@@ -239,12 +239,11 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
     pub(crate) async fn handle_ping(&self) -> Result<()> {
         let region = self.deps.env.region().value.name().to_string();
-        let mut request_url = Url::parse(&format!("https://session.qldb.{}.amazonaws.com/ping", region))?;
 
-        let qldb_session_endpoint = self.deps.env.qldb_session_endpoint().value;
-        if qldb_session_endpoint.is_some() {
-            request_url = qldb_session_endpoint.unwrap().join("ping")?;
-        }
+        let request_url = match self.deps.env.qldb_session_endpoint().value {
+            Some(url) => url.join("ping")?,
+            None => Url::parse(&format!("https://session.qldb.{}.amazonaws.com/ping", region))?
+        };
 
         let start = Instant::now();
         let response = reqwest::get(request_url).await?;
