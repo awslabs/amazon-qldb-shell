@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-alpha12] - [Unreleased]
+
+### Added
+
+- Added `\ping` which prints the round trip time.
+- Added `\status` which prints the current ledger/region/version.
+
 ## [2.0.0-alpha11] - 2021-05-18
 
 ### Fixed
