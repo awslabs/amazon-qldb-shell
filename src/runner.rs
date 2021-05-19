@@ -231,9 +231,12 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
     pub(crate) async fn handle_status(&self) -> Result<()> {
         // TODO: Return latency information from recent commands if we're able to capture it.
-        self.deps.ui.println(&format!("Current region: {}", self.deps.env.region().value.name()));
-        self.deps.ui.println(&format!("Current ledger: {}", self.deps.driver.ledger_name()));
-        self.deps.ui.println(&format!("Shell version: {}", env!("CARGO_PKG_VERSION")));
+        self.deps.ui.println(&format!(
+            "Region: {}, Ledger: {}, Shell version: {}",
+            self.deps.env.region().value.name(),
+            self.deps.driver.ledger_name(),
+            env!("CARGO_PKG_VERSION")
+        ));
         Ok(())
     }
 
@@ -247,9 +250,9 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
         let start = Instant::now();
         let response = reqwest::get(request_url).await?;
-        let total_time = Instant::now().duration_since(start).as_millis();
         let status_code = response.status();
         let response_body = response.text().await?;
+        let total_time = Instant::now().duration_since(start).as_millis();
 
         if status_code == 200 && response_body == "healthy" {
             self.deps.ui.println(&format!(
