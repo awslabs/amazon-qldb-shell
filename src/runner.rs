@@ -61,7 +61,10 @@ fn is_special_command(line: &str) -> bool {
 }
 
 fn build_prompt(env: &Environment, transaction_active: bool) -> String {
-    let prompt = env.config().ui.prompt.clone();
+    let prompt = match env.config().ui.prompt {
+        Some(ref p) => p.clone(),
+        _ => "qldb$ACTIVE_TRANSACTION> ".to_string(),
+    };
     let current_region = env.current_region();
     let current_ledger = env.current_ledger();
 

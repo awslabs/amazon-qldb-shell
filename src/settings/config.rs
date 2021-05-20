@@ -32,8 +32,7 @@ pub struct UiConfig {
     #[serde(default = "default_true")]
     pub auto_commit: bool,
 
-    #[serde(default = "default_prompt")]
-    pub prompt: String,
+    pub prompt: Option<String>,
 
     #[serde(default)]
     pub format: FormatMode,
@@ -61,10 +60,6 @@ pub struct DebugConfig {
 
 fn default_true() -> bool {
     true
-}
-
-fn default_prompt() -> String {
-    "qldb$ACTIVE_TRANSACTION>".to_string()
 }
 
 #[derive(StructOpt, Serialize, Deserialize, Clone, Debug)]
