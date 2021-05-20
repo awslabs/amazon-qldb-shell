@@ -5,12 +5,12 @@ use rusoto_core::Region;
 use std::{
     fmt,
     ops::{Deref, DerefMut},
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, RwLock, RwLockReadGuard},
 };
 
 #[derive(Clone)]
 pub struct Environment {
-    inner: Arc<Mutex<EnvironmentInner>>,
+    inner: Arc<RwLock<EnvironmentInner>>,
 }
 
 struct EnvironmentInner {
@@ -72,22 +72,22 @@ impl Environment {
         };
 
         Ok(Environment {
-            inner: Arc::new(Mutex::new(inner)),
+            inner: Arc::new(RwLock::new(inner)),
         })
     }
 
     pub(crate) fn config(&self) -> ShellConfigGuard {
-        let guard = self.inner.lock().unwrap();
+        let guard = self.inner.read().unwrap();
         ShellConfigGuard { guard }
     }
 
     pub(crate) fn current_ledger(&self) -> LedgerConfigGuard {
-        let guard = self.inner.lock().unwrap();
+        let guard = self.inner.read().unwrap();
         LedgerConfigGuard { guard }
     }
 
     pub(crate) fn current_region(&self) -> Region {
-        let guard = self.inner.lock().unwrap();
+        let guard = self.inner.read().unwrap();
         guard.current_region.clone()
     }
 
@@ -95,7 +95,7 @@ impl Environment {
     where
         F: Fn(&mut LedgerConfig, &mut ShellConfig) -> (),
     {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.write().unwrap();
         let EnvironmentInner {
             current_ledger,
             config,
@@ -107,7 +107,7 @@ impl Environment {
     /// When running in non-iteractive mode (e.g. using unix pipes to process
     /// data), when suppress chrome such as the welcome message.
     pub(crate) fn apply_noninteractive_defaults(&mut self) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.write().unwrap();
         let ui = &mut inner.deref_mut().config.ui;
         ui.display_welcome = false;
         ui.display_ctrl_signals = false;
@@ -115,7 +115,7 @@ impl Environment {
 }
 
 pub(crate) struct ShellConfigGuard<'a> {
-    guard: MutexGuard<'a, EnvironmentInner>,
+    guard: RwLockReadGuard<'a, EnvironmentInner>,
 }
 
 impl<'a> Deref for ShellConfigGuard<'a> {
@@ -127,7 +127,7 @@ impl<'a> Deref for ShellConfigGuard<'a> {
 }
 
 pub(crate) struct LedgerConfigGuard<'a> {
-    guard: MutexGuard<'a, EnvironmentInner>,
+    guard: RwLockReadGuard<'a, EnvironmentInner>,
 }
 
 impl<'a> Deref for LedgerConfigGuard<'a> {
@@ -140,7 +140,7 @@ impl<'a> Deref for LedgerConfigGuard<'a> {
 
 impl fmt::Display for Environment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.read().unwrap();
         write!(f, "{:?}", inner.config)
     }
 }
