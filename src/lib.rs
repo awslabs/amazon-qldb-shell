@@ -41,15 +41,15 @@ pub async fn run() -> Result<()> {
 
     let _guard = tracing::configure(verbose, &env)?;
 
-    //loop {
-    let client = rusoto_driver::health_check_start_session(&env).await?;
-    let mut runner = Runner::new(client, env).await?;
-    if let ProgramFlow::Exit = runner.start().await? {
-        return Ok(());
-    } else {
-        unreachable!() // Restart not yet implemented
+    loop {
+        let client = rusoto_driver::health_check_start_session(&env).await?;
+        let mut runner = Runner::new(client, env.clone()).await?;
+
+        match runner.start().await? {
+            ProgramFlow::Exit => return Ok(()),
+            ProgramFlow::Restart => {} // loops!
+        }
     }
-    //}
 }
 
 struct Deps<C: QldbSession>

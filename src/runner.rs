@@ -173,13 +173,13 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "show tables" => self.handle_show_tables().await?,
             "ping" => self.handle_ping().await?,
             "status" => self.handle_status().await?,
-            _ => self.handle_complex_command(line)?,
+            _ => return self.handle_complex_command(line),
         }
 
         Ok(TickFlow::Again)
     }
 
-    pub(crate) fn handle_complex_command(&mut self, line: &str) -> Result<()> {
+    pub(crate) fn handle_complex_command(&mut self, line: &str) -> Result<TickFlow> {
         let iter = line.split_ascii_whitespace();
         let backslash = match command::backslash(iter) {
             Ok(b) => b,
@@ -197,15 +197,19 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
                     }
                 });
                 self.deps.ui.handle_env_set(&set)?;
+
+                Ok(TickFlow::Again)
             }
             command::Backslash::Use(use_command) => {
-                self.deps.ui.println(&format!("Change ledger to {}, region to {}",
-                                              use_command.ledger.unwrap_or("<not set>".to_string()),
-                                              use_command.region.unwrap_or("<not set>".to_string())));
-            }
-        };
+                self.deps.ui.println(&format!(
+                    "Change ledger to {}, region to {}",
+                    use_command.ledger.unwrap_or("<not set>".to_string()),
+                    use_command.region.unwrap_or("<not set>".to_string())
+                ));
 
-        Ok(())
+                Ok(TickFlow::Restart)
+            }
+        }
     }
 
     pub(crate) fn handle_env(&self) {
