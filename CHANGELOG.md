@@ -6,6 +6,9 @@
 
 - Added `\ping` which prints the round trip time.
 - Added `\status` which prints the current ledger/region/version.
+- Format of the config file has been updated.
+  - We will provide documentation for how to use the new layout before releasing
+    this patch version.
 
 ### Changed
 
