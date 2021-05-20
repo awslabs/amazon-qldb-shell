@@ -18,8 +18,8 @@ where
 #[derive(StructOpt, Debug)]
 #[structopt(name = "backslash", no_version)]
 pub enum Backslash {
-    Status,
     Set(SetCommand),
+    Use(UseCommand)
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -41,6 +41,14 @@ impl From<&TrueFalse> for bool {
 pub enum SetCommand {
     EditMode(EditMode),
     TerminatorRequired(TrueFalse),
+}
+
+#[derive(StructOpt, Debug)]
+pub struct UseCommand {
+    #[structopt(short, long = "--ledger")]
+    pub ledger: Option<String>,
+    #[structopt(short, long = "--region")]
+    pub region: Option<String>
 }
 
 #[cfg(test)]

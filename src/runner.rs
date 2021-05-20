@@ -173,7 +173,6 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             "show tables" => self.handle_show_tables().await?,
             "ping" => self.handle_ping().await?,
             "status" => self.handle_status().await?,
-            "use" => return Ok(TickFlow::Restart), // TODO: implement
             _ => self.handle_complex_command(line)?,
         }
 
@@ -187,17 +186,24 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
             Err(_) => Err(QldbShellError::UnknownCommand)?,
         };
 
-        if let command::Backslash::Set(set) = backslash {
-            self.deps.env.update(|_, mut config| match set {
-                command::SetCommand::EditMode(ref mode) => {
-                    config.ui.edit_mode = mode.clone();
-                }
-                command::SetCommand::TerminatorRequired(ref tf) => {
-                    config.ui.terminator_required = tf.into();
-                }
-            });
-            self.deps.ui.handle_env_set(&set)?;
-        }
+        match backslash {
+            command::Backslash::Set(set) => {
+                self.deps.env.update(|_, mut config| match set {
+                    command::SetCommand::EditMode(ref mode) => {
+                        config.ui.edit_mode = mode.clone();
+                    }
+                    command::SetCommand::TerminatorRequired(ref tf) => {
+                        config.ui.terminator_required = tf.into();
+                    }
+                });
+                self.deps.ui.handle_env_set(&set)?;
+            }
+            command::Backslash::Use(use_command) => {
+                self.deps.ui.println(&format!("Change ledger to {}, region to {}",
+                                              use_command.ledger.unwrap_or("<not set>".to_string()),
+                                              use_command.region.unwrap_or("<not set>".to_string())));
+            }
+        };
 
         Ok(())
     }
