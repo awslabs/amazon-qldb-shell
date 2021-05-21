@@ -21,7 +21,7 @@ rustyline-derive = "0.4.0"
 itertools = "0.10.0"
 thiserror = "1.0.24"
 anyhow = "1.0.39"
-tokio = "1.4.0"
+tokio = "1.6.0"
 toml = "0.5.8"
 serde = "1.0.125"
 tracing = { version = "0.1.25", features = ["log"] }
