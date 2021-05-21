@@ -8,13 +8,13 @@ use rusoto_core::{
     credential::{DefaultCredentialsProvider, ProfileProvider, ProvideAwsCredentials},
     Client, HttpClient, Region,
 };
-use rusoto_qldb_session::QldbSessionClient;
+use rusoto_qldb_session::{QldbSession, QldbSessionClient};
 use std::str::FromStr;
 
-pub async fn build_driver(
-    client: QldbSessionClient,
-    ledger: String,
-) -> Result<QldbDriver<QldbSessionClient>> {
+pub async fn build_driver<C>(client: C, ledger: String) -> Result<QldbDriver<C>>
+where
+    C: QldbSession + Send + Sync + Clone + 'static,
+{
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
     // enter them again! We can't simply remember their inputs and try

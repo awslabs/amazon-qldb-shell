@@ -1,7 +1,9 @@
 use anyhow::Result;
+use std::convert::TryFrom;
 use std::ffi::OsString;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
+use url::Url;
 
 use crate::settings::config::EditMode;
 
@@ -19,7 +21,7 @@ where
 #[structopt(name = "backslash", no_version)]
 pub enum Backslash {
     Set(SetCommand),
-    Use(UseCommand)
+    Use(UseCommand),
 }
 
 #[derive(StructOpt, Debug, Clone)]
@@ -43,12 +45,17 @@ pub enum SetCommand {
     TerminatorRequired(TrueFalse),
 }
 
+// FIXME: is there a way to share this with the main CLI opts?
 #[derive(StructOpt, Debug)]
 pub struct UseCommand {
     #[structopt(short, long = "--ledger")]
     pub ledger: Option<String>,
     #[structopt(short, long = "--region")]
-    pub region: Option<String>
+    pub region: Option<String>,
+    #[structopt(short = "-s", long = "--qldb-session-endpoint", parse(try_from_str = Url::try_from))]
+    pub qldb_session_endpoint: Option<Url>,
+    #[structopt(short, long = "--profile")]
+    pub profile: Option<String>,
 }
 
 #[cfg(test)]

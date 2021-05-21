@@ -1,14 +1,17 @@
 use anyhow::Result;
 use core::fmt;
 use ion_c_sys::reader::IonCReader;
-use rusoto_qldb_session::{QldbSession, QldbSessionClient};
+use rusoto_qldb_session::QldbSession;
 use rustyline::error::ReadlineError;
 use std::time::Instant;
 use tracing::{instrument, span, trace, Instrument, Level};
 use url::Url;
 
 use crate::transaction::ShellTransaction;
-use crate::{command, settings::Environment};
+use crate::{
+    command::{self, UseCommand},
+    settings::Environment,
+};
 use crate::{Deps, QldbShellError};
 
 pub(crate) enum ProgramFlow {
@@ -38,18 +41,6 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Runner")
-    }
-}
-
-impl Runner<QldbSessionClient> {
-    pub(crate) async fn new(
-        client: QldbSessionClient,
-        env: Environment,
-    ) -> Result<Runner<QldbSessionClient>> {
-        Ok(Runner {
-            deps: Deps::new(client, env).await?,
-            current_transaction: None,
-        })
     }
 }
 
@@ -85,15 +76,6 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
-        if self.deps.env.config().ui.display_welcome {
-            self.deps.ui.println(
-                r#"Welcome to the Amazon QLDB Shell!
-
-To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
-            );
-        }
-
         loop {
             let span = span!(Level::TRACE, "tick");
             match self.tick().instrument(span).await {
@@ -188,28 +170,53 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
 
         match backslash {
             command::Backslash::Set(set) => {
-                self.deps.env.update(|_, mut config| match set {
-                    command::SetCommand::EditMode(ref mode) => {
-                        config.ui.edit_mode = mode.clone();
-                    }
-                    command::SetCommand::TerminatorRequired(ref tf) => {
-                        config.ui.terminator_required = tf.into();
-                    }
-                });
+                self.deps.env.update(|env| {
+                    match set {
+                        command::SetCommand::EditMode(ref mode) => {
+                            env.config.ui.edit_mode = mode.clone();
+                        }
+                        command::SetCommand::TerminatorRequired(ref tf) => {
+                            env.config.ui.terminator_required = tf.into();
+                        }
+                    };
+                    Ok(())
+                })?;
                 self.deps.ui.handle_env_set(&set)?;
 
                 Ok(TickFlow::Again)
             }
-            command::Backslash::Use(use_command) => {
-                self.deps.ui.println(&format!(
-                    "Change ledger to {}, region to {}",
-                    use_command.ledger.unwrap_or("<not set>".to_string()),
-                    use_command.region.unwrap_or("<not set>".to_string())
-                ));
-
-                Ok(TickFlow::Restart)
-            }
+            command::Backslash::Use(u) => self.handle_use_command(u),
         }
+    }
+
+    /// The `use` command lets a user switch ledgers (or: region, endpoint, AWS
+    /// profile, etc.) without restarting the shell. [`TickFlow::Restart`] is
+    /// used to signal that the current dependencies need to be thrown away and
+    /// the outer program loop should restart.
+    pub(crate) fn handle_use_command(&mut self, u: UseCommand) -> Result<TickFlow> {
+        self.deps.env.update(|env| {
+            if let Some(ledger) = u.ledger {
+                env.current_ledger.name = ledger;
+            }
+
+            if let Some(region) = u.region {
+                env.current_ledger.region = Some(region);
+            }
+
+            if let Some(profile) = u.profile {
+                env.current_ledger.profile = Some(profile);
+            }
+
+            if let Some(url) = u.qldb_session_endpoint {
+                env.current_ledger.qldb_session_endpoint = Some(url.to_string());
+            }
+
+            let _ = env.reload_current_ledger_config()?;
+
+            Ok(())
+        })?;
+
+        Ok(TickFlow::Restart)
     }
 
     pub(crate) fn handle_env(&self) {

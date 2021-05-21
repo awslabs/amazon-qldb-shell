@@ -1,7 +1,7 @@
 use amazon_qldb_driver::QldbDriver;
 use anyhow::Result;
 use runner::ProgramFlow;
-use rusoto_qldb_session::{QldbSession, QldbSessionClient};
+use rusoto_qldb_session::QldbSession;
 use settings::Environment;
 use structopt::StructOpt;
 use thiserror::Error;
@@ -32,6 +32,8 @@ pub async fn run() -> Result<()> {
     };
 
     let mut env = Environment::new(config, opt)?;
+    let _guard = tracing::configure(verbose, &env)?;
+
     // Certain properties default differently based on whether stdin is a
     // tty or not. For example, certain messages are suppressed when running
     // `echo ... | qldb`.
@@ -39,11 +41,24 @@ pub async fn run() -> Result<()> {
         env.apply_noninteractive_defaults();
     }
 
-    let _guard = tracing::configure(verbose, &env)?;
+    let ui = ConsoleUi::new(env.clone());
+
+    if env.config().ui.display_welcome {
+        ui.println(
+                r#"Welcome to the Amazon QLDB Shell!
+
+To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
+When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
+            );
+    }
 
     loop {
         let client = rusoto_driver::health_check_start_session(&env).await?;
-        let mut runner = Runner::new(client, env.clone()).await?;
+        let deps = Deps::new(env.clone(), client, ui.clone()).await?;
+        let mut runner = Runner {
+            deps,
+            current_transaction: None,
+        };
 
         match runner.start().await? {
             ProgramFlow::Exit => return Ok(()),
@@ -52,7 +67,7 @@ pub async fn run() -> Result<()> {
     }
 }
 
-struct Deps<C: QldbSession>
+struct Deps<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
@@ -61,38 +76,15 @@ where
     ui: Box<dyn Ui>,
 }
 
-impl Deps<QldbSessionClient> {
-    // Production use: builds a real set of dependencies usign the Rusoto client
-    // and ConsoleUi.
-    async fn new(client: QldbSessionClient, env: Environment) -> Result<Deps<QldbSessionClient>> {
-        let driver = rusoto_driver::build_driver(client, env.current_ledger().name.clone()).await?;
-
-        let ui = ConsoleUi::new(env.clone());
-
-        Ok(Deps {
-            env,
-            driver,
-            ui: Box::new(ui),
-        })
-    }
-}
-
 impl<C> Deps<C>
 where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
-    #[cfg(test)]
-    async fn new_with<U>(env: Environment, client: C, ui: U) -> Result<Deps<C>>
+    async fn new<U>(env: Environment, client: C, ui: U) -> Result<Deps<C>>
     where
         U: Ui + 'static,
     {
-        use amazon_qldb_driver::{retry, QldbDriverBuilder};
-
-        let driver = QldbDriverBuilder::new()
-            .ledger_name(env.current_ledger().name.clone())
-            .transaction_retry_policy(retry::never())
-            .build_with_client(client)
-            .await?;
+        let driver = rusoto_driver::build_driver(client, env.current_ledger().name.clone()).await?;
 
         Ok(Deps {
             env,
@@ -156,7 +148,7 @@ mod tests {
         let config = ShellConfig::default();
         let env = Environment::new(config, opt)?;
         let mut runner = Runner {
-            deps: Deps::new_with(env, client, ui.clone()).await?,
+            deps: Deps::new(env, client, ui.clone()).await?,
             current_transaction: None,
         };
         ui.inner().pending.push("help".to_string());

@@ -5,8 +5,8 @@ use anyhow::Result;
 use dirs;
 use rustyline::{config::Builder, error::ReadlineError, Cmd, KeyCode, KeyEvent, Modifiers};
 use rustyline::{Config, Editor};
-use std::cell::RefCell;
 use std::path::PathBuf;
+use std::{cell::RefCell, rc::Rc};
 use tracing::{debug, warn};
 
 pub(crate) trait Ui {
@@ -117,8 +117,9 @@ struct UiInner {
 /// method takes a `Fn` arg (not `FnMut`) so that retries don't have
 /// side-effects. However, we disable retries and thus don't care about the
 /// side-effects (e.g. of saving history).
+#[derive(Clone)]
 pub(crate) struct ConsoleUi {
-    inner: RefCell<UiInner>,
+    inner: Rc<RefCell<UiInner>>,
 }
 
 impl ConsoleUi {
@@ -130,12 +131,12 @@ impl ConsoleUi {
         }
 
         ConsoleUi {
-            inner: RefCell::new(UiInner {
+            inner: Rc::new(RefCell::new(UiInner {
                 env,
                 editor,
                 prompt: "> ".to_owned(),
                 pending_actions: vec![],
-            }),
+            })),
         }
     }
 }

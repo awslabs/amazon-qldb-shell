@@ -13,10 +13,10 @@ pub struct Environment {
     inner: Arc<RwLock<EnvironmentInner>>,
 }
 
-struct EnvironmentInner {
-    current_ledger: LedgerConfig,
-    current_region: Region,
-    config: ShellConfig,
+pub(crate) struct EnvironmentInner {
+    pub(crate) current_ledger: LedgerConfig,
+    pub(crate) current_region: Region,
+    pub(crate) config: ShellConfig,
 }
 
 impl Environment {
@@ -34,42 +34,25 @@ impl Environment {
             (Some(cli), _) => cli,
         };
 
-        let mut current_ledger = LedgerConfig {
+        let current_ledger = LedgerConfig {
             name: ledger_name,
             profile: cli.profile,
             region: cli.region,
             qldb_session_endpoint: cli.qldb_session_endpoint.map(|url| url.to_string()),
         };
 
-        // If there is a preconfigured ledger by this name, copy over any
-        // default configuration not specified on the command line.
-        if let Some(ref all) = config.ledgers {
-            if let Some(preconfigured) = all.iter().find(|c| c.name == current_ledger.name) {
-                if current_ledger.profile.is_none() {
-                    current_ledger.profile = preconfigured.profile.clone();
-                }
-
-                if current_ledger.region.is_none() {
-                    current_ledger.region = preconfigured.region.clone();
-                }
-
-                if current_ledger.qldb_session_endpoint.is_none() {
-                    current_ledger.qldb_session_endpoint =
-                        preconfigured.qldb_session_endpoint.clone();
-                }
-            }
-        }
-
         let current_region = rusoto_driver::rusoto_region(
             current_ledger.region.as_ref(),
             current_ledger.qldb_session_endpoint.as_ref(),
         )?;
 
-        let inner = EnvironmentInner {
+        let mut inner = EnvironmentInner {
             current_ledger,
             current_region,
             config,
         };
+
+        let _ = inner.reload_current_ledger_config()?;
 
         Ok(Environment {
             inner: Arc::new(RwLock::new(inner)),
@@ -91,17 +74,12 @@ impl Environment {
         guard.current_region.clone()
     }
 
-    pub(crate) fn update<F>(&self, update: F)
+    pub(crate) fn update<F, R>(&self, update: F) -> Result<R>
     where
-        F: Fn(&mut LedgerConfig, &mut ShellConfig) -> (),
+        F: FnOnce(&mut EnvironmentInner) -> Result<R>,
     {
         let mut inner = self.inner.write().unwrap();
-        let EnvironmentInner {
-            current_ledger,
-            config,
-            ..
-        } = inner.deref_mut();
-        update(current_ledger, config)
+        update(&mut inner)
     }
 
     /// When running in non-iteractive mode (e.g. using unix pipes to process
@@ -111,6 +89,44 @@ impl Environment {
         let ui = &mut inner.deref_mut().config.ui;
         ui.display_welcome = false;
         ui.display_ctrl_signals = false;
+    }
+}
+
+impl EnvironmentInner {
+    /// Reconfigures `current_ledger` and `current_region` based on the
+    /// currently active ledger name. The main reason to use this function is
+    /// when switching ledgers.
+    ///
+    /// Returns true if a ledger with that name was found in config. false
+    /// indicates no changes were made.
+    pub(crate) fn reload_current_ledger_config(&mut self) -> Result<bool> {
+        if let Some(ref all) = self.config.ledgers {
+            if let Some(preconfigured) = all.iter().find(|c| c.name == self.current_ledger.name) {
+                let current_ledger = &mut self.current_ledger;
+
+                if current_ledger.profile.is_none() {
+                    current_ledger.profile = preconfigured.profile.clone();
+                }
+
+                if current_ledger.region.is_none() {
+                    current_ledger.region = preconfigured.region.clone();
+                }
+
+                if current_ledger.qldb_session_endpoint.is_none() {
+                    current_ledger.qldb_session_endpoint =
+                        preconfigured.qldb_session_endpoint.clone();
+                }
+
+                self.current_region = rusoto_driver::rusoto_region(
+                    current_ledger.region.as_ref(),
+                    current_ledger.qldb_session_endpoint.as_ref(),
+                )?;
+
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 }
 

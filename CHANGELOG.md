@@ -9,6 +9,8 @@
 - Format of the config file has been updated.
   - We will provide documentation for how to use the new layout before releasing
     this patch version.
+- Added `\use` which allows switching ledgers without having to quit the shell.
+  - Same options as the main CLI args: `--ledger LEDGER --region REGION`, etc
 
 ### Changed
 
