@@ -20,8 +20,8 @@ with each commit.
 
 ## Installation
 
-[**v2.0.0.alpha9** is now
-available!](https://github.com/awslabs/amazon-qldb-shell/releases/tag/v2.0.0-alpha9)
+[**v2.0.0.alpha11** is now
+available!](https://github.com/awslabs/amazon-qldb-shell/releases/tag/v2.0.0-alpha11)
 
 In general, see [releases][releases] for the latest and greatest. We provide
 prebuilt binaries for Linux, Windows and macOS. Find your platform, download,
@@ -35,12 +35,12 @@ If your platform is not supported, feel free to open an issue!
 
 On macOS, we integrate with the `aws/tap` Homebrew tap:
 
-   ```
-   xcode-select --install # required to use Homebrew
-   brew tap aws/tap # Add AWS as a Homebrew tap
-   brew install qldbshell
-   qldb --ledger <your-ledger>
-   ```
+```
+xcode-select --install # required to use Homebrew
+brew tap aws/tap # Add AWS as a Homebrew tap
+brew install qldbshell
+qldb --ledger <your-ledger>
+```
 
 ### Building from source
 
