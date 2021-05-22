@@ -11,14 +11,27 @@ use tokio::{
     task::{self, JoinHandle},
 };
 
-use crate::runner::Runner;
 use crate::QldbShellError;
+use crate::{error, runner::Runner};
 use crate::{results, runner::TickFlow};
 
+// `handle` is in an Option to allow for partial drops. In the happy case, you
+// might want to await it to get some typed result back. However, if the
+// transaction goes out of scope, we want to cancel it "quickly". By default,
+// JoinHandle tries to "cancel fast" and falls back to "slow". This could weird
+// UI artifacts (e.g. if a transaction continues, then fails).
 pub(crate) struct ShellTransaction {
     input: Sender<TransactionRequest>,
     results: Receiver<Result<StatementResults, QldbError>>,
-    handle: JoinHandle<Result<()>>,
+    handle: Option<JoinHandle<Result<()>>>,
+}
+
+impl Drop for ShellTransaction {
+    fn drop(&mut self) {
+        if let Some(h) = self.handle.take() {
+            h.abort();
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -56,6 +69,10 @@ where
                         Some(TransactionRequest::Commit) => {
                             break tx.commit(()).await;
                         }
+                        // The `None` variant is actually unreachable. It
+                        // *would* signify that the input channel was closed,
+                        // however the ch and future are dropped simultaneously
+                        // in the case of cancellation.
                         Some(TransactionRequest::Abort) | None => {
                             break tx.abort().await;
                         }
@@ -70,7 +87,7 @@ where
     ShellTransaction {
         input,
         results,
-        handle,
+        handle: Some(handle),
     }
 }
 
@@ -137,10 +154,9 @@ where
             None => {
                 // If the results channel is closed, it means the coroutine has
                 // quit. Await it to get the error.
-                if let Some(tx) = self.current_transaction.take() {
-                    match tx.handle.await? {
-                        Ok(()) => unreachable!(),
-                        Err(e) => Err(e)?,
+                if let Some(mut tx) = self.current_transaction.take() {
+                    if let Some(h) = tx.handle.take() {
+                        let _ = h.await?;
                     }
                 }
 
@@ -172,22 +188,30 @@ where
     }
 
     pub(crate) async fn handle_abort(&mut self) -> Result<()> {
-        let tx = self
+        let mut tx = self
             .current_transaction
             .take()
             .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
 
         tx.input.send(TransactionRequest::Abort).await?;
-        tx.handle.await?
+        if let Some(h) = tx.handle.take() {
+            h.await?
+        } else {
+            Ok(())
+        }
     }
 
     pub(crate) async fn handle_commit(&mut self) -> Result<()> {
-        let tx = self
+        let mut tx = self
             .current_transaction
             .take()
             .ok_or(QldbShellError::UsageError(format!("No active transaction")))?;
 
         tx.input.send(TransactionRequest::Commit).await?;
-        tx.handle.await?
+        if let Some(h) = tx.handle.take() {
+            h.await?
+        } else {
+            Err(error::bug("transaction committed but there are no results"))?
+        }
     }
 }

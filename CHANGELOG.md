@@ -12,6 +12,11 @@
 - Added `\use` which allows switching ledgers without having to quit the shell.
   - Same options as the main CLI args: `--ledger LEDGER --region REGION`, etc
 
+### Fixed
+
+- A bug where expired transactions would print a stacktrace on the next
+  transaction.
+
 ### Changed
 
 - `--execute` is removed in favor of using unix-style pipes.
