@@ -1,5 +1,5 @@
 use crate::{settings::FormatMode, ui::Ui};
-use amazon_qldb_driver::{ion_compat, transaction::StatementResults};
+use amazon_qldb_driver::{ion_compat, StatementResults};
 use anyhow::Result;
 use ion_c_sys::reader::IonCReaderHandle;
 use ion_c_sys::result::IonCError;

@@ -1,7 +1,7 @@
-use amazon_qldb_driver::QldbDriver;
-use amazon_qldb_driver::{transaction::StatementResults, QldbError};
+use amazon_qldb_driver::aws_sdk_qldbsession::error::{SendCommandError, SendCommandErrorKind};
+use amazon_qldb_driver::aws_sdk_qldbsession::SdkError;
+use amazon_qldb_driver::{QldbDriver, QldbError, QldbSession, StatementResults};
 use anyhow::Result;
-use rusoto_qldb_session::QldbSession;
 use std::{sync::Arc, time::Instant};
 use tokio::{
     sync::{
@@ -139,10 +139,14 @@ where
             Some(Ok(r)) => r,
             Some(Err(e)) => {
                 // Some errors end the transaction, some are recoverable.
-                if let QldbError::Rusoto(rusoto_core::RusotoError::Service(ref service)) = e {
-                    let broken = match service {
-                        rusoto_qldb_session::SendCommandError::BadRequest(_)
-                        | rusoto_qldb_session::SendCommandError::InvalidSession(_) => true,
+                if let QldbError::SdkError(SdkError::ServiceError {
+                    err: SendCommandError { kind, .. },
+                    ..
+                }) = &e
+                {
+                    let broken = match kind {
+                        SendCommandErrorKind::BadRequestError(_)
+                        | SendCommandErrorKind::InvalidSessionError(_) => true,
                         _ => false,
                     };
                     if broken {
@@ -178,7 +182,7 @@ where
                 "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
                 results.len(),
                 noun,
-                stats.io_usage.read_ios,
+                stats.io_usage.read_i_os,
                 server_time,
                 total_time
             ));

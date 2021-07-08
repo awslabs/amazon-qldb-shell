@@ -1,20 +1,23 @@
 use crate::error;
 use crate::settings::Environment;
 use amazon_qldb_driver::QldbDriverBuilder;
-use amazon_qldb_driver::{retry, QldbDriver};
+use amazon_qldb_driver::{retry, QldbDriver, QldbResult};
+use amazon_qldb_driver_rusoto::RusotoQldbSessionClient;
 use anyhow::Result;
 use async_trait::async_trait;
 use rusoto_core::{
     credential::{DefaultCredentialsProvider, ProfileProvider, ProvideAwsCredentials},
     Client, HttpClient, Region,
 };
-use rusoto_qldb_session::{QldbSession, QldbSessionClient};
+use rusoto_qldb_session::QldbSessionClient;
 use std::str::FromStr;
 
-pub async fn build_driver<C>(client: C, ledger: String) -> Result<QldbDriver<C>>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+pub async fn build_driver(
+    client: QldbSessionClient,
+    ledger: String,
+) -> QldbResult<QldbDriver<RusotoQldbSessionClient>> {
+    let wrapped = RusotoQldbSessionClient(client);
+
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
     // enter them again! We can't simply remember their inputs and try
@@ -23,7 +26,7 @@ where
     QldbDriverBuilder::new()
         .ledger_name(ledger)
         .transaction_retry_policy(retry::never())
-        .build_with_client(client)
+        .build_with_client(wrapped)
         .await
 }
 

@@ -1,5 +1,5 @@
 use crate::ui::Ui;
-use amazon_qldb_driver::transaction::StatementResults;
+use amazon_qldb_driver::StatementResults;
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
 use comfy_table::Table;

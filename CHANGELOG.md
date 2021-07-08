@@ -2,6 +2,12 @@
 
 ## [2.0.0-alpha13] - [Unreleased]
 
+### Changed
+
+- Updated to match changes to the QLDB driver
+  - in particular, this now uses AWS SDK types instead of rusoto types
+  - the actual dispatch is still handled by rusoto
+
 ## [2.0.0-alpha12] - 2021-05-24
 
 ### Added

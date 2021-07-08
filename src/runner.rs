@@ -1,7 +1,7 @@
+use amazon_qldb_driver::QldbSession;
 use anyhow::Result;
 use core::fmt;
 use ion_c_sys::reader::IonCReader;
-use rusoto_qldb_session::QldbSession;
 use rustyline::error::ReadlineError;
 use std::time::Instant;
 use tracing::{instrument, span, trace, Instrument, Level};
