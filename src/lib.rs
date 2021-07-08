@@ -12,7 +12,9 @@ use crate::settings::{Opt, ShellConfig};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
 
+mod awssdk_driver;
 mod command;
+mod credentials;
 pub mod error;
 mod repl_helper;
 mod results;

@@ -105,7 +105,7 @@ async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
 }
 
 /// Required for static dispatch of [`QldbSessionClient::new_with`].
-enum CredentialProvider {
+pub(crate) enum CredentialProvider {
     Profile(ProfileProvider),
     Default(DefaultCredentialsProvider),
 }
@@ -124,7 +124,7 @@ impl ProvideAwsCredentials for CredentialProvider {
     }
 }
 
-fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
+pub(crate) fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
     let it = match env.current_ledger().profile {
         Some(ref p) => {
             let mut prof = ProfileProvider::new()
