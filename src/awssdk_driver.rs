@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_types::region::{self, ProvideRegion};
-use std::{error::Error, sync::Arc};
+use http::Uri;
+use std::{error::Error, str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
 use aws_hyper::{conn::Standard, Client};
@@ -10,7 +11,7 @@ use aws_sdk_qldbsession::{
     input::SendCommandInput,
     model::{EndSessionRequest, StartSessionRequest},
     output::SendCommandOutput,
-    Config, Region, SdkError,
+    Config, Endpoint, Region, SdkError,
 };
 use rusoto_core::credential::DefaultCredentialsProvider;
 use smithy_http::body::SdkBody;
@@ -175,8 +176,21 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
     let creds = RusotoCredentialProvider(Arc::new(rusoto_provider));
     let conf = Config::builder()
         .region(env.current_region())
-        .credentials_provider(creds)
-        .build();
+        .credentials_provider(creds);
+
+    let conf = match env.current_ledger().qldb_session_endpoint {
+        Some(ref endpoint) => {
+            // Strip a trailing slash, otherwise things go wrong in hyper. Specifically,
+            // it makes a POST request that looks like this:
+            //
+            //     POST // HTTP/1.1
+            let clean = endpoint.trim_matches(|c| c == '/');
+            let endpoint = Uri::from_str(clean)?;
+            let resolver = Endpoint::immutable(endpoint);
+            conf.endpoint_resolver(resolver)
+        }
+        _ => conf,
+    };
 
     // TODO: Set user-agent: https://github.com/awslabs/aws-sdk-rust/issues/146
     // let mut hyper = HttpClient::new()?;
@@ -186,7 +200,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
     //     env!("CARGO_PKG_VERSION")
     // ));
 
-    Ok(QldbSessionSdk::new(client, conf))
+    Ok(QldbSessionSdk::new(client, conf.build()))
 }
 
 // FIXME: Default region should consider what is set in the Profile.

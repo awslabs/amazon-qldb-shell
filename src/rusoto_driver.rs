@@ -86,7 +86,10 @@ The following error may have more information: {}
 async fn build_rusoto_client(env: &Environment) -> Result<QldbSessionClient> {
     let provider = profile_provider(&env)?;
     let awssdk_region = env.current_region();
-    let region = Region::from_str(awssdk_region.as_ref())?;
+    let region = rusoto_region(
+        Some(awssdk_region.as_ref().to_owned()),
+        env.current_ledger().qldb_session_endpoint.clone(),
+    )?;
     let creds = match provider {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
