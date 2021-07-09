@@ -1,7 +1,7 @@
 use super::{config::LedgerConfig, Opt};
-use crate::{error, rusoto_driver, settings::ShellConfig};
+use crate::{awssdk_driver, error, settings::ShellConfig};
 use anyhow::Result;
-use rusoto_core::Region;
+use aws_sdk_qldbsession::Region;
 use std::{
     fmt,
     ops::{Deref, DerefMut},
@@ -40,10 +40,7 @@ impl Environment {
             qldb_session_endpoint: cli.qldb_session_endpoint.map(|url| url.to_string()),
         };
 
-        let current_region = rusoto_driver::rusoto_region(
-            current_ledger.region.as_ref(),
-            current_ledger.qldb_session_endpoint.as_ref(),
-        )?;
+        let current_region = awssdk_driver::determine_region(current_ledger.region.as_ref())?;
 
         let mut inner = EnvironmentInner {
             current_ledger,
@@ -116,10 +113,8 @@ impl EnvironmentInner {
                         preconfigured.qldb_session_endpoint.clone();
                 }
 
-                self.current_region = rusoto_driver::rusoto_region(
-                    current_ledger.region.as_ref(),
-                    current_ledger.qldb_session_endpoint.as_ref(),
-                )?;
+                self.current_region =
+                    awssdk_driver::determine_region(current_ledger.region.as_ref())?;
 
                 return Ok(true);
             }

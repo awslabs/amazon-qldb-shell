@@ -60,7 +60,7 @@ fn build_prompt(env: &Environment, transaction_active: bool) -> String {
     let current_ledger = env.current_ledger();
 
     prompt
-        .replace("$REGION", &current_region.name()[..])
+        .replace("$REGION", current_region.as_ref())
         .replace("$LEDGER", &current_ledger.name[..])
         .replace(
             "$ACTIVE_TRANSACTION",
@@ -243,7 +243,7 @@ where
         // TODO: Return latency information from recent commands if we're able to capture it.
         self.deps.ui.println(&format!(
             "Region: {}, Ledger: {}, Shell version: {}",
-            self.deps.env.current_region().name(),
+            self.deps.env.current_region().as_ref(),
             self.deps.driver.ledger_name(),
             env!("CARGO_PKG_VERSION")
         ));
@@ -255,7 +255,7 @@ where
             Some(ref s) => Url::parse(s)?.join("ping")?,
             None => Url::parse(&format!(
                 "https://session.qldb.{}.amazonaws.com/ping",
-                self.deps.env.current_region().name()
+                self.deps.env.current_region().as_ref()
             ))?,
         };
 

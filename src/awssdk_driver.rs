@@ -173,9 +173,8 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
         None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
     };
     let creds = RusotoCredentialProvider(Arc::new(rusoto_provider));
-    let region = env.current_region().name().to_owned();
     let conf = Config::builder()
-        .region(Region::new(region))
+        .region(env.current_region())
         .credentials_provider(creds)
         .build();
 
@@ -191,7 +190,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
 }
 
 // FIXME: Default region should consider what is set in the Profile.
-pub fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
+pub(crate) fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
 where
     S: Into<String>,
 {
