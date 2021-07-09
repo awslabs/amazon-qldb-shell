@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::{error::Error, sync::Arc};
 
-use amazon_qldb_driver::QldbSession;
+use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
 use aws_hyper::{conn::Standard, Client};
 use aws_sdk_qldbsession::{
     error::SendCommandError,
@@ -22,20 +22,45 @@ use crate::{
     settings::Environment,
 };
 
+// The trait bounds are imposed by the implementation in aws-hyper. I'm sorry
+// it's so ugly.
+
 type BoxError = Box<dyn Error + Send + Sync>;
 
-pub(crate) struct QldbSessionSdk<S> {
+#[derive(Clone)]
+pub(crate) struct QldbSessionSdk<S>
+where
+    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
+    S::Error: Into<BoxError> + Send + Sync + 'static,
+    S::Future: Send + 'static,
+{
+    inner: Arc<QldbSessionSdkInner<S>>,
+}
+
+struct QldbSessionSdkInner<S>
+where
+    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
+    S::Error: Into<BoxError> + Send + Sync + 'static,
+    S::Future: Send + 'static,
+{
     client: Client<S>,
     conf: Config,
 }
 
-impl<S> QldbSessionSdk<S> {
+impl<S> QldbSessionSdk<S>
+where
+    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
+    S::Error: Into<BoxError> + Send + Sync + 'static,
+    S::Future: Send + 'static,
+{
     fn new(client: Client<S>, conf: Config) -> QldbSessionSdk<S> {
-        QldbSessionSdk { client, conf }
+        let inner = QldbSessionSdkInner { client, conf };
+        QldbSessionSdk {
+            inner: Arc::new(inner),
+        }
     }
 }
 
-// The trait bounds are imposed by the implementation in aws-hyper.
 #[async_trait]
 impl<S> QldbSession for QldbSessionSdk<S>
 where
@@ -48,9 +73,33 @@ where
         &self,
         input: SendCommandInput,
     ) -> Result<SendCommandOutput, SdkError<SendCommandError>> {
-        let op = input.make_operation(&self.conf).expect("valid operation"); // FIXME: remove potential panic
-        self.client.call(op).await
+        let op = input
+            .make_operation(&self.inner.conf)
+            .expect("valid operation"); // FIXME: remove potential panic
+        self.inner.client.call(op).await
     }
+}
+
+pub(crate) async fn build_driver<S>(
+    client: QldbSessionSdk<S>,
+    ledger: String,
+) -> QldbResult<QldbDriver<QldbSessionSdk<S>>>
+where
+    S: Clone + Send + Sync + 'static,
+    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
+    S::Error: Into<BoxError> + Send + Sync + 'static,
+    S::Future: Send + 'static,
+{
+    // We disable transaction retries because they don't make sense. Users
+    // are entering statements, so if the tx fails they actually have to
+    // enter them again! We can't simply remember their inputs and try
+    // again, as individual statements may be derived from values seen from
+    // yet other statements.
+    QldbDriverBuilder::new()
+        .ledger_name(ledger)
+        .transaction_retry_policy(retry::never())
+        .build_with_client(client)
+        .await
 }
 
 /// Tries to start a session on the given ledger (via `env`). Fails with a
