@@ -18,8 +18,7 @@ use smithy_http::body::SdkBody;
 use tower::Service;
 
 use crate::{
-    credentials::RusotoCredentialProvider,
-    error,
+    credentials, error,
     rusoto_driver::{self, CredentialProvider},
     settings::Environment,
 };
@@ -173,7 +172,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
     };
-    let creds = RusotoCredentialProvider(Arc::new(rusoto_provider));
+    let creds = credentials::from_rusoto(rusoto_provider).await?;
     let conf = Config::builder()
         .region(env.current_region())
         .credentials_provider(creds);

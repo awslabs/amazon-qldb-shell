@@ -1,8 +1,6 @@
 use amazon_qldb_driver::{QldbDriver, QldbSession};
-use amazon_qldb_driver_rusoto::RusotoQldbSessionClient;
 use anyhow::Result;
 use runner::ProgramFlow;
-use rusoto_qldb_session::QldbSessionClient;
 use settings::Environment;
 use structopt::StructOpt;
 use thiserror::Error;
@@ -56,8 +54,14 @@ When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
     }
 
     loop {
-        let client = rusoto_driver::health_check_start_session(&env).await?;
-        let deps = new_deps_via_rusoto(env.clone(), client, ui.clone()).await?;
+        let client = awssdk_driver::health_check_start_session(&env).await?;
+        let driver = awssdk_driver::build_driver(client, env.current_ledger().name.clone()).await?;
+        let deps = Deps {
+            env: env.clone(),
+            driver,
+            ui: Box::new(ui.clone()),
+        };
+
         let mut runner = Runner {
             deps,
             current_transaction: None,
@@ -77,23 +81,6 @@ where
     env: Environment,
     driver: QldbDriver<C>,
     ui: Box<dyn Ui>,
-}
-
-async fn new_deps_via_rusoto<U>(
-    env: Environment,
-    client: QldbSessionClient,
-    ui: U,
-) -> Result<Deps<RusotoQldbSessionClient>>
-where
-    U: Ui + 'static,
-{
-    let driver = rusoto_driver::build_driver(client, env.current_ledger().name.clone()).await?;
-
-    Ok(Deps {
-        env,
-        driver,
-        ui: Box::new(ui),
-    })
 }
 
 #[derive(Error, Debug)]
