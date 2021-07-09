@@ -1,6 +1,6 @@
 use super::{config::LedgerConfig, Opt};
 use crate::{error, rusoto_driver, settings::ShellConfig};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use rusoto_core::Region;
 use std::{
     fmt,
@@ -28,7 +28,6 @@ impl Environment {
         let ledger_name = match (cli.ledger, &config.default_ledger) {
             (None, None) => Err(error::usage_error(
                 "`--ledger` was not specified and there is no `default_ledger` in your config",
-                anyhow!("user error"),
             ))?,
             (None, Some(default)) => default.clone(),
             (Some(cli), _) => cli,

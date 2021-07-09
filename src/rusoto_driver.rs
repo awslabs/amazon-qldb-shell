@@ -51,9 +51,8 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<Qldb
         })
         .await
         .map_err(|e| {
-            error::usage_error(
-                format!(
-                    r#"Unable to connect to ledger `{}`.
+            error::usage_error(format!(
+                r#"Unable to connect to ledger `{}`.
 
 Please check the following:
 
@@ -62,12 +61,11 @@ Please check the following:
 - That your AWS credentials are setup
 - That your AWS credentials grant access on this ledger
 
-The following error chain may have more information:
+The following error may have more information: {}
 "#,
-                    current_ledger.name.clone()
-                ),
-                e,
-            )
+                current_ledger.name.clone(),
+                e
+            ))
         })?
         .start_session
         .and_then(|s| s.session_token);
@@ -127,8 +125,9 @@ impl ProvideAwsCredentials for CredentialProvider {
 pub(crate) fn profile_provider(env: &Environment) -> Result<Option<ProfileProvider>> {
     let it = match env.current_ledger().profile {
         Some(ref p) => {
-            let mut prof = ProfileProvider::new()
-                .map_err(|e| error::usage_error("Unable to create profile provider", e))?;
+            let mut prof = ProfileProvider::new().map_err(|e| {
+                error::usage_error(format!("Unable to create profile provider: {}", e))
+            })?;
             prof.set_profile(p);
             Some(prof)
         }
@@ -169,9 +168,10 @@ where
 pub fn parse_region(r: impl AsRef<str>) -> Result<Region> {
     Ok(match Region::from_str(r.as_ref()) {
         Ok(it) => it,
-        Err(e) => Err(error::usage_error(
-            format!("Invalid region {}", r.as_ref()),
-            e,
-        ))?,
+        Err(e) => Err(error::usage_error(format!(
+            "Invalid region {}: {}",
+            r.as_ref(),
+            e
+        )))?,
     })
 }

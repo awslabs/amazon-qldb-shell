@@ -73,6 +73,7 @@ dependencies = [
  "aws-auth",
  "aws-hyper",
  "aws-sdk-qldbsession",
+ "aws-types",
  "bigdecimal",
  "chrono",
  "comfy-table",

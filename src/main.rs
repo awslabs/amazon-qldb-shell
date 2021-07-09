@@ -7,7 +7,7 @@ async fn main() {
     if let Err(e) = _main().await {
         if let Some(shell) = e.downcast_ref::<ShellError>() {
             match shell {
-                ShellError::UsageError { message, source } => handle_usage_error(message, source),
+                ShellError::UsageError { message } => handle_usage_error(message),
                 ShellError::Bug(message) => handle_bug(message),
             }
         } else {
@@ -28,12 +28,8 @@ async fn _main() -> Result<()> {
     run().await
 }
 
-fn handle_usage_error(message: impl AsRef<str>, source: &anyhow::Error) {
+fn handle_usage_error(message: impl AsRef<str>) {
     eprintln!("usage error: {}", message.as_ref());
-
-    for error in source.chain().skip(1) {
-        eprintln!(" caused by: {}", error);
-    }
 }
 
 fn handle_bug(message: impl AsRef<str>) {

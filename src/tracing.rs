@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use tracing::subscriber;
 use tracing_appender::{non_blocking::WorkerGuard, rolling};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
@@ -26,14 +26,14 @@ use crate::{error, settings::Environment};
 pub(crate) fn configure(verbose: u8, env: &Environment) -> Result<Option<WorkerGuard>> {
     let (non_blocking, guard) = match env.config().debug.log {
         Some(ref path) => {
-            let dirname = path.parent().ok_or(error::usage_error(
-                format!("{} is not in a directory", path.display()),
-                anyhow!("file logging was enabled"),
-            ))?;
-            let prefix = path.file_name().ok_or(error::usage_error(
-                format!("{} does not have a filename", path.display()),
-                anyhow!("file logging was enabled"),
-            ))?;
+            let dirname = path.parent().ok_or(error::usage_error(format!(
+                "{} is not in a directory",
+                path.display()
+            )))?;
+            let prefix = path.file_name().ok_or(error::usage_error(format!(
+                "{} does not have a filename",
+                path.display()
+            )))?;
             let file_appender = rolling::hourly(dirname, prefix);
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
             (Some(non_blocking), Some(guard))

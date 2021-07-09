@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use aws_types::region::{self, ProvideRegion};
 use std::{error::Error, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
@@ -7,7 +8,7 @@ use aws_hyper::{conn::Standard, Client};
 use aws_sdk_qldbsession::{
     error::SendCommandError,
     input::SendCommandInput,
-    model::{EndSessionRequest, StartSessionRequest, StartSessionResult},
+    model::{EndSessionRequest, StartSessionRequest},
     output::SendCommandOutput,
     Config, Region, SdkError,
 };
@@ -127,9 +128,8 @@ pub(crate) async fn health_check_start_session(
         )
         .await
         .map_err(|e| {
-            error::usage_error(
-                format!(
-                    r#"Unable to connect to ledger `{}`.
+            error::usage_error(format!(
+                r#"Unable to connect to ledger `{}`.
 
 Please check the following:
 
@@ -138,12 +138,11 @@ Please check the following:
 - That your AWS credentials are setup
 - That your AWS credentials grant access on this ledger
 
-The following error chain may have more information:
+The following error may have more information: {}
 "#,
-                    current_ledger.name.clone()
-                ),
-                e,
-            )
+                current_ledger.name.clone(),
+                e
+            ))
         })?;
 
     let session_token = match resp.start_session.and_then(|r| r.session_token) {
@@ -189,4 +188,19 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
     // ));
 
     Ok(QldbSessionSdk::new(client, conf))
+}
+
+// FIXME: Default region should consider what is set in the Profile.
+pub fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
+where
+    S: Into<String>,
+{
+    let it = match user_specified {
+        Some(r) => Region::new(r.into()),
+        None => region::default_provider()
+            .region()
+            .ok_or(error::usage_error("Could not determine a default region"))?,
+    };
+
+    Ok(it)
 }
