@@ -1,15 +1,15 @@
+use std::io;
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::Receiver as SyncReceiver;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::JoinHandle;
 
 use anyhow::Result;
 use aws_auth::{Credentials, CredentialsError, ProvideCredentials};
-use futures::FutureExt;
 use rusoto_core::credential::ProvideAwsCredentials as RusotoProvider;
-use tokio::{
-    sync::mpsc::{channel, Sender},
-    task::JoinHandle,
-};
+use tokio::runtime::Builder;
+use tokio::sync::mpsc::{channel, Sender};
 
 pub(crate) struct RusotoCredentialProvider {
     bridge: AsyncBridge,
@@ -18,7 +18,7 @@ pub(crate) struct RusotoCredentialProvider {
 struct AsyncBridge {
     tx: Sender<()>,
     rx: Arc<Mutex<SyncReceiver<Result<Credentials, CredentialsError>>>>,
-    handle: JoinHandle<()>, // stored for cancellation purposes
+    _handle: JoinHandle<io::Result<()>>, // stored for cancellation purposes
 }
 
 pub(crate) async fn from_rusoto<P>(rusoto: P) -> Result<RusotoCredentialProvider>
@@ -27,14 +27,14 @@ where
 {
     let (wake, mut req) = channel(1);
     let (res, credentials) = sync_channel(1);
-    let handle = tokio::spawn({
-        async move {
+
+    let handle = thread::spawn(|| {
+        let rt = Builder::new_current_thread().build()?;
+        rt.block_on(async move {
             loop {
-                println!("waiting for req for creds");
                 if let None = req.recv().await {
                     break;
                 }
-                println!("waiting for creds");
                 let credentials = match rusoto.credentials().await {
                     Ok(credentials) => Ok(Credentials::from_keys(
                         credentials.aws_access_key_id(),
@@ -43,18 +43,19 @@ where
                     )),
                     Err(err) => Err(CredentialsError::Unhandled(Box::new(err))),
                 };
-                println!("sending creds");
                 if let Err(_) = res.send(credentials) {
                     break;
                 }
             }
-        }
+        });
+
+        Ok(())
     });
 
     let bridge = AsyncBridge {
         tx: wake,
         rx: Arc::new(Mutex::new(credentials)),
-        handle,
+        _handle: handle,
     };
 
     Ok(RusotoCredentialProvider { bridge })
@@ -62,7 +63,6 @@ where
 
 impl ProvideCredentials for RusotoCredentialProvider {
     fn provide_credentials(&self) -> Result<Credentials, CredentialsError> {
-        println!("creds req..");
         self.bridge
             .tx
             .try_send(())
@@ -70,7 +70,6 @@ impl ProvideCredentials for RusotoCredentialProvider {
         // This doesn't work because (I think) the spawned future never wakes
         // up.
         let res = self.bridge.rx.lock().expect("mutex is never poisoned");
-        println!("waiting for creds resp");
         res.recv()
             .expect("credentials (or an error) should always come back")
     }

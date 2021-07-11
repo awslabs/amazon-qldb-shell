@@ -22,6 +22,8 @@ pub struct Opt {
     #[structopt(short, long = "--ledger")]
     pub ledger: Option<String>,
 
+    /// Config file to load. By default, this file is in
+    /// $XDG_CONFIG_HOME/qldbshell/default_config.toml.
     #[structopt(short, long, parse(from_os_str))]
     pub config: Option<PathBuf>,
 
