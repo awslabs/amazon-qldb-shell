@@ -145,8 +145,8 @@ where
                 }) = &e
                 {
                     let broken = match kind {
-                        SendCommandErrorKind::BadRequestError(_)
-                        | SendCommandErrorKind::InvalidSessionError(_) => true,
+                        SendCommandErrorKind::BadRequestException(_)
+                        | SendCommandErrorKind::InvalidSessionException(_) => true,
                         _ => false,
                     };
                     if broken {

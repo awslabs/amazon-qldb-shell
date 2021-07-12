@@ -6,7 +6,8 @@ use std::thread;
 use std::thread::JoinHandle;
 
 use anyhow::Result;
-use aws_auth::{Credentials, CredentialsError, ProvideCredentials};
+use aws_auth::provider::{CredentialsError, ProvideCredentials};
+use aws_auth::Credentials;
 use rusoto_core::credential::ProvideAwsCredentials as RusotoProvider;
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{channel, Sender};

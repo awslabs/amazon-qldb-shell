@@ -2,10 +2,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use aws_types::region::{self, ProvideRegion};
 use http::Uri;
-use std::{error::Error, str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
-use aws_hyper::{conn::Standard, Client};
+use aws_hyper::{Client, DynConnector, SmithyConnector};
 use aws_sdk_qldbsession::{
     error::SendCommandError,
     input::SendCommandInput,
@@ -14,8 +14,6 @@ use aws_sdk_qldbsession::{
     Config, Endpoint, Region, SdkError,
 };
 use rusoto_core::credential::DefaultCredentialsProvider;
-use smithy_http::body::SdkBody;
-use tower::Service;
 
 use crate::{
     credentials, error,
@@ -23,38 +21,18 @@ use crate::{
     settings::Environment,
 };
 
-// The trait bounds are imposed by the implementation in aws-hyper. I'm sorry
-// it's so ugly.
-
-type BoxError = Box<dyn Error + Send + Sync>;
-
 #[derive(Clone)]
-pub(crate) struct QldbSessionSdk<S>
-where
-    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
-    S::Error: Into<BoxError> + Send + Sync + 'static,
-    S::Future: Send + 'static,
-{
-    inner: Arc<QldbSessionSdkInner<S>>,
+pub(crate) struct QldbSessionSdk<C = DynConnector> {
+    inner: Arc<QldbSessionSdkInner<C>>,
 }
 
-struct QldbSessionSdkInner<S>
-where
-    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
-    S::Error: Into<BoxError> + Send + Sync + 'static,
-    S::Future: Send + 'static,
-{
-    client: Client<S>,
+struct QldbSessionSdkInner<C = DynConnector> {
+    client: Client<C>,
     conf: Config,
 }
 
-impl<S> QldbSessionSdk<S>
-where
-    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
-    S::Error: Into<BoxError> + Send + Sync + 'static,
-    S::Future: Send + 'static,
-{
-    fn new(client: Client<S>, conf: Config) -> QldbSessionSdk<S> {
+impl<C> QldbSessionSdk<C> {
+    fn new(client: Client<C>, conf: Config) -> QldbSessionSdk<C> {
         let inner = QldbSessionSdkInner { client, conf };
         QldbSessionSdk {
             inner: Arc::new(inner),
@@ -63,12 +41,9 @@ where
 }
 
 #[async_trait]
-impl<S> QldbSession for QldbSessionSdk<S>
+impl<C> QldbSession for QldbSessionSdk<C>
 where
-    S: Send + Sync,
-    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
-    S::Error: Into<BoxError> + Send + Sync + 'static,
-    S::Future: Send + 'static,
+    C: SmithyConnector,
 {
     async fn send_command(
         &self,
@@ -81,15 +56,12 @@ where
     }
 }
 
-pub(crate) async fn build_driver<S>(
-    client: QldbSessionSdk<S>,
+pub(crate) async fn build_driver<C>(
+    client: QldbSessionSdk<C>,
     ledger: String,
-) -> QldbResult<QldbDriver<QldbSessionSdk<S>>>
+) -> QldbResult<QldbDriver<QldbSessionSdk<C>>>
 where
-    S: Clone + Send + Sync + 'static,
-    S: Service<http::Request<SdkBody>, Response = http::Response<SdkBody>> + Send + Clone + 'static,
-    S::Error: Into<BoxError> + Send + Sync + 'static,
-    S::Future: Send + 'static,
+    C: SmithyConnector,
 {
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
@@ -112,7 +84,7 @@ where
 /// credentials, etc.
 pub(crate) async fn health_check_start_session(
     env: &Environment,
-) -> Result<QldbSessionSdk<Standard>> {
+) -> Result<QldbSessionSdk<DynConnector>> {
     let session_client = build_client(&env).await?;
 
     let current_ledger = env.current_ledger();
@@ -164,9 +136,8 @@ The following error may have more information: {}
     Ok(session_client)
 }
 
-async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
-    let hyper = aws_hyper::conn::Standard::https();
-    let client = Client::new(hyper);
+async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>> {
+    let hyper = Client::https();
     let provider = rusoto_driver::profile_provider(&env)?;
     let rusoto_provider = match provider {
         Some(p) => CredentialProvider::Profile(p),
@@ -199,10 +170,11 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<Standard>> {
     //     env!("CARGO_PKG_VERSION")
     // ));
 
-    Ok(QldbSessionSdk::new(client, conf.build()))
+    Ok(QldbSessionSdk::new(hyper, conf.build()))
 }
 
-// FIXME: Default region should consider what is set in the Profile.
+// Note: infallible, but potentially fallible in the future (e.g. if we want to
+// check that the region is valid).
 pub(crate) fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
 where
     S: Into<String>,
@@ -211,8 +183,18 @@ where
         Some(r) => Region::new(r.into()),
         None => region::default_provider()
             .region()
-            .ok_or(error::usage_error("Could not determine a default region"))?,
+            .unwrap_or_else(rusoto_default_region),
     };
 
     Ok(it)
+}
+
+/// The default region in the rusoto sdk was capable of looking in the profile,
+/// or default to us-east-1. We preserve that behavior here. When the new SDK
+/// has support for profile proviers, use that!
+fn rusoto_default_region() -> Region {
+    match rusoto_core::credential::ProfileProvider::region() {
+        Ok(Some(region)) => Region::new(region),
+        _ => Region::new("us-east-1".to_owned()),
+    }
 }
