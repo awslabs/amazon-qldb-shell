@@ -73,7 +73,7 @@ dependencies = [
  "aws-auth",
  "aws-hyper",
  "aws-sdk-qldbsession",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha)",
  "bigdecimal",
  "chrono",
  "comfy-table",
@@ -187,7 +187,7 @@ name = "aws-endpoint"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha#1b923f86d5ca897da053661a30bddefb90e08ab4"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha)",
  "http",
  "regex",
  "smithy-http",
@@ -198,7 +198,7 @@ name = "aws-http"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha#1b923f86d5ca897da053661a30bddefb90e08ab4"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha)",
  "http",
  "lazy_static",
  "smithy-http",
@@ -241,7 +241,7 @@ dependencies = [
  "aws-http",
  "aws-hyper",
  "aws-sig-auth",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha)",
  "bytes 1.0.1",
  "http",
  "serde",
@@ -258,7 +258,7 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha#1b923f86d
 dependencies = [
  "aws-auth",
  "aws-sigv4",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.7-alpha)",
  "http",
  "smithy-http",
  "thiserror",
@@ -277,6 +277,15 @@ dependencies = [
  "ring",
  "serde",
  "serde_urlencoded",
+]
+
+[[package]]
+name = "aws-types"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+dependencies = [
+ "lazy_static",
+ "rustc_version 0.3.3",
 ]
 
 [[package]]
