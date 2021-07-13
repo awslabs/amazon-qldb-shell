@@ -56,13 +56,10 @@ where
     }
 }
 
-pub(crate) async fn build_driver<C>(
-    client: QldbSessionSdk<C>,
+pub(crate) async fn build_driver(
+    client: QldbSessionSdk,
     ledger: String,
-) -> QldbResult<QldbDriver<QldbSessionSdk<C>>>
-where
-    C: SmithyConnector,
-{
+) -> QldbResult<QldbDriver<QldbSessionSdk>> {
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
     // enter them again! We can't simply remember their inputs and try
