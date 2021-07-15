@@ -136,7 +136,7 @@ jobs:
           
           cd target/wix
           mv amazon_qldb_shell*.msi ../../$release_name.msi
-    
+        
           cd ../../
           $complete_file_name = $release_name + ".msi"
           
