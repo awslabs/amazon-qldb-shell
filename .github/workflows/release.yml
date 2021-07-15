@@ -59,6 +59,15 @@ jobs:
             bin: qldb
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+          role-duration-seconds: 1800
+          
       - name: Env Variable Setup
         if: matrix.os == 'windows-latest'
         run: |
@@ -127,7 +136,27 @@ jobs:
           
           cd target/wix
           mv amazon_qldb_shell*.msi ../../$release_name.msi
-        
+    
+          cd ../../
+          $complete_file_name = $release_name + ".msi"
+          
+          # Push unsigned MSI to S3
+          $put_object_response=( aws s3api put-object --bucket ${{ secrets.AWS_UNSIGNED_BUCKET }} --key ${{ secrets.AWS_KEY }} --body $complete_file_name --acl bucket-owner-full-control ) | ConvertFrom-Json 
+          $version_id = $put_object_response.VersionId
+
+          # Wait 5 seconds for job ID tag to be populated in S3 object
+          Start-Sleep -s 5
+          
+          # Get job ID
+          $get_object_tagging_response=( aws s3api get-object-tagging --bucket ${{ secrets.AWS_UNSIGNED_BUCKET }} --key ${{ secrets.AWS_KEY }} --version-id $version_id ) | ConvertFrom-Json
+          $job_id = $get_object_tagging_response.TagSet[0].Value         
+          
+          # Poll signed S3 bucket to see if the signed artifact is there
+          aws s3api wait object-exists --bucket ${{ secrets.AWS_SIGNED_BUCKET }} --key ${{ secrets.AWS_KEY }}-$job_id
+          
+          # Get signed MSI from S3
+          aws s3api get-object --bucket ${{ secrets.AWS_SIGNED_BUCKET }} --key ${{ secrets.AWS_KEY }}-$job_id $complete_file_name
+          
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
