@@ -14,7 +14,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#a4e1c99754ade031d887571d7305e2b51a5b9500"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#92b757ce609032c0788119abea806b2b3a01535d"
 dependencies = [
  "amazon-qldb-driver-core",
  "amazon-qldb-driver-rusoto",
@@ -26,7 +26,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-core"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#a4e1c99754ade031d887571d7305e2b51a5b9500"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#92b757ce609032c0788119abea806b2b3a01535d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -48,7 +48,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-rusoto"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#a4e1c99754ade031d887571d7305e2b51a5b9500"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#92b757ce609032c0788119abea806b2b3a01535d"
 dependencies = [
  "amazon-qldb-driver-core",
  "async-trait",
@@ -175,7 +175,7 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 [[package]]
 name = "aws-auth"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "smithy-http",
  "zeroize",
@@ -184,7 +184,7 @@ dependencies = [
 [[package]]
 name = "aws-endpoint"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "aws-types",
  "http",
@@ -195,7 +195,7 @@ dependencies = [
 [[package]]
 name = "aws-http"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "aws-types",
  "http",
@@ -208,7 +208,7 @@ dependencies = [
 [[package]]
 name = "aws-hyper"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "aws-auth",
  "aws-endpoint",
@@ -233,8 +233,8 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-qldbsession"
-version = "0.0.11-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+version = "0.0.12-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "aws-auth",
  "aws-endpoint",
@@ -253,7 +253,7 @@ dependencies = [
 [[package]]
 name = "aws-sig-auth"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "aws-auth",
  "aws-sigv4",
@@ -282,7 +282,7 @@ dependencies = [
 [[package]]
 name = "aws-types"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "lazy_static",
  "rustc_version 0.3.3",
@@ -1634,7 +1634,7 @@ dependencies = [
 [[package]]
 name = "protocol-test-helpers"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "assert-json-diff",
  "http",
@@ -2220,7 +2220,7 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 [[package]]
 name = "smithy-client"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "bytes 1.0.1",
  "fastrand",
@@ -2241,7 +2241,7 @@ dependencies = [
 [[package]]
 name = "smithy-http"
 version = "0.0.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "bytes 1.0.1",
  "bytes-utils",
@@ -2261,7 +2261,7 @@ dependencies = [
 [[package]]
 name = "smithy-http-tower"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "bytes 1.0.1",
  "http",
@@ -2275,7 +2275,7 @@ dependencies = [
 [[package]]
 name = "smithy-json"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "itoa",
  "ryu",
@@ -2285,7 +2285,7 @@ dependencies = [
 [[package]]
 name = "smithy-types"
 version = "0.0.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.11-alpha#6780fde33fd800c70deb27d0f096c0f2acc215b3"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
  "chrono",
 ]
