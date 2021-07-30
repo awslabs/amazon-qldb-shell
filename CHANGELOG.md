@@ -1,6 +1,10 @@
 # Changelog
 
-## [2.0.0-alpha13] - [Unreleased]
+## [2.0.0-alpha13] - 2021-07-28
+
+### Added
+
+- Added signing to Windows installer
 
 ### Changed
 
