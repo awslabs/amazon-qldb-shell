@@ -72,7 +72,7 @@ dependencies = [
  "aws-auth",
  "aws-hyper",
  "aws-sdk-qldbsession",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha)",
  "bigdecimal",
  "chrono",
  "comfy-table",
@@ -186,7 +186,7 @@ name = "aws-endpoint"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "regex",
  "smithy-http 0.0.1 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
@@ -197,7 +197,7 @@ name = "aws-http"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa9575151b9e9ac88810e65d5481860d8a552"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "lazy_static",
  "smithy-http 0.0.1 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
@@ -241,7 +241,7 @@ dependencies = [
  "aws-http",
  "aws-hyper",
  "aws-sig-auth",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "bytes 1.0.1",
  "http",
  "serde_json",
@@ -257,7 +257,7 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa957
 dependencies = [
  "aws-auth",
  "aws-sigv4",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "smithy-http 0.0.1 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "thiserror",
@@ -286,6 +286,16 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha#d61aa957
 dependencies = [
  "lazy_static",
  "rustc_version 0.3.3",
+]
+
+[[package]]
+name = "aws-types"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.14-alpha#c0905d9c991bb38a9738f1ffcb74e200772afc12"
+dependencies = [
+ "lazy_static",
+ "rustc_version 0.4.0",
+ "tracing",
 ]
 
 [[package]]
