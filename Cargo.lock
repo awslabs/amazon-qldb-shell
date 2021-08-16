@@ -14,7 +14,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#670ea5051cbe6be0f350b263a85116a4caaea95d"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#50218b05e3a48e07af43a232f7781b4739490cad"
 dependencies = [
  "amazon-qldb-driver-core",
  "amazon-qldb-driver-rusoto",
@@ -26,7 +26,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-core"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#670ea5051cbe6be0f350b263a85116a4caaea95d"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#50218b05e3a48e07af43a232f7781b4739490cad"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -48,7 +48,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-rusoto"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#670ea5051cbe6be0f350b263a85116a4caaea95d"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#50218b05e3a48e07af43a232f7781b4739490cad"
 dependencies = [
  "amazon-qldb-driver-core",
  "async-trait",
@@ -324,9 +324,9 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "bb8"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dae93eccab998c4b8703e3a6bbaa1714c38e445ebacb4bede25d0408521e293c"
+checksum = "2e9f4fa9768efd269499d8fba693260cfc670891cf6de3adc935588447a77cc8"
 dependencies = [
  "async-trait",
  "futures-channel",
