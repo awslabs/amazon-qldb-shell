@@ -134,7 +134,7 @@ All commands to the shell itself will be prefixed with a backslash (\), e.g:
 * `\env`
   * Prints out your current environment settings including where they were set from.
 
-### Line terminators <a href="line-terminators"/>
+### Line terminators
 
 The way to indicate to the shell that you are done with a command is by pressing the ENTER key. Some SQL data miners 
 using shells regularly type out long commands and separating this over multiple lines is natural. For these

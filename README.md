@@ -20,8 +20,8 @@ with each commit.
 
 ## Installation
 
-[**v2.0.0.alpha11** is now
-available!](https://github.com/awslabs/amazon-qldb-shell/releases/tag/v2.0.0-alpha11)
+[**v2.0.0.alpha13** is now
+available!](https://github.com/awslabs/amazon-qldb-shell/releases/tag/v2.0.0-alpha13)
 
 In general, see [releases][releases] for the latest and greatest. We provide
 prebuilt binaries for Linux, Windows and macOS. Find your platform, download,
@@ -40,6 +40,14 @@ xcode-select --install # required to use Homebrew
 brew tap aws/tap # Add AWS as a Homebrew tap
 brew install qldbshell
 qldb --ledger <your-ledger>
+```
+
+After installation, the Shell will load default config file located at `$XDG_CONFIG_HOME/qldbshell/default_config.toml` during initialization. For example on OSX this will typically be at `/Users/username/Library/Application Support/qldbshell/default_config.toml`. You will need to create the `default_config.toml` config file manually after installation. An example minimal `default_config.toml` config file:
+```
+default_ledger = "my-ledger"
+
+[ui]
+edit_mode = "Vi"
 ```
 
 ### Building from source
