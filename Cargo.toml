@@ -34,7 +34,7 @@ thiserror = "1.0.25"
 anyhow = "1.0.43"
 tokio = "1.10.0"
 toml = "0.5.8"
-serde = "1.0.127"
+serde = "1.0.128"
 tracing = { version = "0.1.25", features = ["log"] }
 tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
 tracing-appender = "0.1.2"
