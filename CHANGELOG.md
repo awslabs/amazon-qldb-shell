@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.0] - 2021-08-25
+
+The Amazon QLDB team is pleased to announce the release of version v2.0.0 of Amazon QLDB Shell. This release is aimed at enhancing the developer experience when interacting with Amazon QLDB.
+
 ## [2.0.0-alpha13] - 2021-07-28
 
 ### Added
@@ -154,7 +158,7 @@
 
 ### Added
 
-- Howbrew installation instructions
+- Homebrew installation instructions
 - Additional logging (when using `--verbose`)
 - `--format table` as an option (this is not fully implemented)
 - DESIGN.md as a vision document
