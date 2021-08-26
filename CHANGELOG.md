@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0-alpha14] - Unreleased
+
+### Changed
+
+- SDK updated to 0.0.16
+
 ## [2.0.0-alpha13] - 2021-07-28
 
 ### Added
