@@ -52,7 +52,7 @@ source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#59e
 dependencies = [
  "amazon-qldb-driver-core",
  "async-trait",
- "aws-auth",
+ "aws-auth 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha)",
  "aws-sdk-qldbsession",
  "bytes 1.1.0",
  "http",
@@ -69,10 +69,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "aws-auth",
+ "aws-auth 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "aws-hyper",
  "aws-sdk-qldbsession",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "bigdecimal",
  "chrono",
  "comfy-table",
@@ -176,11 +176,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-auth"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+dependencies = [
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha)",
+ "smithy-http 0.0.1 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha)",
+ "tokio",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
 name = "aws-endpoint"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a97d8213105549f35914670dd7bd91d619"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "regex",
  "smithy-http",
@@ -191,7 +203,7 @@ name = "aws-http"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a97d8213105549f35914670dd7bd91d619"
 dependencies = [
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "lazy_static",
  "smithy-http",
@@ -204,7 +216,7 @@ name = "aws-hyper"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a97d8213105549f35914670dd7bd91d619"
 dependencies = [
- "aws-auth",
+ "aws-auth 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "aws-endpoint",
  "aws-http",
  "aws-sig-auth",
@@ -229,7 +241,7 @@ name = "aws-sdk-qldbsession"
 version = "0.0.16-alpha"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a97d8213105549f35914670dd7bd91d619"
 dependencies = [
- "aws-auth",
+ "aws-auth 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "aws-endpoint",
  "aws-http",
  "aws-hyper",
@@ -247,9 +259,9 @@ name = "aws-sig-auth"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a97d8213105549f35914670dd7bd91d619"
 dependencies = [
- "aws-auth",
+ "aws-auth 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "aws-sigv4",
- "aws-types",
+ "aws-types 0.1.0 (git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.12-alpha)",
  "http",
  "smithy-http",
  "thiserror",
@@ -277,6 +289,16 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.16-alpha#dab3b0a9
 dependencies = [
  "lazy_static",
  "rustc_version",
+ "tracing",
+]
+
+[[package]]
+name = "aws-types"
+version = "0.1.0"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.13-alpha#7c5f3753b8fce99b43f7c1a4fe5f2dd8077b95e3"
+dependencies = [
+ "lazy_static",
+ "rustc_version 0.4.0",
  "tracing",
 ]
 
@@ -487,13 +509,14 @@ dependencies = [
 
 [[package]]
 name = "comfy-table"
-version = "4.0.1"
+version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92e0356b571da8e3d6ff2fe5de9be56e379c6bf22d91ffc86c2fcab35e54701f"
+checksum = "11e95a3e867422fd8d04049041f5671f94d53c32a9dcd82e2be268714942f3f3"
 dependencies = [
  "crossterm",
  "strum",
  "strum_macros",
+ "unicode-width",
 ]
 
 [[package]]
