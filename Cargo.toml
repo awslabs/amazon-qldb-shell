@@ -10,11 +10,11 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", package = "amazon-qldb-driver", branch = "main" }
 
 # All of this is related to the AWS SDK for Rust
-aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
-aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-hyper", features = [] }
-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.13-alpha", package = "smithy-http", features = [] }
-aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-auth", features = [] }
-aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-types", features = [] }
+aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
+aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-hyper", features = [] }
+smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "smithy-http", features = [] }
+aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-auth", features = [] }
+aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-types", features = [] }
 tower = "0.4.8"
 http = "0.2.4"
 # --
@@ -31,15 +31,15 @@ async-trait = "0.1.51"
 rustyline-derive = "0.4.0"
 itertools = "0.10.0"
 thiserror = "1.0.25"
-anyhow = "1.0.43"
-tokio = "1.10.0"
+anyhow = "1.0.39"
+tokio = "1.9.0"
 toml = "0.5.8"
 serde = "1.0.127"
 tracing = { version = "0.1.25", features = ["log"] }
 tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
 tracing-appender = "0.1.2"
 tracing-bunyan-formatter = "0.2.4"
-comfy-table = "4.1.1"
+comfy-table = "4.0.1"
 bigdecimal = "0.2.0"
 smallvec = "1.6.1"
 atty = "0.2.14"
