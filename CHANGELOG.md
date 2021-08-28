@@ -2,6 +2,10 @@
 
 ## [2.0.0-alpha13] - 2021-07-28
 
+### Changed
+
+- BadRequestException no longer aborts transactions
+
 ### Added
 
 - Added signing to Windows installer
