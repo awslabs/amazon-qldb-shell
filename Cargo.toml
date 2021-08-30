@@ -36,7 +36,7 @@ tokio = "1.9.0"
 toml = "0.5.8"
 serde = "1.0.130"
 tracing = { version = "0.1.25", features = ["log"] }
-tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
+tracing-subscriber = { version = "0.2.20", features = ["fmt"] }
 tracing-appender = "0.1.2"
 tracing-bunyan-formatter = "0.2.4"
 comfy-table = "4.1.1"
