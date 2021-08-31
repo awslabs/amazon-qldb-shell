@@ -5,7 +5,15 @@
 
 ## Welcome to the v2.0 branch!
 
-The Amazon QLDB team is pleased to announce the release of version v2.0.0 of Amazon QLDB Shell. This release is aimed at enhancing the developer experience when interacting with Amazon QLDB.
+Hi traveler, you've found your way to **alpha quality software**. Here be
+dragons.
+
+The QLDB Shell is undergoing a complete rewrite in Rust to make it faster and
+lower latency with zero external dependencies. This is an early alpha release
+which is not intended for use in production systems. For the time being the
+Python-based shell on the master branch continues to be the production-ready
+release. Please contact us if you experiment with this early alpha release and
+have feedback you'd like to share with us.
 
 If you'd like to follow along, [CHANGELOG.md](CHANGELOG.md) is kept up to date
 with each commit.
@@ -42,16 +50,27 @@ default_ledger = "my-ledger"
 # Determines whether each statement will be executed as a transaction or not. 
 # By default this is on, meaning that statements are all executed as individual transactions.
 auto_commit = [true|false] # default: true
+
 # Set your prompt to your desired value. The following values can be interpolated:
 #   - $REGION: the name of the AWS region
 #   - $LEDGER: the name of the ledger
 #   - $ACTIVE_TRANSACTION: the string " \*" if a transaction is open
 prompt = your-prompt-syntax # default: "qldb$ACTIVE_TRANSACTION> "
-edit_mode = "Emacs" # or Vi
+
+# format = [ion|table]
+#   ion: Prints the objects from the database as ION documents in text.
+#   table: Tabulates the data and prints out the data as rows.
+format = "table" # or ion default: ion
+
+edit_mode = "Emacs" # or Vi default: Emacs
+
 display_welcome = [true|false] # default: true
+
 display_ctrl_signals = [true|false] # default: true
+
 # Determines whether or not metrics will be emitted after the results of a query are shown.
 display_query_metrics = [true|false] # default: true
+
 # Set terminator_required to true indicates that pressing the enter key at the end of a line of input will not execute the command by itself. 
 # Alternately, if you end your statement with a semi-colon (`;`) you will execute the statement.
 terminator_required = [true|false] # default: false
@@ -92,11 +111,11 @@ See [HACKING.md](HACKING.md) for further instructions
 
 All commands to the shell itself will be prefixed with a backslash \\, e.g:
 
-* `\use --ledger ledger-name`
-  * Connect to a different ledger.
+* `\use -l LEDGER_NAME [-p PROFILE] [-r REGION_CODE] [-s QLDB_SESSION_ENDPOINT]`
+  * Switch to a different ledger (or: region, endpoint, AWS profile) without restarting the shell.
 * `\set`
-  * `\set edit-mode [emacs|vi]` Toggle between Emacs/Vi keybindings
-  * `\set terminator-required [true|false]` Toggle `terminator_required`
+  * `\set edit-mode [emacs|vi]` Toggle between Emacs/Vi keybindings.
+  * `\set terminator-required [true|false]` Toggle `terminator_required`.
 * `\show tables`
   * Display a list of tables in the current ledger.
 * `\status`
@@ -104,7 +123,7 @@ All commands to the shell itself will be prefixed with a backslash \\, e.g:
 * `\env`
   * Prints out your current environment settings including where they were set from.
 * `\ping`
-  * Prints the round-trip time to the server
+  * Prints the round-trip time to the server.
 
 ## License
 
