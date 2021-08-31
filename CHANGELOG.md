@@ -6,6 +6,10 @@
 
 - SDK updated to 0.0.16
 
+### Fixed
+
+- A bug where `ui.format` option in config file would not work (fixes #132).
+
 ## [2.0.0-alpha13] - 2021-07-28
 
 ### Changed
@@ -164,7 +168,7 @@
 
 ### Added
 
-- Howbrew installation instructions
+- Homebrew installation instructions
 - Additional logging (when using `--verbose`)
 - `--format table` as an option (this is not fully implemented)
 - DESIGN.md as a vision document
