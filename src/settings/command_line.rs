@@ -39,8 +39,8 @@ pub struct Opt {
     #[structopt(short, long = "--verbose", parse(from_occurrences))]
     pub verbose: u8,
 
-    #[structopt(short, long = "--format", default_value = "ion")]
-    pub format: FormatMode,
+    #[structopt(short, long = "--format")]
+    pub format: Option<FormatMode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

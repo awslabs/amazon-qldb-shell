@@ -22,7 +22,9 @@ pub(crate) struct EnvironmentInner {
 impl Environment {
     pub fn new(mut config: ShellConfig, cli: Opt) -> Result<Environment> {
         // First, update any config options based off `[cli]`.
-        config.ui.format = cli.format;
+        if let Some(format) = cli.format {
+            config.ui.format = format;
+        }
 
         // Next, identify the current ledger and region.
         let ledger_name = match (cli.ledger, &config.default_ledger) {

@@ -1,12 +1,20 @@
 # Changelog
 
-## [2.0.0-alpha14]
+## [2.0.0-alpha14] - Unreleased
+
+### Changed
+
+- SDK updated to 0.0.16
 
 ### Fixed
 
 - A bug where `ui.format` option in config file would not work (fixes #132).
 
 ## [2.0.0-alpha13] - 2021-07-28
+
+### Changed
+
+- BadRequestException no longer aborts transactions
 
 ### Added
 

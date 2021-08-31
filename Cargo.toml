@@ -10,42 +10,42 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", package = "amazon-qldb-driver", branch = "main" }
 
 # All of this is related to the AWS SDK for Rust
-aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
-aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-hyper", features = [] }
-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.13-alpha", package = "smithy-http", features = [] }
-aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-auth", features = [] }
-aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.12-alpha", package = "aws-types", features = [] }
+aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
+aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-hyper", features = [] }
+smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "smithy-http", features = [] }
+aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-auth", features = [] }
+aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-types", features = [] }
 tower = "0.4.8"
 http = "0.2.4"
 # --
 
 rusoto_core = { version = "0.47.0", default_features = false, features = ["rustls"]}
 rusoto_qldb_session = { version = "0.47.0", default_features = false, features = ["rustls"]}
-rustyline = "8.2.0"
+rustyline = "9.0.0"
 dirs = "3.0.1"
 structopt = "0.3.21"
 ion-rs = "0.6"
 ion-c-sys = "0.4.9"
 chrono = "0.4.19"
 async-trait = "0.1.51"
-rustyline-derive = "0.4.0"
+rustyline-derive = "0.5.0"
 itertools = "0.10.0"
-thiserror = "1.0.25"
+thiserror = "1.0.28"
 anyhow = "1.0.39"
 tokio = "1.9.0"
 toml = "0.5.8"
-serde = "1.0.127"
+serde = "1.0.130"
 tracing = { version = "0.1.25", features = ["log"] }
-tracing-subscriber = { version = "0.2.16", features = ["fmt"] }
+tracing-subscriber = { version = "0.2.20", features = ["fmt"] }
 tracing-appender = "0.1.2"
-tracing-bunyan-formatter = "0.2.4"
-comfy-table = "4.1.0"
+tracing-bunyan-formatter = "0.2.5"
+comfy-table = "4.1.1"
 bigdecimal = "0.2.0"
 smallvec = "1.6.1"
 atty = "0.2.14"
 url = "2.2.2"
 reqwest = "0.11.3"
-futures = "0.3.16"
+futures = "0.3.17"
 
 [dev-dependencies]
 tempdir = "0.3"
