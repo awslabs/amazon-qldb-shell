@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use dirs;
 use ion_rs::value::owned::OwnedStruct;
 use ion_rs::value::reader::{element_reader, ElementReader};
