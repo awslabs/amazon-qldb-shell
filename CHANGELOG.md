@@ -9,6 +9,8 @@
 ### Fixed
 
 - A bug where `ui.format` option in config file would not work (fixes #132).
+- Fixed a case where an invalid statement could cause the shell to hang in
+  autocommit mode (#142).
 
 ## [2.0.0-alpha13] - 2021-07-28
 
