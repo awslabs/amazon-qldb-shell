@@ -105,9 +105,10 @@ where
         }
         self.handle_start_transaction();
         if let Err(e) = self.handle_partiql(line).await {
-            // By dropping the current transaction, the input channel will be
-            // closed which ends the transaction.
-            self.current_transaction.take();
+            // If we got an error, the transaction might still be open if the
+            // error was not fatal to the transaction. So, we should send an
+            // abort.
+            let _ = self.handle_abort().await; // ignore any error calling abort()
             Err(e)?
         }
         self.handle_commit().await?;
