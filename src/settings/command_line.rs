@@ -9,10 +9,7 @@ use url::Url;
 use crate::error::{usage_error, ShellError};
 
 #[derive(Debug, StructOpt, Default)]
-#[structopt(
-    name = "qldb-shell",
-    about = "A shell for interacting with Amazon QLDB."
-)]
+#[structopt(name = "qldb", about = "A shell for interacting with Amazon QLDB.")]
 pub struct Opt {
     #[structopt(short, long = "--region")]
     pub region: Option<String>,
