@@ -143,23 +143,19 @@ impl TryFrom<&OwnedStruct> for UiConfig {
             );
         };
 
-        ui.format = if let Some(elem) = value.get("format") {
+        if let Some(elem) = value.get("format") {
             let format = elem
                 .as_str()
                 .ok_or(usage_error("`ui.format` should be a string"))?;
-            FormatMode::from_str(format)?
-        } else {
-            FormatMode::Ion
-        };
+            ui.format = FormatMode::from_str(format)?;
+        }
 
-        ui.edit_mode = if let Some(elem) = value.get("edit_mode") {
+        if let Some(elem) = value.get("edit_mode") {
             let edit_mode = elem
                 .as_str()
                 .ok_or(usage_error("`ui.edit_mode` should be a string"))?;
-            EditMode::from_str(edit_mode)?
-        } else {
-            EditMode::Emacs
-        };
+            ui.edit_mode = EditMode::from_str(edit_mode)?;
+        }
 
         ui.display_welcome = if let Some(elem) = value.get("display_welcome") {
             elem.as_bool()
@@ -182,12 +178,11 @@ impl TryFrom<&OwnedStruct> for UiConfig {
             true
         };
 
-        ui.terminator_required = if let Some(elem) = value.get("terminator_required") {
-            elem.as_bool()
+        if let Some(elem) = value.get("terminator_required") {
+            ui.terminator_required = elem
+                .as_bool()
                 .ok_or(usage_error("`ui.terminator_required` should be a bool"))?
-        } else {
-            false
-        };
+        }
 
         Ok(ui)
     }
