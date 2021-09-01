@@ -6,6 +6,9 @@
 
 - SDK updated to 0.0.16
 - The config file is now `config.ion` instead of `default_config.toml` (see #141)
+  - if you have a config file, please migrate to Ion and rename the file
+- On Macos, the XDG defaults are now `~/.config` to align with Linux (see #141)
+  - if you had a config file in `~/Library/Application Support`, please move it
 
 ### Fixed
 
