@@ -15,6 +15,7 @@
 - A bug where `ui.format` option in config file would not work (fixes #132).
 - Fixed a case where an invalid statement could cause the shell to hang in
   autocommit mode (#142).
+- Program name in `--help` now matches the binary name.
 
 ## [2.0.0-alpha13] - 2021-07-28
 
