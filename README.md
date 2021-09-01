@@ -42,9 +42,9 @@ qldb --ledger <your-ledger>
 ### Configuration
 
 After installation, the Shell will load default config file located at
-`$XDG_CONFIG_HOME/qldbshell/config.ion` during initialization. For example on
-OSX this will typically be at `~/Library/Application Support/qldbshell/config.ion`. If such a file doesn't exist, the shell will run
-with default settings.
+`$XDG_CONFIG_HOME/qldbshell/config.ion` during initialization. On Linux and
+Macos, this will typically be at `~/.config/qldbshell/config.ion`. If such a
+file doesn't exist, the shell will run with default settings.
 
 You can create a `config.ion` config file manually after installation. The
 config file uses [Ion][ion]. If you're new to Ion, you can consider the file to
