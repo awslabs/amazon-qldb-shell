@@ -292,7 +292,7 @@ impl ShellConfig {
     }
 
     pub fn default_config_file_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir().ok_or(usage_error("$XDG_CONFIG_HOME not set"))?;
+        let config_dir = config_dir_path().ok_or(usage_error("$XDG_CONFIG_HOME not set"))?;
         let shell_dir = config_dir.join("qldbshell");
         fs::create_dir_all(&shell_dir)?;
         Ok(shell_dir.join("config.ion"))
@@ -314,6 +314,33 @@ impl ShellConfig {
             ShellConfig::load(&config_file)
         }
     }
+}
+
+// On Macos, we override the XDG default of `~/Library/Application Support` to
+// match the Linux convention of `~/.config`. See the discussion in #141 for why
+// this decision was made.
+//
+// The code below is, essentially, the definition of `dirs::config_dir()` for
+// Linux. We cannot call that directly because it is conditionally compiled, and
+// thus we need our own slightly modified version of the code for Macos.
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+fn config_dir_path() -> Option<PathBuf> {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .and_then(|path| {
+            let path = PathBuf::from(path);
+            if path.is_absolute() {
+                Some(path)
+            } else {
+                None
+            }
+        })
+        .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
+}
+
+// On other platforms, we rely on the XDG default convention.
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+fn config_dir_path() -> Option<PathBuf> {
+    dirs::config_dir()
 }
 
 #[cfg(test)]
