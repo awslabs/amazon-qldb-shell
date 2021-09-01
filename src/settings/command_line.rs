@@ -4,8 +4,9 @@ use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::str::FromStr;
 use structopt::StructOpt;
-use thiserror::Error;
 use url::Url;
+
+use crate::error::{usage_error, ShellError};
 
 #[derive(Debug, StructOpt, Default)]
 #[structopt(
@@ -23,7 +24,7 @@ pub struct Opt {
     pub ledger: Option<String>,
 
     /// Config file to load. By default, this file is in
-    /// $XDG_CONFIG_HOME/qldbshell/default_config.toml.
+    /// $XDG_CONFIG_HOME/qldbshell/config.ion
     #[structopt(short, long, parse(from_os_str))]
     pub config: Option<PathBuf>,
 
@@ -58,21 +59,15 @@ impl Default for FormatMode {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ParseFormatModeErr {
-    #[error("{0} is not a valid format mode")]
-    InvalidFormatMode(String),
-}
-
 impl FromStr for FormatMode {
-    type Err = ParseFormatModeErr;
+    type Err = ShellError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match &s.to_lowercase()[..] {
             "ion" | "ion-text" => FormatMode::Ion,
             "table" => FormatMode::Table,
             "json" => todo!("json is not yet supported"),
-            _ => return Err(ParseFormatModeErr::InvalidFormatMode(s.into())),
+            _ => return Err(usage_error(format!("{} is not a valid format mode", s))),
         })
     }
 }

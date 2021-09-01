@@ -5,6 +5,7 @@
 ### Changed
 
 - SDK updated to 0.0.16
+- The config file is now `config.ion` instead of `default_config.toml` (see #141)
 
 ### Fixed
 
