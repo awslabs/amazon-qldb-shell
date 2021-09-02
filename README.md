@@ -73,7 +73,7 @@ be JSON with support for comments and you'll be just fine!
     edit_mode: "Emacs", // or Vi default: Emacs
 
     // Can be toggled to suppress some messaging when runnning in interactive mode
-    display_welcome: true // the default; can be set to false
+    display_welcome: true, // the default; can be set to false
     display_ctrl_signals: true,
 
     // Determines whether or not metrics will be emitted after the results of a query are shown.
@@ -81,7 +81,7 @@ be JSON with support for comments and you'll be just fine!
 
     // Set terminator_required to true indicates that pressing the enter key at the end of a line of input will not execute the command by itself.
     // Alternately, if you end your statement with a semi-colon (`;`) you will execute the statement.
-    terminator_required = true
+    terminator_required: true
   }
 }
 ```
@@ -129,9 +129,9 @@ All commands to the shell itself will be prefixed with a backslash \\, e.g:
   - `\set edit-mode [emacs|vi]` Toggle between Emacs/Vi keybindings.
   - `\set terminator-required [true|false]` Toggle `terminator_required`.
 - `\show tables`
-  - Display a list of tables in the current ledger.
+  - Display a list of active tables in the current ledger.
 - `\status`
-  - Prints out things like connection status, server ping latency, etc.
+  - Prints out your current region, ledger and Shell version.
 - `\env`
   - Prints out your current environment settings including where they were set from.
 - `\ping`
