@@ -9,6 +9,7 @@
   - if you have a config file, please migrate to Ion and rename the file
 - On Macos, the XDG defaults are now `~/.config` to align with Linux (see #141)
   - if you had a config file in `~/Library/Application Support`, please move it
+- Format=table takes less vertical space (see #153)
 
 ### Fixed
 

@@ -78,6 +78,7 @@ fn build_table(elems: &[&OwnedElement]) -> Result<Table> {
     final_headers.extend(headers);
 
     let mut table = Table::new();
+    table.load_preset(comfy_table::presets::ASCII_BORDERS_ONLY_CONDENSED);
     table.set_header(final_headers.clone());
 
     for elem in elems {
