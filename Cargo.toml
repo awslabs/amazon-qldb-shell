@@ -23,7 +23,7 @@ rusoto_core = { version = "0.47.0", default_features = false, features = ["rustl
 rusoto_qldb_session = { version = "0.47.0", default_features = false, features = ["rustls"]}
 rustyline = "9.0.0"
 dirs = "3.0.1"
-structopt = "0.3.21"
+structopt = "0.3.23"
 ion-rs = "0.6"
 ion-c-sys = "0.4.9"
 chrono = "0.4.19"
