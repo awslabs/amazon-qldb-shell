@@ -140,7 +140,8 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         Some(p) => CredentialProvider::Profile(p),
         None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
     };
-    let creds = credentials::from_rusoto(rusoto_provider).await?;
+    let creds = credentials::from_rusoto(rusoto_provider);
+
     let conf = Config::builder()
         .region(env.current_region())
         .credentials_provider(creds);
