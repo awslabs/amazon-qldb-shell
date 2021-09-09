@@ -10,6 +10,10 @@
 - On Macos, the XDG defaults are now `~/.config` to align with Linux (see #141)
   - if you had a config file in `~/Library/Application Support`, please move it
 - Format=table takes less vertical space (see #153)
+- Refine Welcome message (see #148)
+- Add more help info for CLI options when using `--help` (see #151)
+- Remove backslashes for database commands (see #173)
+
 
 ### Fixed
 

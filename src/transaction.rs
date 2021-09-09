@@ -100,7 +100,7 @@ where
             // We're not in auto-commit mode, but there is no transaction
             return Err(QldbShellError::UsageError(format!(
                 "No active transaction and not in auto-commit mode. \
-                Start a transaction with '\\start transaction'"
+                Start a transaction with 'start transaction' or 'begin'"
             )))?;
         }
         self.handle_start_transaction();

@@ -11,6 +11,8 @@ use crate::error::{usage_error, ShellError};
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "qldb", about = "A shell for interacting with Amazon QLDB.")]
 pub struct Opt {
+    /// The AWS Region code of the QLDB ledger to connect to. For example: `us-east-1`.
+    /// If not provided, the shell connects to your default AWS Region as specified in your AWS profile.
     #[structopt(short, long = "--region")]
     pub region: Option<String>,
 
@@ -24,10 +26,13 @@ pub struct Opt {
     /// $XDG_CONFIG_HOME/qldbshell/config.ion
     #[structopt(short, long, parse(from_os_str))]
     pub config: Option<PathBuf>,
-
+    /// The `qldb-session` API endpoint to connect to.
+    /// For a complete list of available QLDB Regions and endpoints,
+    /// see [Amazon QLDB endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/qldb.html).
     #[structopt(short = "-s", long = "--qldb-session-endpoint", parse(try_from_str = Url::try_from))]
     pub qldb_session_endpoint: Option<Url>,
-
+    /// The location of your AWS credentials profile to use for authentication.
+    /// If not provided, the shell uses your default AWS profile, which is located at `~/.aws/credentials`.
     #[structopt(short, long = "--profile")]
     pub profile: Option<String>,
 
@@ -37,6 +42,7 @@ pub struct Opt {
     #[structopt(short, long = "--verbose", parse(from_occurrences))]
     pub verbose: u8,
 
+    /// The output format of your query results. The default is `ion`.
     #[structopt(short, long = "--format")]
     pub format: Option<FormatMode>,
 }
