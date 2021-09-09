@@ -18,6 +18,15 @@ have feedback you'd like to share with us.
 If you'd like to follow along, [CHANGELOG.md](CHANGELOG.md) is kept up to date
 with each commit.
 
+## Getting Started
+This readme assumes you have an environment configured with AWS credentials and IAM users/roles with appropriate access to QLDB. This readme focuses on shell configuration and commands. For a guide about prerequisites and general use of the shell, please see the developer guide: https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html
+
+## QLDB Core Concepts
+QLDB provides guarantees about consistency during transactions, and ensures that transactions are consistent upon commit via Optimistic Currency Control. This applies to all queries, so when using the shell, your statements must be run as transactions. By default, the shell enables auto-commit mode, which will interpret queries by default as transactions, meaning you do not have to `start transaction` and `commit` manually each time. This is configurable (see below).
+
+Additionally, currently, transactions have a 30-second window, so when using the shell, you'll want to submit queries within that window. Otherwise, you'll get an error and need to retry.
+
+
 ## Installation
 
 In general, see [releases][releases] for the latest and greatest. We provide
@@ -103,6 +112,16 @@ If `default_ledger` is not set, then `--ledger` becomes a required CLI parameter
 See [HACKING.md](HACKING.md) for further instructions
 
 ## Command interface
+
+### Shell Keys
+- Enter
+ - Runs the statement
+- Escape+Enter
+ - Starts a new line to enter a statement that spans multiple lines. You can also copy input text with multiple lines and paste it into the shell. For instructions on setting up Option instead of Escape as a Meta key in macOS, see the [OS X Daily](https://osxdaily.com/2013/02/01/use-option-as-meta-key-in-mac-os-x-terminal/) site. 
+- Ctrl+C
+ - Noop
+- Ctrl+D
+ - EOF / exit current level of shell. If not in a transaction, exit shell. If in a transaction, aborts the transaction.
 
 ### Database commands
 
