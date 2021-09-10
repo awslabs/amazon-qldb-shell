@@ -126,13 +126,13 @@ impl Default for UiConfig {
     fn default() -> Self {
         UiConfig {
             auto_commit: true,
-            prompt: None,
-            format: FormatMode::default(),
-            edit_mode: EditMode::default(),
             display_welcome: true,
             display_ctrl_signals: true,
             display_query_metrics: true,
-            terminator_required: false,
+            terminator_required: Default::default(),
+            prompt: Default::default(),
+            format: Default::default(),
+            edit_mode: Default::default(),
         }
     }
 }
