@@ -25,7 +25,7 @@ pub(crate) enum TickFlow {
     Exit,
 }
 
-pub(crate) const HELP_TEXT: &'static str = r"To start a transaction, enter '\start transaction' or '\begin'. To exit, enter '\exit' or press CTRL-D.";
+pub(crate) const HELP_TEXT: &'static str = r"To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
 
 pub(crate) struct Runner<C>
 where

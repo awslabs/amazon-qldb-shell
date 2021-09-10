@@ -48,8 +48,10 @@ pub async fn run() -> Result<()> {
         ui.println(
                 r#"Welcome to the Amazon QLDB Shell!
 
-To start a transaction type 'start transaction', after which you may enter a series of PartiQL statements.
-When your transaction is complete, enter 'commit' or 'abort' as appropriate."#,
+- Transactions: By default, the shell implicitly runs each statement in its own transaction and automatically commits the transaction if no errors are found. This is configurable. To start a multi-statement transaction, enter `start transaction` or `begin`.
+- PartiQL: QLDB supports a subset of PartiQL, and returns elements of query results in unordered "bags". For more details, see the shell topic in the QLDB Developer Guide.
+- Developer Guide: https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html
+- Reminder: This welcome message can be disabled in the config."#,
             );
     }
 
@@ -88,7 +90,7 @@ enum QldbShellError {
     #[error("usage error: {0}")]
     UsageError(String),
 
-    #[error(r"Unknown command, enter '\help' for a list of commands.")]
+    #[error(r"Unknown command, enter 'help' for a list of commands.")]
     UnknownCommand,
 }
 
