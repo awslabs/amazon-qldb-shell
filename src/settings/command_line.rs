@@ -37,7 +37,6 @@ pub struct Opt {
 
     /// The location of your AWS credentials profile to use for authentication.
     /// By default, the shell will pick a default profile as described in the shell guide
-    #[structopt(short, long = "--region")]
     #[structopt(short, long = "--profile")]
     pub profile: Option<String>,
 
