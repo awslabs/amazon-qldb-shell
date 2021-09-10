@@ -49,9 +49,9 @@ pub async fn run() -> Result<()> {
                 r#"Welcome to the Amazon QLDB Shell!
 
 - Transactions: By default, the shell implicitly runs each statement in its own transaction and automatically commits the transaction if no errors are found. This is configurable. To start a multi-statement transaction, enter `start transaction` or `begin`.
-- PartiQL: a subset of PartiQL is supported, and elements returned by queries are in unordered "bags." For more details, check the shell guide in the developer guide.
+- PartiQL: QLDB supports a subset of PartiQL, and returns elements of query results in unordered "bags". For more details, see the shell topic in the QLDB Developer Guide.
 - Developer Guide: https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html
-- Reminder: this welcome message can be disabled in the config."#,
+- Reminder: This welcome message can be disabled in the config."#,
             );
     }
 

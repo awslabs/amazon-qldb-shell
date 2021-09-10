@@ -9,11 +9,12 @@ use url::Url;
 use crate::error::{usage_error, ShellError};
 
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "qldb", about = "A shell for interacting with Amazon QLDB.")]
+/// A shell for interacting with Amazon QLDB. For more details,
+/// see the shell topic in the QLDB Developer Guide: https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html
+#[structopt(name = "qldb")]
 pub struct Opt {
     /// The AWS Region code of the QLDB ledger to connect to. For example: `us-east-1`.
-    /// By default, the shell will pick a default region as described in the 
-    /// standard AWS toolchain [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html).
+    /// By default, the shell will pick a default region as described in the shell guide
     #[structopt(short, long = "--region")]
     pub region: Option<String>,
 
@@ -35,8 +36,7 @@ pub struct Opt {
     pub qldb_session_endpoint: Option<Url>,
 
     /// The location of your AWS credentials profile to use for authentication.
-    /// By default, the shell will pick a default profile as described in the 
-    /// standard AWS toolchain [documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html).
+    /// By default, the shell will pick a default profile as described in the shell guide
     #[structopt(short, long = "--region")]
     #[structopt(short, long = "--profile")]
     pub profile: Option<String>,
