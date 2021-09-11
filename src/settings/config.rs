@@ -30,7 +30,7 @@ pub struct LedgerConfig {
     pub qldb_session_endpoint: Option<String>,
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct UiConfig {
     pub auto_commit: bool,
     pub prompt: Option<String>,
@@ -122,18 +122,32 @@ impl TryFrom<&OwnedStruct> for ShellConfig {
     }
 }
 
+impl Default for UiConfig {
+    fn default() -> Self {
+        UiConfig {
+            auto_commit: true,
+            display_welcome: true,
+            display_ctrl_signals: true,
+            display_query_metrics: true,
+            terminator_required: Default::default(),
+            prompt: Default::default(),
+            format: Default::default(),
+            edit_mode: Default::default(),
+        }
+    }
+}
+
 impl TryFrom<&OwnedStruct> for UiConfig {
     type Error = ShellError;
 
     fn try_from(value: &OwnedStruct) -> Result<Self, Self::Error> {
         let mut ui = UiConfig::default();
 
-        ui.auto_commit = if let Some(elem) = value.get("auto_commit") {
-            elem.as_bool()
+        if let Some(elem) = value.get("auto_commit") {
+            ui.auto_commit = elem
+                .as_bool()
                 .ok_or(usage_error("`ui.auto_commit` should be a bool"))?
-        } else {
-            true
-        };
+        }
 
         if let Some(elem) = value.get("prompt") {
             ui.prompt = Some(
@@ -157,26 +171,23 @@ impl TryFrom<&OwnedStruct> for UiConfig {
             ui.edit_mode = EditMode::from_str(edit_mode)?;
         }
 
-        ui.display_welcome = if let Some(elem) = value.get("display_welcome") {
-            elem.as_bool()
+        if let Some(elem) = value.get("display_welcome") {
+            ui.display_welcome = elem
+                .as_bool()
                 .ok_or(usage_error("`ui.display_welcome` should be a bool"))?
-        } else {
-            true
-        };
+        }
 
-        ui.display_ctrl_signals = if let Some(elem) = value.get("display_ctrl_signals") {
-            elem.as_bool()
+        if let Some(elem) = value.get("display_ctrl_signals") {
+            ui.display_ctrl_signals = elem
+                .as_bool()
                 .ok_or(usage_error("`ui.display_ctrl_signals` should be a bool"))?
-        } else {
-            true
-        };
+        }
 
-        ui.display_query_metrics = if let Some(elem) = value.get("display_query_metrics") {
-            elem.as_bool()
+        if let Some(elem) = value.get("display_query_metrics") {
+            ui.display_query_metrics = elem
+                .as_bool()
                 .ok_or(usage_error("`ui.display_query_metrics` should be a bool"))?
-        } else {
-            true
-        };
+        }
 
         if let Some(elem) = value.get("terminator_required") {
             ui.terminator_required = elem
