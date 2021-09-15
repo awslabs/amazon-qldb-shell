@@ -18,14 +18,17 @@ have feedback you'd like to share with us.
 If you'd like to follow along, [CHANGELOG.md](CHANGELOG.md) is kept up to date
 with each commit.
 
-## Getting Started
-This readme assumes you have an environment configured with AWS credentials and IAM users/roles with appropriate access to QLDB. This readme focuses on shell configuration and commands. For a guide about prerequisites and general use of the shell, please see the developer guide: https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html
+## Prerequisites
+This readme assumes you have an AWS account, an environment configured with AWS credentials, as well as IAM users/roles with appropriate access to QLDB. This readme focuses on shell configuration and commands. For a guide about prerequisites and general use of the shell, please see the [Developer Guide: Using the Amazon QLDB Shell](https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html)
 
 ## QLDB Core Concepts
-QLDB provides guarantees about consistency during transactions, and ensures that transactions are consistent upon commit via Optimistic Currency Control. This applies to all queries, so when using the shell, your statements must be run as transactions. By default, the shell enables auto-commit mode, which will interpret queries by default as transactions, meaning you do not have to `start transaction` and `commit` manually each time. This is configurable (see below).
-
-Additionally, currently, transactions have a 30-second window, so when using the shell, you'll want to submit queries within that window. Otherwise, you'll get an error and need to retry.
-
+-  QLDB ensures that transactions are consistent upon commit by using [optimistic currency control (OCC)](https://docs.aws.amazon.com/qldb/latest/developerguide/concurrency.html#concurrency.occ).
+- In QLDB, every statement (including every SELECT query) must run in a transaction.
+ - By default, the shell enables auto-commit mode. In this mode, the shell interprets each command that you enter as a separate PartiQL statement, meaning that you don't have to run `start transaction` and `commit` manually each time. This is configurable (see below).
+- An interactive transaction adheres to QLDB's [transaction timeout limit](https://docs.aws.amazon.com/qldb/latest/developerguide/limits.html#limits.fixed). If you don't commit a transaction within 30 seconds of starting it, QLDB automatically expires the transaction and rejects any changes made during the transaction. Then, the shell displays an error message and returns to the normal command prompt. To retry, you must enter the begin or start transaction command again to begin a new transaction.
+  - Consider reading more in our guide for [optimizing query performance](https://docs.aws.amazon.com/qldb/latest/developerguide/working.optimize.html).
+- QLDB supports a *subset* of the PartiQL query language. When you use the QLDB shell to query data in Amazon QLDB, you write statements in PartiQL, but results are shown in Amazon Ion (this is configurable). PartiQL is intended to be SQL-compatible, whereas Ion is an extension of JSON. This leads to syntactic differences with how you notate data in your queries, compared to how the QLDB console presents your query results. Further details are available in the [Developer Guide: Querying Ion with PartiQL](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.query.html).
+- This QLDB shell is used for the data plane only. To interact with the control plane, use the [AWS CLI](https://docs.aws.amazon.com/qldb/latest/developerguide/Tools.CLI.html)
 
 ## Installation
 
@@ -115,24 +118,23 @@ See [HACKING.md](HACKING.md) for further instructions
 
 ### Shell Keys
 - Enter
- - Runs the statement
-- Escape+Enter
- - Starts a new line to enter a statement that spans multiple lines. You can also copy input text with multiple lines and paste it into the shell. For instructions on setting up Option instead of Escape as a Meta key in macOS, see the [OS X Daily](https://osxdaily.com/2013/02/01/use-option-as-meta-key-in-mac-os-x-terminal/) site. 
+  - Runs the statement
+- Escape+Enter (macOS, \*nix) or Shift+Enter (Windows)
+  - Starts a new line to enter a statement that spans multiple lines. You can also copy input text with multiple lines and paste it into the shell. For instructions on setting up Option instead of Escape as a Meta key in macOS, see the [OS X Daily](https://osxdaily.com/2013/02/01/use-option-as-meta-key-in-mac-os-x-terminal/) site. 
 - Ctrl+C
- - Noop
+  - Cancels the current command.
 - Ctrl+D
- - EOF / exit current level of shell. If not in a transaction, exit shell. If in a transaction, aborts the transaction.
+  - EOF / exits the current level of the shell. If not in a transaction, exits the shell. If in a transaction, aborts the transaction.
+
 
 ### Database commands
 
 - `start transaction` or `begin`
-  - This starts a transaction.
+  - Manually starts a transaction. You can run multiple statements within a transaction interactively, or non-interactively by batching commands and statements sequentially. Transactions that are not committed within 30 seconds will time out, and QLDB will reject any changes made during the transaction. For more details and examples, see the [QLDB Developer Guide](https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html#data-shell-transactions).
 - `commit`
-  - This commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is
-    no active transaction.
+  - Commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
 - `abort`
-  - This aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is
-    no active transaction.
+  - Aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
 - `help`
   - Prints the lists of database and meta commands.
 - `quit` or `exit`
