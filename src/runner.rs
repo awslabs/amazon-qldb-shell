@@ -28,24 +28,24 @@ pub(crate) enum TickFlow {
 pub(crate) const HELP_TEXT: &'static str = r#"Shell Keys
   Enter
     - Runs the statement.
-  Escape+Enter (macOS)
+  Escape+Enter (macOS, *nix)
   Shift+Enter (Windows)
     - Starts a new line to enter a statement that spans multiple lines. You can also copy input text with multiple lines and paste it into the shell.
   Ctrl+C
     - Cancels the current command.
   Ctrl+D
-    - EOF / exit current level of shell. If not in a transaction, exit shell. If in a transaction, aborts the transaction.
+    - EOF / exits the current level of the shell. If not in a transaction, exits the shell. If in a transaction, aborts the transaction.
 
 Database commands
   start transaction
   begin
-    - This starts a transaction.
+    - Manually starts a transaction. You can run multiple statements within a transaction interactively, or non-interactively by batching commands and statements sequentially. 
+    Transactions that are not committed within 30 seconds will time out, and QLDB will reject any changes made during the transaction. 
+    For more details and examples, see the QLDB Developer Guide [https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html#data-shell-transactions].
   commit
-    - This commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is
-    no active transaction.
+    - Commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
   abort
-    - This aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is
-    no active transaction.
+    - Aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
   help
     - Prints the lists of database and meta commands.
   quit
