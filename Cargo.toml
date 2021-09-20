@@ -35,7 +35,7 @@ anyhow = "1.0.44"
 tokio = "1.11.0"
 serde = "1.0.130"
 tracing = { version = "0.1.28", features = ["log"] }
-tracing-subscriber = { version = "0.2.21", features = ["fmt"] }
+tracing-subscriber = { version = "0.2.24", features = ["fmt"] }
 tracing-appender = "0.1.2"
 tracing-bunyan-formatter = "0.2.6"
 comfy-table = "4.1.1"
