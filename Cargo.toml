@@ -37,7 +37,7 @@ serde = "1.0.130"
 tracing = { version = "0.1.25", features = ["log"] }
 tracing-subscriber = { version = "0.2.21", features = ["fmt"] }
 tracing-appender = "0.1.2"
-tracing-bunyan-formatter = "0.2.5"
+tracing-bunyan-formatter = "0.2.6"
 comfy-table = "4.1.1"
 bigdecimal = "0.2.0"
 smallvec = "1.6.1"
