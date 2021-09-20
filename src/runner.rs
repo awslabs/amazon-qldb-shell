@@ -25,7 +25,48 @@ pub(crate) enum TickFlow {
     Exit,
 }
 
-pub(crate) const HELP_TEXT: &'static str = r"To start a transaction, enter 'start transaction' or 'begin'. To exit, enter 'exit' or press CTRL-D.";
+pub(crate) const HELP_TEXT: &'static str = r#"Shell Keys
+  Enter
+    - Runs the statement.
+  Escape+Enter (macOS, *nix)
+  Shift+Enter (Windows)
+    - Starts a new line to enter a statement that spans multiple lines. You can also copy input text with multiple lines and paste it into the shell.
+  Ctrl+C
+    - Cancels the current command.
+  Ctrl+D
+    - EOF / exits the current level of the shell. If not in a transaction, exits the shell. If in a transaction, aborts the transaction.
+
+Database commands
+  start transaction
+  begin
+    - Manually starts a transaction. You can run multiple statements within a transaction interactively, or non-interactively by batching commands and statements sequentially. 
+    Transactions that are not committed within 30 seconds will time out, and QLDB will reject any changes made during the transaction. 
+    For more details and examples, see the QLDB Developer Guide [https://docs.aws.amazon.com/qldb/latest/developerguide/data-shell.html#data-shell-transactions].
+  commit
+    - Commits a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
+  abort
+    - Aborts a transaction. If there is no transaction in progress, the shell reports an error saying that there is no active transaction.
+  help
+    - Prints the lists of database and meta commands.
+  quit
+  exit
+    - Quits the shell.
+
+Shell Meta Commands
+  \use -l LEDGER_NAME [-p PROFILE] [-r REGION_CODE] [-s QLDB_SESSION_ENDPOINT]
+    - Switch to a different ledger (or: region, endpoint, AWS profile) without restarting the shell.
+  \set edit-mode [emacs|vi]
+    - Toggle between Emacs/Vi keybindings.
+  \set terminator-required [true|false] 
+    - Toggle if a line terminator is required to end each statement.
+  \show tables
+    - Display a list of active tables in the current ledger.
+  \status
+    - Prints out your current region, ledger and Shell version.
+  \env
+    - Prints out your current environment settings including where they were set from.
+  \ping
+    - Prints the round-trip time to the server."#;
 
 pub(crate) struct Runner<C>
 where
