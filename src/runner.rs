@@ -123,7 +123,7 @@ where
                 Ok(TickFlow::Again) => {}
                 Ok(TickFlow::Exit) => return Ok(ProgramFlow::Exit),
                 Ok(TickFlow::Restart) => return Ok(ProgramFlow::Restart),
-                Err(e) => self.deps.ui.println(&format!("{}", e)),
+                Err(e) => self.deps.ui.eprintln(&format!("{}", e)),
             }
         }
     }
@@ -189,7 +189,7 @@ where
             "quit" | "exit" => {
                 return Ok(TickFlow::Exit);
             }
-            "start transaction" | "begin" => self.handle_start_transaction(),
+            "start transaction" | "begin" => self.handle_start_transaction()?,
             "abort" => self.handle_abort().await?,
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),

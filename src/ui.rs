@@ -18,6 +18,8 @@ pub(crate) trait Ui {
 
     fn println(&self, str: &str);
 
+    fn eprintln(&self, str: &str);
+
     fn newline(&self);
 
     fn print(&self, str: &str);
@@ -76,6 +78,10 @@ pub mod testing {
         }
 
         fn println(&self, str: &str) {
+            self.inner.borrow_mut().output.push(str.to_string());
+        }
+
+        fn eprintln(&self, str: &str) {
             self.inner.borrow_mut().output.push(str.to_string());
         }
 
@@ -214,6 +220,10 @@ impl Ui for ConsoleUi {
 
     fn println(&self, str: &str) {
         println!("{}", str);
+    }
+
+    fn eprintln(&self, str: &str) {
+        eprintln!("{}", str);
     }
 
     fn newline(&self) {
