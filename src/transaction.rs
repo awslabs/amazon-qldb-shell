@@ -103,7 +103,7 @@ where
                 Start a transaction with 'start transaction' or 'begin'"
             )))?;
         }
-        self.handle_start_transaction();
+        self.handle_start_transaction()?;
         if let Err(e) = self.handle_partiql(line).await {
             // If we got an error, the transaction might still be open if the
             // error was not fatal to the transaction. So, we should send an
@@ -115,14 +115,14 @@ where
         Ok(TickFlow::Again)
     }
 
-    pub(crate) fn handle_start_transaction(&mut self) {
+    pub(crate) fn handle_start_transaction(&mut self) -> Result<()> {
         if let Some(_) = self.current_transaction {
-            self.deps.ui.println("Transaction already open");
-            return;
+            return Err(QldbShellError::UsageError(format!("Transaction already open")))?;
         }
 
         let new_tx = new_transaction(self.deps.driver.clone());
         self.current_transaction.replace(new_tx);
+        Ok(())
     }
 
     pub(crate) async fn handle_partiql(&mut self, line: &str) -> Result<TickFlow> {
