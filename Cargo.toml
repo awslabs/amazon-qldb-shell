@@ -16,7 +16,7 @@ smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.17-
 aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-auth", features = [] }
 aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.16-alpha", package = "aws-types", features = [] }
 tower = "0.4.8"
-http = "0.2.4"
+http = "0.2.5"
 # --
 
 rusoto_core = { version = "0.47.0", default_features = false, features = ["rustls"]}
