@@ -196,13 +196,13 @@ where
             "show tables" => self.handle_show_tables().await?,
             "ping" => self.handle_ping().await?,
             "status" => self.handle_status().await?,
-            _ => return self.handle_complex_command(line),
+            _ => return self.handle_complex_command(line).await,
         }
 
         Ok(TickFlow::Again)
     }
 
-    pub(crate) fn handle_complex_command(&mut self, line: &str) -> Result<TickFlow> {
+    pub(crate) async fn handle_complex_command(&mut self, line: &str) -> Result<TickFlow> {
         let iter = line.split_ascii_whitespace();
         let backslash = match command::backslash(iter) {
             Ok(b) => b,
@@ -226,7 +226,7 @@ where
 
                 Ok(TickFlow::Again)
             }
-            command::Backslash::Use(u) => self.handle_use_command(u),
+            command::Backslash::Use(u) => self.handle_use_command(u).await,
         }
     }
 
@@ -234,7 +234,7 @@ where
     /// profile, etc.) without restarting the shell. [`TickFlow::Restart`] is
     /// used to signal that the current dependencies need to be thrown away and
     /// the outer program loop should restart.
-    pub(crate) fn handle_use_command(&mut self, u: UseCommand) -> Result<TickFlow> {
+    pub(crate) async fn handle_use_command(&mut self, u: UseCommand) -> Result<TickFlow> {
         self.deps.env.update(|env| {
             if let Some(ledger) = u.ledger {
                 env.current_ledger.name = ledger;
@@ -252,10 +252,10 @@ where
                 env.current_ledger.qldb_session_endpoint = Some(url.to_string());
             }
 
-            let _ = env.reload_current_ledger_config()?;
-
             Ok(())
         })?;
+
+        let _ = self.deps.env.reload_current_ledger_config().await?;
 
         Ok(TickFlow::Restart)
     }

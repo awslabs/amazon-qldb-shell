@@ -20,7 +20,7 @@ pub(crate) struct EnvironmentInner {
 }
 
 impl Environment {
-    pub fn new(mut config: ShellConfig, cli: Opt) -> Result<Environment> {
+    pub async fn new(mut config: ShellConfig, cli: Opt) -> Result<Environment> {
         // First, update any config options based off `[cli]`.
         if let Some(format) = cli.format {
             config.ui.format = format;
@@ -42,7 +42,8 @@ impl Environment {
             qldb_session_endpoint: cli.qldb_session_endpoint.map(|url| url.to_string()),
         };
 
-        let current_region = awssdk_driver::determine_region(current_ledger.region.as_ref())?;
+        let current_region =
+            awssdk_driver::determine_region(current_ledger.region.as_ref()).await?;
 
         let mut inner = EnvironmentInner {
             current_ledger,
@@ -50,7 +51,7 @@ impl Environment {
             config,
         };
 
-        let _ = inner.reload_current_ledger_config()?;
+        let _ = inner.reload_current_ledger_config().await?;
 
         Ok(Environment {
             inner: Arc::new(RwLock::new(inner)),
@@ -80,6 +81,11 @@ impl Environment {
         update(&mut inner)
     }
 
+    pub(crate) async fn reload_current_ledger_config(&self) -> Result<bool> {
+        let mut inner = self.inner.write().unwrap();
+        inner.reload_current_ledger_config().await
+    }
+
     /// When running in non-iteractive mode (e.g. using unix pipes to process
     /// data), when suppress chrome such as the welcome message.
     pub(crate) fn apply_noninteractive_defaults(&mut self) {
@@ -97,7 +103,7 @@ impl EnvironmentInner {
     ///
     /// Returns true if a ledger with that name was found in config. false
     /// indicates no changes were made.
-    pub(crate) fn reload_current_ledger_config(&mut self) -> Result<bool> {
+    pub(crate) async fn reload_current_ledger_config(&mut self) -> Result<bool> {
         if let Some(ref all) = self.config.ledgers {
             if let Some(preconfigured) = all.iter().find(|c| c.name == self.current_ledger.name) {
                 let current_ledger = &mut self.current_ledger;
@@ -116,7 +122,7 @@ impl EnvironmentInner {
                 }
 
                 self.current_region =
-                    awssdk_driver::determine_region(current_ledger.region.as_ref())?;
+                    awssdk_driver::determine_region(current_ledger.region.as_ref()).await?;
 
                 return Ok(true);
             }
