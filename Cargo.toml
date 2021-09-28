@@ -44,7 +44,6 @@ bigdecimal = "0.2.0"
 smallvec = "1.6.1"
 atty = "0.2.14"
 url = "2.2.2"
-reqwest = { version = "0.11.3", features = ["rustls"] }
 futures = "0.3.17"
 
 [dev-dependencies]
