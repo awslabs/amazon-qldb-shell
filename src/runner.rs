@@ -3,9 +3,7 @@ use anyhow::Result;
 use core::fmt;
 use ion_c_sys::reader::IonCReader;
 use rustyline::error::ReadlineError;
-use std::time::Instant;
 use tracing::{instrument, span, trace, Instrument, Level};
-use url::Url;
 
 use crate::transaction::ShellTransaction;
 use crate::{
@@ -65,8 +63,7 @@ Shell Meta Commands
     - Prints out your current region, ledger and Shell version.
   \env
     - Prints out your current environment settings including where they were set from.
-  \ping
-    - Prints the round-trip time to the server."#;
+"#;
 
 pub(crate) struct Runner<C>
 where
@@ -194,7 +191,6 @@ where
             "commit" => self.handle_commit().await?,
             "env" => self.handle_env(),
             "show tables" => self.handle_show_tables().await?,
-            "ping" => self.handle_ping().await?,
             "status" => self.handle_status().await?,
             _ => return self.handle_complex_command(line).await,
         }
@@ -288,34 +284,6 @@ where
             self.deps.driver.ledger_name(),
             env!("CARGO_PKG_VERSION")
         ));
-        Ok(())
-    }
-
-    pub(crate) async fn handle_ping(&self) -> Result<()> {
-        let request_url = match self.deps.env.current_ledger().qldb_session_endpoint {
-            Some(ref s) => Url::parse(s)?.join("ping")?,
-            None => Url::parse(&format!(
-                "https://session.qldb.{}.amazonaws.com/ping",
-                self.deps.env.current_region().as_ref()
-            ))?,
-        };
-
-        let start = Instant::now();
-        let response = reqwest::get(request_url).await?;
-        let status_code = response.status();
-        let response_body = response.text().await?;
-        let total_time = Instant::now().duration_since(start).as_millis();
-
-        if status_code == 200 && response_body == "healthy" {
-            self.deps.ui.println(&format!(
-                "Connection status: Connected, roundtrip-time: {}ms",
-                total_time
-            ));
-        } else {
-            self.deps
-                .ui
-                .println(&format!("Connection status: Unavailable"));
-        }
         Ok(())
     }
 }
