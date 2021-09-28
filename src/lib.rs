@@ -32,7 +32,7 @@ pub async fn run() -> Result<()> {
         Some(ref path) => ShellConfig::load(path)?,
     };
 
-    let mut env = Environment::new(config, opt)?;
+    let mut env = Environment::new(config, opt).await?;
     let _guard = tracing::configure(verbose, &env)?;
 
     // Certain properties default differently based on whether stdin is a

@@ -1,12 +1,17 @@
-use aws_auth::provider::AsyncProvideCredentials;
-use aws_auth::provider::BoxFuture;
-use aws_auth::provider::CredentialsError;
-use aws_auth::provider::CredentialsResult;
-use aws_auth::Credentials;
+use aws_types::credentials::{future, Credentials, CredentialsError, ProvideCredentials};
 use rusoto_core::credential::ProvideAwsCredentials as RusotoProvider;
 
 pub(crate) struct RusotoCredentialProvider<P: RusotoProvider + Send + Sync + 'static> {
     rusoto: P,
+}
+
+impl<P> std::fmt::Debug for RusotoCredentialProvider<P>
+where
+    P: RusotoProvider + Send + Sync + 'static,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RusotoCredentialProvider").finish()
+    }
 }
 
 pub(crate) fn from_rusoto<P>(rusoto: P) -> RusotoCredentialProvider<P>
@@ -16,15 +21,15 @@ where
     RusotoCredentialProvider { rusoto }
 }
 
-impl<P> AsyncProvideCredentials for RusotoCredentialProvider<P>
+impl<P> ProvideCredentials for RusotoCredentialProvider<P>
 where
     P: RusotoProvider + Send + Sync + 'static,
 {
-    fn provide_credentials<'a>(&'a self) -> BoxFuture<'a, CredentialsResult>
+    fn provide_credentials<'a>(&'a self) -> future::ProvideCredentials
     where
         Self: 'a,
     {
-        let fut = async move {
+        future::ProvideCredentials::new(async move {
             match self.rusoto.credentials().await {
                 Ok(credentials) => Ok(Credentials::from_keys(
                     credentials.aws_access_key_id(),
@@ -33,8 +38,6 @@ where
                 )),
                 Err(err) => Err(CredentialsError::Unhandled(Box::new(err))),
             }
-        };
-
-        Box::pin(fut)
+        })
     }
 }

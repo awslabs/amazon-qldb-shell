@@ -1,6 +1,13 @@
 # Changelog
 
-## [2.0.0-alpha14] - Unreleased
+## [2.0.0-alpha15] - Unreleased
+
+### Changed
+
+- SDK updated to 0.0.19
+  - Region provider is now based on the AWS SDK and not rusoto
+
+## [2.0.0-alpha14] - 2021-09-28
 
 ### Changed
 
@@ -13,7 +20,6 @@
 - Refine Welcome message (see #148)
 - Add more help info for CLI options when using `--help` (see #151)
 - Remove backslashes for database commands (see #173)
-
 
 ### Fixed
 

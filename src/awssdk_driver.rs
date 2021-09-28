@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_types::region::{self, ProvideRegion};
+use aws_config::meta::region::RegionProviderChain;
 use http::Uri;
 use std::{str::FromStr, sync::Arc};
 
@@ -173,26 +173,17 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
 
 // Note: infallible, but potentially fallible in the future (e.g. if we want to
 // check that the region is valid).
-pub(crate) fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
+pub(crate) async fn determine_region<S>(user_specified: Option<S>) -> Result<Region>
 where
     S: Into<String>,
 {
-    let it = match user_specified {
-        Some(r) => Region::new(r.into()),
-        None => region::default_provider()
-            .region()
-            .unwrap_or_else(rusoto_default_region),
-    };
+    let user_specified = user_specified.map(|it| Region::new(it.into()));
+    let region = RegionProviderChain::first_try(user_specified)
+        .or_default_provider()
+        .region()
+        .await;
 
-    Ok(it)
-}
-
-/// The default region in the rusoto sdk was capable of looking in the profile,
-/// or default to us-east-1. We preserve that behavior here. When the new SDK
-/// has support for profile proviers, use that!
-fn rusoto_default_region() -> Region {
-    match rusoto_core::credential::ProfileProvider::region() {
-        Ok(Some(region)) => Region::new(region),
-        _ => Region::new("us-east-1".to_owned()),
-    }
+    Ok(region.ok_or(error::usage_error(
+        "no region provided, and none could be automatically determined",
+    ))?)
 }
