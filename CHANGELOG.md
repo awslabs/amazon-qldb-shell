@@ -7,6 +7,14 @@
 - SDK updated to 0.0.19
   - Region provider is now based on the AWS SDK and not rusoto
 
+### Fixed
+
+- Openssl is no longer a runtime requirement (#205)
+
+### Removed
+
+- ping command
+
 ## [2.0.0-alpha14] - 2021-09-28
 
 ### Changed
