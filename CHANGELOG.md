@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.0-alpha16] - Unreleased
+
+### Changed
+
+- Credentials now come from the awssdk, not rusoto
+
 ## [2.0.0-alpha15] - 2021-09-28
 
 ### Changed

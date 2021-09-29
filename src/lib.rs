@@ -12,12 +12,10 @@ use crate::ui::Ui;
 
 mod awssdk_driver;
 mod command;
-mod credentials;
 pub mod error;
 mod repl_helper;
 mod results;
 mod runner;
-mod rusoto_driver;
 mod settings;
 mod tracing;
 mod transaction;
