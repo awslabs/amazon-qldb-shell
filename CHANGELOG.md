@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0-alpha15] - Unreleased
+## [2.0.0-alpha15] - 2021-09-28
 
 ### Changed
 
@@ -15,7 +15,7 @@
 
 - ping command
 
-## [2.0.0-alpha14] - 2021-09-28
+## [2.0.0-alpha14] - 2021-09-27
 
 ### Changed
 
