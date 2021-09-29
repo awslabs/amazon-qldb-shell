@@ -1,25 +1,24 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_config::meta::region::RegionProviderChain;
+use aws_config::{
+    meta::{credentials::LazyCachingCredentialsProvider, region::RegionProviderChain},
+    profile::ProfileFileCredentialsProvider,
+};
 use http::Uri;
 use std::{str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
 use aws_hyper::{Client, DynConnector, SmithyConnector};
 use aws_sdk_qldbsession::{
+    config,
     error::SendCommandError,
     input::SendCommandInput,
     model::{EndSessionRequest, StartSessionRequest},
     output::SendCommandOutput,
     Config, Endpoint, Region, SdkError,
 };
-use rusoto_core::credential::DefaultCredentialsProvider;
 
-use crate::{
-    credentials, error,
-    rusoto_driver::{self, CredentialProvider},
-    settings::Environment,
-};
+use crate::{error, settings::Environment};
 
 #[derive(Clone)]
 pub(crate) struct QldbSessionSdk<C = DynConnector> {
@@ -135,17 +134,23 @@ The following error may have more information: {}
 
 async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>> {
     let hyper = Client::https();
-    let provider = rusoto_driver::profile_provider(&env)?;
-    let rusoto_provider = match provider {
-        Some(p) => CredentialProvider::Profile(p),
-        None => CredentialProvider::Default(DefaultCredentialsProvider::new()?),
+
+    let aws_config = aws_config::from_env();
+    let aws_config = match env.current_ledger().profile {
+        Some(ref name) => aws_config.credentials_provider(
+            LazyCachingCredentialsProvider::builder()
+                .load(
+                    ProfileFileCredentialsProvider::builder()
+                        .profile_name(name)
+                        .build(),
+                )
+                .build(),
+        ),
+        None => aws_config,
     };
-    let creds = credentials::from_rusoto(rusoto_provider);
+    let aws_config = aws_config.load().await;
 
-    let conf = Config::builder()
-        .region(env.current_region())
-        .credentials_provider(creds);
-
+    let conf = config::Builder::from(&aws_config).region(env.current_region());
     let conf = match env.current_ledger().qldb_session_endpoint {
         Some(ref endpoint) => {
             // Strip a trailing slash, otherwise things go wrong in hyper. Specifically,
