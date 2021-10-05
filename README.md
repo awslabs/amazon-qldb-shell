@@ -3,20 +3,9 @@
 [![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/awslabs/amazon-qldb-shell/blob/main/LICENSE)
 [![CI Build](https://github.com/awslabs/amazon-qldb-shell/workflows/CI%20Build/badge.svg)](https://github.com/awslabs/amazon-qldb-shell/actions?query=workflow%3A%22CI+Build%22)
 
-## Welcome to the v2.0 branch!
-
-Hi traveler, you've found your way to **alpha quality software**. Here be
-dragons.
-
-The QLDB Shell is undergoing a complete rewrite in Rust to make it faster and
-lower latency with zero external dependencies. This is an early alpha release
-which is not intended for use in production systems. For the time being the
-Python-based shell on the master branch continues to be the production-ready
-release. Please contact us if you experiment with this early alpha release and
-have feedback you'd like to share with us.
-
-If you'd like to follow along, [CHANGELOG.md](CHANGELOG.md) is kept up to date
-with each commit.
+This tool provides an interface to send PartiQL statements to [Amazon Quantum Ledger Database (QLDB)](https://aws.amazon.com/qldb/).
+This tool is not intended to be incorporated into an application or adopted for production purposes.
+The objective of the tool is to give developers, devops, database administrators, and anyone else interested the opportunity for rapid experimentation with QLDB and [PartiQL](https://docs.aws.amazon.com/qldb/latest/developerguide/ql-reference.html).
 
 ## Prerequisites
 
