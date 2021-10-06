@@ -55,6 +55,7 @@ dependencies = [
  "atty",
  "aws-auth",
  "aws-config",
+ "aws-http",
  "aws-hyper",
  "aws-sdk-qldbsession",
  "aws-types",
