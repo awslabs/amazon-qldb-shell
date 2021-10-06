@@ -68,6 +68,7 @@ dependencies = [
  "ion-c-sys",
  "ion-rs",
  "itertools",
+ "lazy_static",
  "rustyline",
  "rustyline-derive",
  "serde",

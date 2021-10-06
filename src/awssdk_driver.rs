@@ -39,8 +39,11 @@ impl<C> QldbSessionSdk<C> {
         }
     }
 }
-const DRIVER_VERSION: &'static str = "QLDB Driver for Rust v0.1.0";
-const SHELL_VERSION: &'static str = "QLDB Shell for Rust v2.0.0";
+
+lazy_static::lazy_static! {
+    static ref DRIVER_VERSION: String = format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version());
+    static ref SHELL_VERSION: String = format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION"));
+}
 
 #[async_trait]
 impl<C> QldbSession for QldbSessionSdk<C>
@@ -56,8 +59,8 @@ where
             .expect("valid operation"); // FIXME: remove potential panic
         op.properties_mut()
             .insert(AwsUserAgent::new_from_environment(ApiMetadata::new(
-                DRIVER_VERSION,
-                SHELL_VERSION,
+                &DRIVER_VERSION,
+                &SHELL_VERSION,
             )));
         self.inner.client.call(op).await
     }
