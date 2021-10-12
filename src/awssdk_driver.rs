@@ -8,7 +8,7 @@ use http::Uri;
 use std::{str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
-use aws_http::user_agent::{ApiMetadata, AwsUserAgent};
+use aws_http::user_agent::{AdditionalMetadata, AwsUserAgent};
 use aws_hyper::{Client, DynConnector, SmithyConnector};
 use aws_sdk_qldbsession::{
     config,
@@ -40,11 +40,6 @@ impl<C> QldbSessionSdk<C> {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref DRIVER_VERSION: String = format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version());
-    static ref SHELL_VERSION: String = format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION"));
-}
-
 #[async_trait]
 impl<C> QldbSession for QldbSessionSdk<C>
 where
@@ -58,10 +53,12 @@ where
             .make_operation(&self.inner.conf)
             .expect("valid operation"); // FIXME: remove potential panic
         op.properties_mut()
-            .insert(AwsUserAgent::new_from_environment(ApiMetadata::new(
-                &DRIVER_VERSION,
-                &SHELL_VERSION,
-            )));
+            .get_mut::<AwsUserAgent>()
+            .unwrap()
+            .add_metadata(AdditionalMetadata::new(
+                format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version()),
+                format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION")),
+            ));
         self.inner.client.call(op).await
     }
 }
