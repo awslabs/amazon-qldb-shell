@@ -117,7 +117,9 @@ where
 
     pub(crate) fn handle_start_transaction(&mut self) -> Result<()> {
         if let Some(_) = self.current_transaction {
-            return Err(QldbShellError::UsageError(format!("Transaction already open")))?;
+            return Err(QldbShellError::UsageError(format!(
+                "Transaction already open"
+            )))?;
         }
 
         let new_tx = new_transaction(self.deps.driver.clone());

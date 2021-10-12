@@ -6,6 +6,10 @@
 
 - Credentials now come from the awssdk, not rusoto
 
+### Fixed
+
+- Set user agent to include both the driver and shell versions (#196)
+
 ## [2.0.0-alpha15] - 2021-09-28
 
 ### Changed

@@ -8,6 +8,7 @@ use http::Uri;
 use std::{str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
+use aws_http::user_agent::{AdditionalMetadata, AwsUserAgent};
 use aws_hyper::{Client, DynConnector, SmithyConnector};
 use aws_sdk_qldbsession::{
     config,
@@ -48,9 +49,16 @@ where
         &self,
         input: SendCommandInput,
     ) -> Result<SendCommandOutput, SdkError<SendCommandError>> {
-        let op = input
+        let mut op = input
             .make_operation(&self.inner.conf)
             .expect("valid operation"); // FIXME: remove potential panic
+        op.properties_mut()
+            .get_mut::<AwsUserAgent>()
+            .unwrap()
+            .add_metadata(AdditionalMetadata::new(
+                format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version()),
+                format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION")),
+            ));
         self.inner.client.call(op).await
     }
 }
@@ -164,14 +172,6 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         }
         _ => conf,
     };
-
-    // TODO: Set user-agent: https://github.com/awslabs/aws-sdk-rust/issues/146
-    // let mut hyper = HttpClient::new()?;
-    // hyper.local_agent(format!(
-    //     "QLDB Driver for Rust v{}/QLDB Shell for Rust v{}",
-    //     amazon_qldb_driver::version(),
-    //     env!("CARGO_PKG_VERSION")
-    // ));
 
     Ok(QldbSessionSdk::new(hyper, conf.build()))
 }
