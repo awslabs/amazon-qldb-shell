@@ -6,7 +6,7 @@ The Amazon QLDB team is pleased to announce the release of version v2.0.0 of Ama
 
 ### Enhancements:
 
-* The QLDB Shell is completely rewritten in Rust to make it faster and lower latency with zero external dependencies. The Shell could be run by downloading prebuilt binaries for Linux, Windows and macOS without Python installation requirement.
+* The QLDB Shell is completely rewritten in Rust to make it faster to set up and easier to use with zero external dependencies. The Shell could be run by downloading prebuilt binaries for Linux, Windows and macOS without Python installation requirement.
 
 ## [2.0.0-alpha16] - 2021-10-12
 
