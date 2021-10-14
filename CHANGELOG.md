@@ -1,6 +1,14 @@
 # Changelog
 
-## [2.0.0-alpha16] - Unreleased
+## [2.0.0] - 2021-10-14
+
+The Amazon QLDB team is pleased to announce the release of version v2.0.0 of Amazon QLDB Shell. This release is aimed at enhancing the developer experience when interacting with Amazon QLDB.
+
+### Enhancements:
+
+* The QLDB Shell is completely rewritten in Rust to make it faster to set up and easier to use with zero external dependencies. The Shell could be run by downloading prebuilt binaries for Linux, Windows and macOS without Python installation requirement.
+
+## [2.0.0-alpha16] - 2021-10-12
 
 ### Changed
 
