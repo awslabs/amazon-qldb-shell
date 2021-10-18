@@ -12,18 +12,18 @@ jobs:
 
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.actor == 'dependabot[bot]' }}
     steps:
-      - uses: actions/github-script@v3
+      - uses: actions/github-script@v5
         env:
           pull_request_number: ${{ toJSON(github.event.workflow_run.pull_requests[0].number) }}
         with:
           script: |
-            github.pullRequests.createReview({
+            github.pulls.createReview({
               owner: context.payload.repository.owner.login,
               repo: context.payload.repository.name,
               pull_number: ${{env.pull_request_number}},
               event: 'APPROVE'
             })
-            github.pullRequests.merge({
+            github.pulls.merge({
               owner: context.payload.repository.owner.login,
               repo: context.payload.repository.name,
               pull_number: ${{env.pull_request_number}},
