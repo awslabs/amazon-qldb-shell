@@ -55,7 +55,7 @@ dependencies = [
  "atty",
  "aws-auth",
  "aws-config",
- "aws-http",
+ "aws-http 0.0.22-alpha",
  "aws-hyper",
  "aws-sdk-qldbsession",
  "aws-types 0.0.22-alpha",
@@ -162,7 +162,7 @@ name = "aws-config"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.20-alpha#acfa8b17206870802e0074a0869147cada5550b5"
 dependencies = [
- "aws-http",
+ "aws-http 0.1.0",
  "aws-hyper",
  "aws-sdk-sts",
  "aws-types 0.1.0",
@@ -192,6 +192,20 @@ dependencies = [
 
 [[package]]
 name = "aws-http"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
+dependencies = [
+ "aws-smithy-http",
+ "aws-smithy-types",
+ "aws-types 0.0.22-alpha",
+ "http",
+ "lazy_static",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "aws-http"
 version = "0.1.0"
 source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.20-alpha#acfa8b17206870802e0074a0869147cada5550b5"
 dependencies = [
@@ -210,7 +224,7 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.20-alpha#acfa8b17
 dependencies = [
  "aws-auth",
  "aws-endpoint",
- "aws-http",
+ "aws-http 0.1.0",
  "aws-sig-auth",
  "bytes 1.1.0",
  "fastrand",
@@ -235,7 +249,7 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.20-alpha#acfa8b17
 dependencies = [
  "aws-auth",
  "aws-endpoint",
- "aws-http",
+ "aws-http 0.1.0",
  "aws-hyper",
  "aws-sig-auth",
  "aws-types 0.1.0",
@@ -254,7 +268,7 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.20-alpha#acfa8b17
 dependencies = [
  "aws-auth",
  "aws-endpoint",
- "aws-http",
+ "aws-http 0.1.0",
  "aws-hyper",
  "aws-sig-auth",
  "aws-types 0.1.0",
@@ -303,6 +317,26 @@ source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3
 dependencies = [
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "aws-smithy-http"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
+dependencies = [
+ "aws-smithy-types",
+ "bytes 1.1.0",
+ "bytes-utils",
+ "futures-core",
+ "http",
+ "http-body",
+ "hyper",
+ "percent-encoding",
+ "pin-project",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing",
 ]
 
 [[package]]
