@@ -17,7 +17,7 @@ smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-
 aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-auth", features = [] }
 aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-types", features = [] }
 aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-config", features = [] }
-tower = "0.4.9"
+tower = "0.4.10"
 http = "0.2.5"
 # --
 
