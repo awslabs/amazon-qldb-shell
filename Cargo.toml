@@ -10,13 +10,12 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", package = "amazon-qldb-driver", branch = "main" }
 
 # All of this is related to the AWS SDK for Rust
-aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
+aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
 aws-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-http", features = [] }
-aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-hyper", features = ["rustls"] }
-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "smithy-http", features = [] }
-aws-auth = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-auth", features = [] }
+aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-hyper", features = ["rustls"] }
+aws-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-smithy-http", features = [] }
 aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-types", features = [] }
-aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.20-alpha", package = "aws-config", features = [] }
+aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.22-alpha", package = "aws-config", features = [] }
 tower = "0.4.10"
 http = "0.2.5"
 # --
