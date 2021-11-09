@@ -51,6 +51,7 @@ where
     ) -> Result<SendCommandOutput, SdkError<SendCommandError>> {
         let mut op = input
             .make_operation(&self.inner.conf)
+            .await
             .expect("valid operation"); // FIXME: remove potential panic
         op.properties_mut()
             .get_mut::<AwsUserAgent>()
