@@ -52,7 +52,7 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<Clie
 
     let current_ledger = env.current_ledger();
 
-    let (mut sender, receiver) = channel(1);
+    let (_sender, receiver) = channel(1);
 
     debug!("testing connectivity");
     let connect_fut = session_client
@@ -61,7 +61,7 @@ pub(crate) async fn health_check_start_session(env: &Environment) -> Result<Clie
         .command_stream(receiver.into())
         .send();
 
-    let mut output = tokio::time::timeout(Duration::from_secs(5), connect_fut)
+    let _output = tokio::time::timeout(Duration::from_secs(5), connect_fut)
         .await
         .map_err(|_| error::usage_error(format!("timed out connecting after 5 seconds")))?
         .map_err(|e| {
@@ -81,9 +81,7 @@ The following error may have more information: {}
                 e
             ))
         })?;
-    debug!("connected!");
-    sender.close_channel();
-    output.result_stream.recv().await?;
+    debug!("test connection succeeded");
 
     // Dropping the ch pair ends the connection.
 
