@@ -1,8 +1,6 @@
-use amazon_qldb_driver::aws_sdk_qldbsession::error::{SendCommandError, SendCommandErrorKind};
-use amazon_qldb_driver::aws_sdk_qldbsession::SdkError;
-use amazon_qldb_driver::{QldbDriver, QldbError, QldbSession, StatementResults};
+use amazon_qldb_driver::{results::BufferedStatementResults, QldbDriver, TransactError};
 use anyhow::Result;
-use std::{sync::Arc, time::Instant};
+use std::{convert::Infallible, sync::Arc, time::Instant};
 use tokio::{
     sync::{
         mpsc::{channel, Receiver, Sender},
@@ -22,7 +20,7 @@ use crate::{results, runner::TickFlow};
 // UI artifacts (e.g. if a transaction continues, then fails).
 pub(crate) struct ShellTransaction {
     input: Sender<TransactionRequest>,
-    results: Receiver<Result<StatementResults, QldbError>>,
+    results: Receiver<Result<BufferedStatementResults, TransactError<Infallible>>>,
     handle: Option<JoinHandle<Result<()>>>,
 }
 
@@ -41,10 +39,7 @@ enum TransactionRequest {
     Abort,
 }
 
-fn new_transaction<C>(driver: QldbDriver<C>) -> ShellTransaction
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+fn new_transaction(driver: QldbDriver) -> ShellTransaction {
     let (input, recv) = channel(1);
     let (output, results) = channel(1);
 
@@ -62,6 +57,11 @@ where
                     match input.await {
                         Some(TransactionRequest::ExecuteStatement(partiql)) => {
                             let results = tx.execute_statement(partiql).await;
+                            let results = match results {
+                                Ok(r) => r.buffered().await,
+                                Err(e) => Err(e),
+                            };
+
                             if let Err(_) = output.send(results).await {
                                 panic!("results ch should never be closed");
                             }
@@ -91,10 +91,7 @@ where
     }
 }
 
-impl<C> Runner<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+impl Runner {
     pub(crate) async fn handle_autocommit_partiql(&mut self, line: &str) -> Result<TickFlow> {
         if !self.deps.env.config().ui.auto_commit {
             // We're not in auto-commit mode, but there is no transaction
@@ -141,20 +138,13 @@ where
         let results = match tx.results.recv().await {
             Some(Ok(r)) => r,
             Some(Err(e)) => {
-                // Some errors end the transaction, some are recoverable.
-                if let QldbError::SdkError(SdkError::ServiceError {
-                    err: SendCommandError { kind, .. },
-                    ..
-                }) = &e
-                {
-                    let broken = match kind {
-                        SendCommandErrorKind::InvalidSessionException(_) => true,
-                        _ => false,
-                    };
-                    if broken {
-                        let _ = self.current_transaction.take();
+                match &e {
+                    TransactError::GenericError(_) => {}
+                    _ => {
+                        self.current_transaction.take();
                     }
                 }
+
                 Err(e)?
             }
             None => {

@@ -1,5 +1,6 @@
 use crate::{settings::FormatMode, ui::Ui};
-use amazon_qldb_driver::{ion_compat, StatementResults};
+use amazon_qldb_driver::ion_compat;
+use amazon_qldb_driver::results::BufferedStatementResults;
 use anyhow::Result;
 use ion_c_sys::reader::IonCReaderHandle;
 use ion_c_sys::result::IonCError;
@@ -9,7 +10,11 @@ use tracing::warn;
 
 mod table;
 
-pub(crate) fn display_results(results: &StatementResults, format: &FormatMode, ui: &Box<dyn Ui>) {
+pub(crate) fn display_results(
+    results: &BufferedStatementResults,
+    format: &FormatMode,
+    ui: &Box<dyn Ui>,
+) {
     match format {
         FormatMode::Ion => display_results_ion_text(results, ui),
         FormatMode::Table => {
@@ -20,7 +25,7 @@ pub(crate) fn display_results(results: &StatementResults, format: &FormatMode, u
     }
 }
 
-fn display_results_ion_text(results: &StatementResults, ui: &Box<dyn Ui>) {
+fn display_results_ion_text(results: &BufferedStatementResults, ui: &Box<dyn Ui>) {
     let iter = results.readers().map(|r| ion_text_string(r));
     Itertools::intersperse(iter, ",\n".to_owned()).for_each(|p| ui.print(&p));
     ui.newline();

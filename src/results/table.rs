@@ -1,5 +1,5 @@
 use crate::ui::Ui;
-use amazon_qldb_driver::StatementResults;
+use amazon_qldb_driver::results::BufferedStatementResults;
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
 use comfy_table::Table;
@@ -13,11 +13,14 @@ use ion_rs::IonType;
 use std::convert::TryFrom;
 use std::{collections::HashSet, convert::TryInto};
 
-pub(crate) fn display_results_table(results: &StatementResults, ui: &Box<dyn Ui>) -> Result<()> {
+pub(crate) fn display_results_table(
+    results: &BufferedStatementResults,
+    ui: &Box<dyn Ui>,
+) -> Result<()> {
     let element_reader = element_reader();
 
     let elems: Vec<_> = results
-        .raw_values()
+        .iter()
         .map(|data| match element_reader.iterate_over(data)?.next() {
             None => Err(anyhow!("found no value, which is unexpected"))?,
             Some(r) => Ok(r?),

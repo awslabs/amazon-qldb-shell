@@ -1,83 +1,43 @@
 use anyhow::Result;
-use async_trait::async_trait;
 use aws_config::{
     meta::{credentials::LazyCachingCredentialsProvider, region::RegionProviderChain},
     profile::ProfileFileCredentialsProvider,
 };
+use futures::channel::mpsc::channel;
 use http::Uri;
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, time::Duration};
+use tracing::debug;
 
-use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
-use aws_http::user_agent::{AdditionalMetadata, AwsUserAgent};
-use aws_hyper::{Client, DynConnector, SmithyConnector};
-use aws_sdk_qldbsession::{
-    config,
-    error::SendCommandError,
-    input::SendCommandInput,
-    model::{EndSessionRequest, StartSessionRequest},
-    output::SendCommandOutput,
-    Config, Endpoint, Region, SdkError,
-};
+use amazon_qldb_driver::awssdk::{config, Client, Endpoint, Region};
+use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder};
 
 use crate::{error, settings::Environment};
 
-#[derive(Clone)]
-pub(crate) struct QldbSessionSdk<C = DynConnector> {
-    inner: Arc<QldbSessionSdkInner<C>>,
-}
-
-struct QldbSessionSdkInner<C = DynConnector> {
-    client: Client<C>,
-    conf: Config,
-}
-
-impl<C> QldbSessionSdk<C> {
-    fn new(client: Client<C>, conf: Config) -> QldbSessionSdk<C> {
-        let inner = QldbSessionSdkInner { client, conf };
-        QldbSessionSdk {
-            inner: Arc::new(inner),
-        }
-    }
-}
-
-#[async_trait]
-impl<C> QldbSession for QldbSessionSdk<C>
-where
-    C: SmithyConnector,
-{
-    async fn send_command(
-        &self,
-        input: SendCommandInput,
-    ) -> Result<SendCommandOutput, SdkError<SendCommandError>> {
-        let mut op = input
-            .make_operation(&self.inner.conf)
-            .await
-            .expect("valid operation"); // FIXME: remove potential panic
-        op.properties_mut()
-            .get_mut::<AwsUserAgent>()
-            .unwrap()
-            .add_metadata(AdditionalMetadata::new(
-                format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version()),
-                format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION")),
-            ));
-        self.inner.client.call(op).await
-    }
-}
-
-pub(crate) async fn build_driver(
-    client: QldbSessionSdk,
-    ledger: String,
-) -> QldbResult<QldbDriver<QldbSessionSdk>> {
+// TODO: re-add metadata
+// use aws_http::user_agent::{AdditionalMetadata, AwsUserAgent};
+// let mut op = input
+//     .make_operation(&self.inner.conf)
+//     .await
+//     .expect("valid operation"); // FIXME: remove potential panic
+// op.properties_mut()
+//     .get_mut::<AwsUserAgent>()
+//     .unwrap()
+//     .add_metadata(AdditionalMetadata::new(
+//         format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version()),
+//         format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION")),
+//     ));
+// self.inner.client.call(op).await
+pub(crate) async fn build_driver(client: Client, ledger: String) -> Result<QldbDriver> {
     // We disable transaction retries because they don't make sense. Users
     // are entering statements, so if the tx fails they actually have to
     // enter them again! We can't simply remember their inputs and try
     // again, as individual statements may be derived from values seen from
     // yet other statements.
-    QldbDriverBuilder::new()
+    Ok(QldbDriverBuilder::new()
         .ledger_name(ledger)
         .transaction_retry_policy(retry::never())
         .build_with_client(client)
-        .await
+        .await?)
 }
 
 /// Tries to start a session on the given ledger (via `env`). Fails with a
@@ -87,23 +47,23 @@ pub(crate) async fn build_driver(
 /// returned. The cleanup is just good manners, but the client is important
 /// because it means future commands can reuse that same initial connection,
 /// credentials, etc.
-pub(crate) async fn health_check_start_session(
-    env: &Environment,
-) -> Result<QldbSessionSdk<DynConnector>> {
+pub(crate) async fn health_check_start_session(env: &Environment) -> Result<Client> {
     let session_client = build_client(&env).await?;
 
     let current_ledger = env.current_ledger();
-    let resp = session_client
-        .send_command(
-            SendCommandInput::builder()
-                .start_session(
-                    StartSessionRequest::builder()
-                        .ledger_name(current_ledger.name.clone())
-                        .build(),
-                )
-                .build()?,
-        )
+
+    let (mut sender, receiver) = channel(1);
+
+    debug!("testing connectivity");
+    let connect_fut = session_client
+        .send_command()
+        .ledger_name(&current_ledger.name[..])
+        .command_stream(receiver.into())
+        .send();
+
+    let mut output = tokio::time::timeout(Duration::from_secs(5), connect_fut)
         .await
+        .map_err(|_| error::usage_error(format!("timed out connecting after 5 seconds")))?
         .map_err(|e| {
             error::usage_error(format!(
                 r#"Unable to connect to ledger `{}`.
@@ -121,29 +81,16 @@ The following error may have more information: {}
                 e
             ))
         })?;
+    debug!("connected!");
+    sender.close_channel();
+    output.result_stream.recv().await?;
 
-    let session_token = match resp.start_session.and_then(|r| r.session_token) {
-        Some(session_token) => session_token,
-        None => Err(error::bug("start session did not return a session token"))?,
-    };
-
-    // Try be a good citizen, but don't fail if the new session can't be
-    // released.
-    let _ = session_client
-        .send_command(
-            SendCommandInput::builder()
-                .session_token(session_token)
-                .end_session(EndSessionRequest::builder().build())
-                .build()?,
-        )
-        .await;
+    // Dropping the ch pair ends the connection.
 
     Ok(session_client)
 }
 
-async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>> {
-    let hyper = Client::https();
-
+async fn build_client(env: &Environment) -> Result<Client> {
     let aws_config = aws_config::from_env();
     let aws_config = match env.current_ledger().profile {
         Some(ref name) => aws_config.credentials_provider(
@@ -174,7 +121,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         _ => conf,
     };
 
-    Ok(QldbSessionSdk::new(hyper, conf.build()))
+    Ok(Client::from_conf(conf.build()))
 }
 
 // Note: infallible, but potentially fallible in the future (e.g. if we want to

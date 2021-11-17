@@ -1,7 +1,7 @@
 use super::{config::LedgerConfig, Opt};
 use crate::{awssdk_driver, error, settings::ShellConfig};
+use amazon_qldb_driver::awssdk::Region;
 use anyhow::Result;
-use aws_sdk_qldbsession::Region;
 use std::{
     fmt,
     ops::{Deref, DerefMut},

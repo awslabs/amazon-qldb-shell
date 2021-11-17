@@ -1,4 +1,4 @@
-use amazon_qldb_driver::{QldbDriver, QldbSession};
+use amazon_qldb_driver::QldbDriver;
 use anyhow::Result;
 use runner::ProgramFlow;
 use settings::Environment;
@@ -74,12 +74,9 @@ pub async fn run() -> Result<()> {
     }
 }
 
-struct Deps<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+struct Deps {
     env: Environment,
-    driver: QldbDriver<C>,
+    driver: QldbDriver,
     ui: Box<dyn Ui>,
 }
 

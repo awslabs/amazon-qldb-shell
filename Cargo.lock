@@ -14,26 +14,19 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#75f3a3ed0e1f6bf7688f065304f792e9141dd01e"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=streaming#2782bacad20f29204169d0e4b36ff07f4e69fe44"
 dependencies = [
- "amazon-qldb-driver-core",
- "tokio",
-]
-
-[[package]]
-name = "amazon-qldb-driver-core"
-version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#75f3a3ed0e1f6bf7688f065304f792e9141dd01e"
-dependencies = [
- "anyhow",
+ "async-stream",
  "async-trait",
+ "aws-config",
  "aws-hyper",
- "aws-sdk-qldbsession",
- "aws-smithy-http 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-sdk-qldbsessionv2",
+ "aws-smithy-http",
+ "aws-types",
  "bb8",
  "bytes 1.1.0",
  "futures",
+ "futures-core",
  "http",
  "ion-c-sys",
  "ion-rs",
@@ -53,11 +46,10 @@ dependencies = [
  "async-trait",
  "atty",
  "aws-config",
- "aws-http 0.0.25-alpha",
+ "aws-http",
  "aws-hyper",
- "aws-sdk-qldbsession",
- "aws-smithy-http 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-smithy-http",
+ "aws-types",
  "bigdecimal",
  "chrono",
  "comfy-table",
@@ -114,6 +106,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
+name = "async-stream"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "171374e7e3b2504e0e5236e3b59260560f9fe94bfe9ac39ba5e4e929c5590625"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "648ed8c8d2ce5409ccd57453d9d1b214b342a0d69376a6feda1fd6cae3299308"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -143,19 +156,19 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "aws-config"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-http 0.0.23-alpha",
+ "aws-http",
  "aws-hyper",
  "aws-sdk-sts",
- "aws-smithy-async 0.27.0-alpha.1",
+ "aws-smithy-async",
  "aws-smithy-client",
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-http",
  "aws-smithy-http-tower",
  "aws-smithy-json",
- "aws-smithy-types 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-smithy-types",
+ "aws-types",
  "bytes 1.1.0",
  "http",
  "tokio",
@@ -165,11 +178,11 @@ dependencies = [
 
 [[package]]
 name = "aws-endpoint"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-http 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-smithy-http",
+ "aws-types",
  "http",
  "regex",
  "tracing",
@@ -177,26 +190,12 @@ dependencies = [
 
 [[package]]
 name = "aws-http"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-http 0.27.0-alpha.1",
- "aws-smithy-types 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
- "http",
- "lazy_static",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "aws-http"
-version = "0.0.25-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.25-alpha#d6aacb5fbb501f568d53a1bcd30cb7d68619a415"
-dependencies = [
- "aws-smithy-http 0.28.0-alpha",
- "aws-smithy-types 0.28.0-alpha",
- "aws-types 0.0.25-alpha",
+ "aws-smithy-http",
+ "aws-smithy-types",
+ "aws-types",
  "http",
  "lazy_static",
  "thiserror",
@@ -205,16 +204,16 @@ dependencies = [
 
 [[package]]
 name = "aws-hyper"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "aws-endpoint",
- "aws-http 0.0.23-alpha",
+ "aws-http",
  "aws-sig-auth",
  "aws-smithy-client",
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-http",
  "aws-smithy-http-tower",
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
  "bytes 1.1.0",
  "fastrand",
  "http",
@@ -228,50 +227,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-sdk-qldbsession"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+name = "aws-sdk-qldbsessionv2"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=streaming#2782bacad20f29204169d0e4b36ff07f4e69fe44"
 dependencies = [
  "aws-endpoint",
- "aws-http 0.0.23-alpha",
+ "aws-http",
  "aws-hyper",
  "aws-sig-auth",
  "aws-smithy-client",
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-eventstream",
+ "aws-smithy-http",
  "aws-smithy-json",
- "aws-smithy-types 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-smithy-types",
+ "aws-types",
  "bytes 1.1.0",
  "http",
+ "hyper",
 ]
 
 [[package]]
 name = "aws-sdk-sts"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "aws-endpoint",
- "aws-http 0.0.23-alpha",
+ "aws-http",
  "aws-hyper",
  "aws-sig-auth",
  "aws-smithy-client",
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-http",
  "aws-smithy-query",
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
  "aws-smithy-xml",
- "aws-types 0.0.23-alpha",
+ "aws-types",
  "bytes 1.1.0",
  "http",
 ]
 
 [[package]]
 name = "aws-sig-auth"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "aws-sigv4",
- "aws-smithy-http 0.27.0-alpha.1",
- "aws-types 0.0.23-alpha",
+ "aws-smithy-eventstream",
+ "aws-smithy-http",
+ "aws-types",
  "http",
  "thiserror",
  "tracing",
@@ -279,33 +281,24 @@ dependencies = [
 
 [[package]]
 name = "aws-sigv4"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
+ "aws-smithy-eventstream",
+ "bytes 1.1.0",
  "chrono",
  "form_urlencoded",
  "hex",
  "http",
- "once_cell",
  "percent-encoding",
- "regex",
  "ring",
  "tracing",
 ]
 
 [[package]]
 name = "aws-smithy-async"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
-dependencies = [
- "pin-project-lite",
- "tokio",
-]
-
-[[package]]
-name = "aws-smithy-async"
-version = "0.28.0-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.25-alpha#d6aacb5fbb501f568d53a1bcd30cb7d68619a415"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "pin-project-lite",
  "tokio",
@@ -313,13 +306,13 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-client"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-async 0.27.0-alpha.1",
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-async",
+ "aws-smithy-http",
  "aws-smithy-http-tower",
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
  "bytes 1.1.0",
  "fastrand",
  "http",
@@ -335,11 +328,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-smithy-http"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+name = "aws-smithy-eventstream"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
+ "bytes 1.1.0",
+ "crc32fast",
+]
+
+[[package]]
+name = "aws-smithy-http"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
+dependencies = [
+ "aws-smithy-eventstream",
+ "aws-smithy-types",
  "bytes 1.1.0",
  "bytes-utils",
  "futures-core",
@@ -355,30 +359,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-smithy-http"
-version = "0.28.0-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.25-alpha#d6aacb5fbb501f568d53a1bcd30cb7d68619a415"
-dependencies = [
- "aws-smithy-types 0.28.0-alpha",
- "bytes 1.1.0",
- "bytes-utils",
- "futures-core",
- "http",
- "http-body",
- "hyper",
- "percent-encoding",
- "pin-project",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
 name = "aws-smithy-http-tower"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-http 0.27.0-alpha.1",
+ "aws-smithy-http",
  "bytes 1.1.0",
  "http",
  "http-body",
@@ -389,36 +374,25 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-json"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
 ]
 
 [[package]]
 name = "aws-smithy-query"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-types 0.27.0-alpha.1",
+ "aws-smithy-types",
  "urlencoding",
 ]
 
 [[package]]
 name = "aws-smithy-types"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
-dependencies = [
- "chrono",
- "itoa",
- "num-integer",
- "ryu",
-]
-
-[[package]]
-name = "aws-smithy-types"
-version = "0.28.0-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.25-alpha#d6aacb5fbb501f568d53a1bcd30cb7d68619a415"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "chrono",
  "itoa",
@@ -428,8 +402,8 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-xml"
-version = "0.27.0-alpha.1"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.27.0-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
  "thiserror",
  "xmlparser",
@@ -437,22 +411,11 @@ dependencies = [
 
 [[package]]
 name = "aws-types"
-version = "0.0.23-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.23-alpha#8ea6c06a7652928bd5757591a142fa9ebe4a5bfc"
+version = "0.0.22-alpha"
+source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.22-alpha#6c874ba3c63387254ecd00d651fe04c367070132"
 dependencies = [
- "aws-smithy-async 0.27.0-alpha.1",
- "aws-smithy-types 0.27.0-alpha.1",
- "rustc_version",
- "zeroize",
-]
-
-[[package]]
-name = "aws-types"
-version = "0.0.25-alpha"
-source = "git+https://github.com/awslabs/aws-sdk-rust?tag=v0.0.25-alpha#d6aacb5fbb501f568d53a1bcd30cb7d68619a415"
-dependencies = [
- "aws-smithy-async 0.28.0-alpha",
- "aws-smithy-types 0.28.0-alpha",
+ "aws-smithy-async",
+ "aws-smithy-types",
  "rustc_version",
  "zeroize",
 ]
@@ -696,6 +659,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95059428f66df56b63431fdb4e1947ed2190586af5c5a8a8b71122bdf5a7f469"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "crc32fast"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81156fece84ab6a9f2afdb109ce3ae577e42b1228441eded99bd77f627953b1a"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]

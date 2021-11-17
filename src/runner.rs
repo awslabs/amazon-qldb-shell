@@ -1,4 +1,3 @@
-use amazon_qldb_driver::QldbSession;
 use anyhow::Result;
 use core::fmt;
 use ion_c_sys::reader::IonCReader;
@@ -65,18 +64,12 @@ Shell Meta Commands
     - Prints out your current environment settings including where they were set from.
 "#;
 
-pub(crate) struct Runner<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
-    pub(crate) deps: Deps<C>,
+pub(crate) struct Runner {
+    pub(crate) deps: Deps,
     pub(crate) current_transaction: Option<ShellTransaction>,
 }
 
-impl<C> fmt::Debug for Runner<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+impl fmt::Debug for Runner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Runner")
     }
@@ -109,10 +102,7 @@ fn build_prompt(env: &Environment, transaction_active: bool) -> String {
         )
 }
 
-impl<C> Runner<C>
-where
-    C: QldbSession + Send + Sync + Clone + 'static,
-{
+impl Runner {
     pub(crate) async fn start(&mut self) -> Result<ProgramFlow> {
         loop {
             let span = span!(Level::TRACE, "tick");
@@ -263,7 +253,7 @@ where
     pub(crate) async fn handle_show_tables(&self) -> Result<()> {
         let table_names = self.deps.driver.transact(|mut tx| async {
             let table_names =
-                tx.execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'").await?;
+                tx.execute_statement("select VALUE name from information_schema.user_tables where status='ACTIVE'").await?.buffered().await?;
             tx.commit(table_names).await
         }).await?;
 
