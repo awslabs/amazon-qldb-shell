@@ -16,7 +16,7 @@ aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-al
 aws-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-smithy-http", features = [] }
 aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-types", features = [] }
 aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-config", features = [] }
-tower = "0.4.10"
+tower = "0.4.11"
 http = "0.2.5"
 # --
 
