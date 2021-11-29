@@ -14,7 +14,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#4c54ce40f59d5f6603e1d159bd87ba764e3cb4e5"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#16003e5246432d70cf268a3c937f7c4c454029ea"
 dependencies = [
  "amazon-qldb-driver-core",
  "tokio",
@@ -23,7 +23,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-core"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#4c54ce40f59d5f6603e1d159bd87ba764e3cb4e5"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#16003e5246432d70cf268a3c937f7c4c454029ea"
 dependencies = [
  "anyhow",
  "async-trait",
