@@ -5,11 +5,11 @@ use aws_config::{
     profile::ProfileFileCredentialsProvider,
 };
 use http::Uri;
-use std::{str::FromStr, sync::Arc};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
-use aws_http::user_agent::{AdditionalMetadata, AwsUserAgent};
-use aws_hyper::{Client, DynConnector, SmithyConnector};
+use aws_http::user_agent::AwsUserAgent;
+use aws_http::user_agent::FrameworkMetadata;
 use aws_sdk_qldbsession::{
     config,
     error::SendCommandError,
@@ -18,6 +18,10 @@ use aws_sdk_qldbsession::{
     output::SendCommandOutput,
     Config, Endpoint, Region, SdkError,
 };
+use aws_smithy_client::bounds::SmithyConnector;
+use aws_smithy_client::erase::DynConnector;
+use aws_smithy_client::Client;
+use aws_types::app_name::AppName;
 
 use crate::{error, settings::Environment};
 
@@ -53,13 +57,24 @@ where
             .make_operation(&self.inner.conf)
             .await
             .expect("valid operation"); // FIXME: remove potential panic
+                                        // FIXME: use map middleware
         op.properties_mut()
             .get_mut::<AwsUserAgent>()
             .unwrap()
-            .add_metadata(AdditionalMetadata::new(
-                format!("QLDB Driver for Rust v{}", amazon_qldb_driver::version()),
-                format!("QLDB Shell for Rust v{}", env!("CARGO_PKG_VERSION")),
-            ));
+            .set_app_name(
+                AppName::new(format!(
+                    "QLDB Shell for Rust v{}",
+                    env!("CARGO_PKG_VERSION")
+                ))
+                .unwrap(),
+            )
+            .add_framework_metadata(
+                FrameworkMetadata::new(
+                    "qldbdriver",
+                    Some(Cow::Borrowed(amazon_qldb_driver::version())),
+                )
+                .unwrap(),
+            );
         self.inner.client.call(op).await
     }
 }
@@ -142,7 +157,12 @@ The following error may have more information: {}
 }
 
 async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>> {
-    let hyper = Client::https();
+    let builder: aws_smithy_client::Builder<
+        _,
+        aws_sdk_qldbsession::middleware::DefaultMiddleware,
+        _,
+    > = aws_smithy_client::Builder::new();
+    let client = builder.rustls().build_dyn();
 
     let aws_config = aws_config::from_env();
     let aws_config = match env.current_ledger().profile {
@@ -174,7 +194,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         _ => conf,
     };
 
-    Ok(QldbSessionSdk::new(hyper, conf.build()))
+    Ok(QldbSessionSdk::new(client, conf.build()))
 }
 
 // Note: infallible, but potentially fallible in the future (e.g. if we want to

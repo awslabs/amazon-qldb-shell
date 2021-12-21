@@ -10,12 +10,12 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", package = "amazon-qldb-driver", branch = "main" }
 
 # All of this is related to the AWS SDK for Rust
-aws_sdk_qldbsession = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-sdk-qldbsession", features = ["rustls", "client"] }
-aws-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-http", features = [] }
-aws-hyper = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-hyper", features = ["rustls"] }
-aws-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.3.0", package = "aws-smithy-http", features = [] }
-aws-types = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.3.0", package = "aws-types", features = [] }
-aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", tag = "v0.0.25-alpha", package = "aws-config", features = [] }
+aws-sdk-qldbsession = { version = "0.3.0", features = ["rustls"] }
+aws-http = "0.3.0"
+aws-smithy-client = { version = "0.33.1", features = ["client-hyper", "rustls", "rt-tokio"] }
+aws-smithy-http = { version = "0.33.1", features = ["rt-tokio"] }
+aws-types = "0.3.0"
+aws-config = "0.3.0"
 tower = "0.4.11"
 http = "0.2.5"
 # --
@@ -23,7 +23,7 @@ http = "0.2.5"
 rustyline = "9.1.1"
 dirs = "4.0.0"
 structopt = "0.3.25"
-ion-rs = "0.7"
+ion-rs = "0.7.0"
 ion-c-sys = "0.4.12"
 chrono = "0.4.19"
 async-trait = "0.1.52"
@@ -38,14 +38,13 @@ tracing-subscriber = { version = "0.3.3", features = ["fmt", "env-filter"] }
 tracing-appender = "0.2.0"
 tracing-bunyan-formatter = "0.3.1"
 comfy-table = "5.0.0"
-bigdecimal = "0.2.0"
-smallvec = "1.6.1"
+smallvec = "1.7.0"
 atty = "0.2.14"
 url = "2.2.2"
 futures = "0.3.19"
 
 [dev-dependencies]
-tempdir = "0.3"
+tempdir = "0.3.7"
 
 [[bin]]
 name = "qldb"

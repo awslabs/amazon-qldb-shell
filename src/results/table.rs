@@ -1,9 +1,9 @@
 use crate::ui::Ui;
 use amazon_qldb_driver::StatementResults;
 use anyhow::{anyhow, Result};
-use bigdecimal::BigDecimal;
 use comfy_table::Table;
 use ion_c_sys::timestamp::IonDateTime;
+use ion_rs::external::bigdecimal::BigDecimal;
 use ion_rs::value::*;
 use ion_rs::value::{
     owned::OwnedElement,
