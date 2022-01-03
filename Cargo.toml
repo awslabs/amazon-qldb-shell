@@ -20,7 +20,7 @@ tower = "0.4.11"
 http = "0.2.5"
 # --
 
-rustyline = "9.1.1"
+rustyline = "9.1.2"
 dirs = "4.0.0"
 structopt = "0.3.25"
 ion-rs = "0.7.0"
