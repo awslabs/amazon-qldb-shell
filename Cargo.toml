@@ -17,7 +17,7 @@ aws-smithy-http = { version = "0.33.1", features = ["rt-tokio"] }
 aws-types = "0.3.0"
 aws-config = "0.3.0"
 tower = "0.4.11"
-http = "0.2.5"
+http = "0.2.6"
 # --
 
 rustyline = "9.1.1"
