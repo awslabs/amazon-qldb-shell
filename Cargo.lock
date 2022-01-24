@@ -56,7 +56,7 @@ dependencies = [
  "aws-http",
  "aws-sdk-qldbsession",
  "aws-smithy-client",
- "aws-smithy-http 0.34.1",
+ "aws-smithy-http 0.35.2",
  "aws-types",
  "chrono",
  "comfy-table",
@@ -326,11 +326,11 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-http"
-version = "0.34.1"
+version = "0.35.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "009e7ddec00dfe28a5eb1d6749342d274aa05c2fddb3b8abf82429fd060544c9"
+checksum = "da0cd7cf4c3eab32ccbaab8a3c2a128d5fee49c59414b8f0e1be66380ab5870a"
 dependencies = [
- "aws-smithy-types 0.34.1",
+ "aws-smithy-types 0.35.2",
  "bytes 1.1.0",
  "bytes-utils",
  "futures-core",
@@ -392,9 +392,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-types"
-version = "0.34.1"
+version = "0.35.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d9ea9658f2576b4e91c6b00c4963a68614daf74b5160a66daa02c9f897da3ae"
+checksum = "193abb2559d65d6eaeacc45dd3764cb8f821a90425f6b051a8fd17ea12cbd0d1"
 dependencies = [
  "itoa 1.0.1",
  "num-integer",
