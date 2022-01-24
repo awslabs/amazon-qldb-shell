@@ -15,7 +15,7 @@ aws-http = "0.3.0"
 aws-smithy-client = { version = "0.33.1", features = ["client-hyper", "rustls", "rt-tokio"] }
 aws-smithy-http = { version = "0.35.2", features = ["rt-tokio"] }
 aws-types = "0.3.0"
-aws-config = "0.3.0"
+aws-config = "0.5.2"
 tower = "0.4.11"
 http = "0.2.6"
 # --
