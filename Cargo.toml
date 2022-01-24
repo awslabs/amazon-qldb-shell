@@ -22,7 +22,7 @@ http = "0.2.6"
 
 rustyline = "9.1.2"
 dirs = "4.0.0"
-structopt = "0.3.25"
+structopt = "0.3.26"
 ion-rs = "0.8.0"
 ion-c-sys = "0.4.13"
 chrono = "0.4.19"
