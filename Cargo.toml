@@ -32,7 +32,7 @@ itertools = "0.10.3"
 thiserror = "1.0.30"
 anyhow = "1.0.53"
 tokio = "1.15.0"
-serde = { version = "1.0.135", features = ["derive"] }
+serde = { version = "1.0.136", features = ["derive"] }
 tracing = { version = "0.1.29", features = ["log"] }
 tracing-subscriber = { version = "0.3.6", features = ["fmt", "env-filter"] }
 tracing-appender = "0.2.0"
