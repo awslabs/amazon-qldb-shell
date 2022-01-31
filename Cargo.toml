@@ -31,7 +31,7 @@ rustyline-derive = "0.6.0"
 itertools = "0.10.3"
 thiserror = "1.0.30"
 anyhow = "1.0.53"
-tokio = "1.15.0"
+tokio = "1.16.1"
 serde = { version = "1.0.136", features = ["derive"] }
 tracing = { version = "0.1.29", features = ["log"] }
 tracing-subscriber = { version = "0.3.7", features = ["fmt", "env-filter"] }
