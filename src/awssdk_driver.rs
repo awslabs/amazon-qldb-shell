@@ -1,15 +1,13 @@
+use std::error::Error;
+use std::{str::FromStr, sync::Arc};
+
+use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_config::{
     meta::{credentials::LazyCachingCredentialsProvider, region::RegionProviderChain},
     profile::ProfileFileCredentialsProvider,
 };
-use http::Uri;
-use std::{borrow::Cow, str::FromStr, sync::Arc};
-
-use amazon_qldb_driver::{retry, QldbDriver, QldbDriverBuilder, QldbResult, QldbSession};
-use aws_http::user_agent::AwsUserAgent;
-use aws_http::user_agent::FrameworkMetadata;
 use aws_sdk_qldbsession::{
     config,
     error::SendCommandError,
@@ -21,9 +19,34 @@ use aws_sdk_qldbsession::{
 use aws_smithy_client::bounds::SmithyConnector;
 use aws_smithy_client::erase::DynConnector;
 use aws_smithy_client::Client;
-use aws_types::app_name::AppName;
+use aws_smithy_http::{middleware::MapRequest, operation};
+use aws_smithy_http_tower::map_request::MapRequestLayer;
+use http::header::HeaderName;
+use http::{HeaderValue, Uri};
+use tower::ServiceBuilder;
 
 use crate::{error, settings::Environment};
+
+#[derive(Clone, Debug)]
+struct UserAgent;
+
+impl MapRequest for UserAgent {
+    type Error = Box<dyn Error + Send + Sync + 'static>;
+
+    fn apply(&self, request: operation::Request) -> Result<operation::Request, Self::Error> {
+        request.augment(|mut req, _conf| {
+            req.headers_mut().append(
+                HeaderName::from_static("x-amz-qldb-driver-version"),
+                HeaderValue::from_static(amazon_qldb_driver::version())
+            );
+            req.headers_mut().append(
+                HeaderName::from_static("x-amz-qldb-shell-version"),
+                HeaderValue::from_static(env!("CARGO_PKG_VERSION")),
+            );
+            Ok(req)
+        })
+    }
+}
 
 #[derive(Clone)]
 pub(crate) struct QldbSessionSdk<C = DynConnector> {
@@ -53,28 +76,10 @@ where
         &self,
         input: SendCommandInput,
     ) -> Result<SendCommandOutput, SdkError<SendCommandError>> {
-        let mut op = input
+        let op = input
             .make_operation(&self.inner.conf)
             .await
             .expect("valid operation"); // FIXME: remove potential panic
-                                        // FIXME: use map middleware
-        op.properties_mut()
-            .get_mut::<AwsUserAgent>()
-            .unwrap()
-            .set_app_name(
-                AppName::new(format!(
-                    "QLDB Shell for Rust v{}",
-                    env!("CARGO_PKG_VERSION")
-                ))
-                .unwrap(),
-            )
-            .add_framework_metadata(
-                FrameworkMetadata::new(
-                    "qldbdriver",
-                    Some(Cow::Borrowed(amazon_qldb_driver::version())),
-                )
-                .unwrap(),
-            );
         self.inner.client.call(op).await
     }
 }
@@ -162,7 +167,14 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         aws_sdk_qldbsession::middleware::DefaultMiddleware,
         _,
     > = aws_smithy_client::Builder::new();
-    let client = builder.rustls().build_dyn();
+    let client = builder
+        .rustls()
+        .map_middleware(|middleware| {
+            ServiceBuilder::new()
+                .layer(MapRequestLayer::for_mapper(UserAgent))
+                .layer(middleware)
+        })
+        .build_dyn();
 
     let aws_config = aws_config::from_env();
     let aws_config = match env.current_ledger().profile {
