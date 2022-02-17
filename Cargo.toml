@@ -41,7 +41,7 @@ comfy-table = "5.0.0"
 smallvec = "1.8.0"
 atty = "0.2.14"
 url = "2.2.2"
-futures = "0.3.19"
+futures = "0.3.21"
 
 [dev-dependencies]
 tempdir = "0.3.7"
