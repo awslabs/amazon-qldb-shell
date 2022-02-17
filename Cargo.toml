@@ -34,7 +34,7 @@ anyhow = "1.0.53"
 tokio = "1.16.1"
 serde = { version = "1.0.136", features = ["derive"] }
 tracing = { version = "0.1.30", features = ["log"] }
-tracing-subscriber = { version = "0.3.7", features = ["fmt", "env-filter"] }
+tracing-subscriber = { version = "0.3.8", features = ["fmt", "env-filter"] }
 tracing-appender = "0.2.0"
 tracing-bunyan-formatter = "0.3.2"
 comfy-table = "5.0.0"
