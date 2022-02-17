@@ -53,7 +53,7 @@ jobs:
           - os: ubuntu-18.04
             variant: linux
             bin: qldb
-          - os: windows-latest
+          - os: windows-2019
             variant: windows
             bin: qldb.exe
           - os: macos-latest
@@ -102,7 +102,7 @@ jobs:
 
           cargo fetch && cargo build --release
 
-          if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          if [ "${{ matrix.os }}" != "windows-2019" ]; then
               strip "target/${{ matrix.target }}/release/${{ matrix.bin }}"
           fi
           cp "target/release/${{ matrix.bin }}" "$release_name/"
@@ -113,7 +113,7 @@ jobs:
           git tag -l -n --format="%(contents:subject)" $(git describe --tags --abbrev=0) > TAG-COMMENT.txt
       - name: MSI
         shell: powershell
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         run: |
           $name='qldb'
           $tag=git describe --tags --abbrev=0
