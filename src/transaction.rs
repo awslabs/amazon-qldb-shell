@@ -124,6 +124,7 @@ where
 
         let new_tx = new_transaction(self.deps.driver.clone());
         self.current_transaction.replace(new_tx);
+        self.timer.start();
         Ok(())
     }
 
@@ -208,6 +209,7 @@ where
     }
 
     pub(crate) async fn handle_commit(&mut self) -> Result<()> {
+        self.timer.stop();
         let mut tx = self
             .current_transaction
             .take()

@@ -6,6 +6,7 @@ use rustyline::error::ReadlineError;
 use tracing::{instrument, span, trace, Instrument, Level};
 
 use crate::transaction::ShellTransaction;
+use crate::timer::Timer;
 use crate::{
     command::{self, UseCommand},
     settings::Environment,
@@ -71,6 +72,7 @@ where
 {
     pub(crate) deps: Deps<C>,
     pub(crate) current_transaction: Option<ShellTransaction>,
+    pub timer: Timer
 }
 
 impl<C> fmt::Debug for Runner<C>

@@ -9,6 +9,7 @@ use crate::runner::Runner;
 use crate::settings::{Opt, ShellConfig};
 use crate::ui::ConsoleUi;
 use crate::ui::Ui;
+use crate::timer::Timer;
 
 mod awssdk_driver;
 mod command;
@@ -20,6 +21,7 @@ mod settings;
 mod tracing;
 mod transaction;
 mod ui;
+mod timer;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
@@ -61,10 +63,12 @@ pub async fn run() -> Result<()> {
             driver,
             ui: Box::new(ui.clone()),
         };
+        let timer = Timer::new();
 
         let mut runner = Runner {
             deps,
             current_transaction: None,
+            timer
         };
 
         match runner.start().await? {
