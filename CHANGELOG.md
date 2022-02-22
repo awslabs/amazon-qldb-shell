@@ -4,12 +4,12 @@
 
 ### Fixed
 
-- Various dependency updates, including the SDK updates (#329)
+- Updated the AWS SDK to 0.3.0 to enable full support for AWS profiles (#329)
 
 ### Changed
 
-- User agent uses the SDK default (#332)
-  - the driver and shell versions are sent as extra headers
+- User agent uses the AWS SDK default value without adding customized key value pairs (#332)
+  - Driver and shell versions are sent as extra headers now
 
 ## [2.0.0] - 2021-10-14
 
