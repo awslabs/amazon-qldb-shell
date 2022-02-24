@@ -5,11 +5,11 @@
 ### Fixed
 
 - Updated the AWS SDK to 0.3.0 to enable full support for AWS profiles (#329)
+- Fixed an issue where the shell would not start (#331)
 
 ### Changed
 
-- User agent uses the AWS SDK default value without adding customized key value pairs (#332)
-  - Driver and shell versions are sent as extra headers now
+- Improved QLDB-internal diagnostics. The user agent uses the AWS SDK default value without adding customized key value pairs (#196), and the driver and shell versions are sent as extra headers (#332).
 
 ## [2.0.0] - 2021-10-14
 
