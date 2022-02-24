@@ -2,7 +2,7 @@ use amazon_qldb_driver::aws_sdk_qldbsession::error::{SendCommandError, SendComma
 use amazon_qldb_driver::aws_sdk_qldbsession::SdkError;
 use amazon_qldb_driver::{QldbDriver, QldbError, QldbSession, StatementResults};
 use anyhow::Result;
-use std::{sync::Arc, time::Instant};
+use std::{sync::{Arc, Mutex as BlockingMutex}, time::Instant};
 use tokio::{
     sync::{
         mpsc::{channel, Receiver, Sender},
@@ -12,6 +12,7 @@ use tokio::{
 };
 
 use crate::QldbShellError;
+use crate::timer::Timer;
 use crate::{error, runner::Runner};
 use crate::{results, runner::TickFlow};
 
@@ -47,6 +48,8 @@ where
 {
     let (input, recv) = channel(1);
     let (output, results) = channel(1);
+    let timer = Arc::new(BlockingMutex::new(Timer::new()));
+    timer.lock().unwrap().restart();
 
     let handle = task::spawn(async move {
         let recv = Arc::new(Mutex::new(recv));
@@ -62,11 +65,13 @@ where
                     match input.await {
                         Some(TransactionRequest::ExecuteStatement(partiql)) => {
                             let results = tx.execute_statement(partiql).await;
-                            if let Err(_) = output.send(results).await {
+                            if let Err(_) = output.send(results).await {                                
+                                timer.lock().unwrap().stop();
                                 panic!("results ch should never be closed");
                             }
                         }
                         Some(TransactionRequest::Commit) => {
+                            timer.lock().unwrap().stop();
                             break tx.commit(()).await;
                         }
                         // The `None` variant is actually unreachable. It
@@ -74,6 +79,7 @@ where
                         // however the ch and future are dropped simultaneously
                         // in the case of cancellation.
                         Some(TransactionRequest::Abort) | None => {
+                            timer.lock().unwrap().stop();
                             break tx.abort().await;
                         }
                     }
@@ -124,7 +130,6 @@ where
 
         let new_tx = new_transaction(self.deps.driver.clone());
         self.current_transaction.replace(new_tx);
-        self.timer.start();
         Ok(())
     }
 
@@ -209,7 +214,6 @@ where
     }
 
     pub(crate) async fn handle_commit(&mut self) -> Result<()> {
-        self.timer.stop();
         let mut tx = self
             .current_transaction
             .take()

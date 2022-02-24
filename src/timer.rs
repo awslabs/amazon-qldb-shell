@@ -23,7 +23,7 @@ impl Timer {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn restart(&mut self) {
         self.stop_timer();
         self.run_timer();
     }

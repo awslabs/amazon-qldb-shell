@@ -6,7 +6,6 @@ use rustyline::error::ReadlineError;
 use tracing::{instrument, span, trace, Instrument, Level};
 
 use crate::transaction::ShellTransaction;
-use crate::timer::Timer;
 use crate::{
     command::{self, UseCommand},
     settings::Environment,
@@ -71,8 +70,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) deps: Deps<C>,
-    pub(crate) current_transaction: Option<ShellTransaction>,
-    pub timer: Timer
+    pub(crate) current_transaction: Option<ShellTransaction>
 }
 
 impl<C> fmt::Debug for Runner<C>
