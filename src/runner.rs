@@ -70,7 +70,7 @@ where
     C: QldbSession + Send + Sync + Clone + 'static,
 {
     pub(crate) deps: Deps<C>,
-    pub(crate) current_transaction: Option<ShellTransaction>,
+    pub(crate) current_transaction: Option<ShellTransaction>
 }
 
 impl<C> fmt::Debug for Runner<C>

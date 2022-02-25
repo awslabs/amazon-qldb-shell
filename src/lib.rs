@@ -20,6 +20,7 @@ mod settings;
 mod tracing;
 mod transaction;
 mod ui;
+mod timer;
 
 pub async fn run() -> Result<()> {
     let opt = Opt::from_args();
@@ -64,7 +65,7 @@ pub async fn run() -> Result<()> {
 
         let mut runner = Runner {
             deps,
-            current_transaction: None,
+            current_transaction: None
         };
 
         match runner.start().await? {
