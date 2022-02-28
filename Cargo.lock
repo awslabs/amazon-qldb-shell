@@ -56,7 +56,7 @@ dependencies = [
  "aws-http 0.8.0",
  "aws-sdk-qldbsession",
  "aws-smithy-client 0.33.1",
- "aws-smithy-http 0.33.1",
+ "aws-smithy-http 0.38.0",
  "aws-smithy-http-tower 0.33.1",
  "aws-types 0.8.0",
  "chrono",
@@ -391,6 +391,8 @@ dependencies = [
  "hyper",
  "percent-encoding",
  "pin-project",
+ "tokio",
+ "tokio-util",
  "tracing",
 ]
 
