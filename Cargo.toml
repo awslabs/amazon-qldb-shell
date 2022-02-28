@@ -31,7 +31,7 @@ async-trait = "0.1.52"
 rustyline-derive = "0.6.0"
 itertools = "0.10.3"
 thiserror = "1.0.30"
-anyhow = "1.0.54"
+anyhow = "1.0.55"
 tokio = "1.16.1"
 serde = { version = "1.0.136", features = ["derive"] }
 tracing = { version = "0.1.31", features = ["log"] }
