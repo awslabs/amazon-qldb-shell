@@ -56,7 +56,7 @@ dependencies = [
  "aws-http 0.9.0",
  "aws-sdk-qldbsession",
  "aws-smithy-client 0.33.1",
- "aws-smithy-http 0.33.1",
+ "aws-smithy-http 0.39.0",
  "aws-smithy-http-tower 0.33.1",
  "aws-types 0.9.0",
  "chrono",
@@ -392,6 +392,8 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project",
+ "tokio",
+ "tokio-util",
  "tracing",
 ]
 
