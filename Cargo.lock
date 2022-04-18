@@ -57,7 +57,7 @@ dependencies = [
  "aws-sdk-qldbsession",
  "aws-smithy-client 0.33.1",
  "aws-smithy-http 0.33.1",
- "aws-smithy-http-tower 0.33.1",
+ "aws-smithy-http-tower 0.40.2",
  "aws-types 0.10.1",
  "chrono",
  "comfy-table",
