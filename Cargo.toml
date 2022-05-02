@@ -30,7 +30,7 @@ chrono = "0.4.19"
 async-trait = "0.1.53"
 rustyline-derive = "0.6.0"
 itertools = "0.10.3"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 anyhow = "1.0.57"
 tokio = "1.16.1"
 serde = { version = "1.0.137", features = ["derive"] }
