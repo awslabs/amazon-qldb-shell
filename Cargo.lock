@@ -65,7 +65,7 @@ dependencies = [
  "futures",
  "http",
  "ion-c-sys",
- "ion-rs 0.8.0",
+ "ion-rs 0.9.0",
  "itertools",
  "rustyline",
  "rustyline-derive",
