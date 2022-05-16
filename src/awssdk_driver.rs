@@ -14,7 +14,7 @@ use aws_sdk_qldbsession::{
     input::SendCommandInput,
     model::{EndSessionRequest, StartSessionRequest},
     output::SendCommandOutput,
-    Config, Endpoint, Region, SdkError,
+    Config, Endpoint, Region, types::SdkError,
 };
 use aws_smithy_client::bounds::SmithyConnector;
 use aws_smithy_client::erase::DynConnector;
