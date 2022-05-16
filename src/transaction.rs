@@ -1,5 +1,5 @@
 use amazon_qldb_driver::aws_sdk_qldbsession::error::{SendCommandError, SendCommandErrorKind};
-use amazon_qldb_driver::aws_sdk_qldbsession::SdkError;
+use amazon_qldb_driver::aws_sdk_qldbsession::types::SdkError;
 use amazon_qldb_driver::{QldbDriver, QldbError, QldbSession, StatementResults};
 use anyhow::Result;
 use std::{sync::Arc, time::Instant};
