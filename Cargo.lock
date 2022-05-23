@@ -36,7 +36,7 @@ dependencies = [
  "futures",
  "http",
  "ion-c-sys",
- "ion-rs",
+ "ion-rs 0.9.0",
  "rand 0.8.5",
  "sha2",
  "thiserror",
@@ -65,7 +65,7 @@ dependencies = [
  "futures",
  "http",
  "ion-c-sys",
- "ion-rs",
+ "ion-rs 0.10.0",
  "itertools",
  "rustyline",
  "rustyline-derive",
@@ -1220,6 +1220,26 @@ dependencies = [
  "delegate",
  "ion-c-sys",
  "nom 6.1.2",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "thiserror",
+]
+
+[[package]]
+name = "ion-rs"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffacd656579b8eb8e712a5761a738cace24ab6f3e03393302a412e16dfa34053"
+dependencies = [
+ "arrayvec 0.7.2",
+ "base64 0.12.3",
+ "bigdecimal",
+ "bytes 0.4.12",
+ "chrono",
+ "delegate",
+ "ion-c-sys",
+ "nom 7.1.1",
  "num-bigint",
  "num-integer",
  "num-traits",
