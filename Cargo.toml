@@ -11,7 +11,7 @@ amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust
 
 # All of this is related to the AWS SDK for Rust
 aws-sdk-qldbsession = { version = "0.12.0", features = ["rustls"] }
-aws-http = "0.12.0"
+aws-http = "0.13.0"
 aws-smithy-client = { version = "0.42.0", features = ["client-hyper", "rustls", "rt-tokio"] }
 aws-smithy-http = { version = "0.42.0", features = ["rt-tokio"] }
 aws-smithy-http-tower = "0.42.0"
