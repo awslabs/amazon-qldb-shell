@@ -18,7 +18,7 @@ aws-smithy-http-tower = "0.42.0"
 aws-types = "0.12.0"
 aws-config = "0.12.0"
 tower = "0.4.11"
-http = "0.2.7"
+http = "0.2.8"
 # --
 
 rustyline = "9.1.2"
