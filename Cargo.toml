@@ -10,13 +10,13 @@ edition = "2018"
 amazon-qldb-driver = { git = "https://github.com/awslabs/amazon-qldb-driver-rust", package = "amazon-qldb-driver", branch = "main" }
 
 # All of this is related to the AWS SDK for Rust
-aws-sdk-qldbsession = { version = "0.12.0", features = ["rustls"] }
+aws-sdk-qldbsession = { version = "0.15.0", features = ["rustls"] }
 aws-http = "0.15.0"
-aws-smithy-client = { version = "0.42.0", features = ["client-hyper", "rustls", "rt-tokio"] }
-aws-smithy-http = { version = "0.42.0", features = ["rt-tokio"] }
-aws-smithy-http-tower = "0.42.0"
+aws-smithy-client = { version = "0.45.0", features = ["client-hyper", "rustls", "rt-tokio"] }
+aws-smithy-http = { version = "0.45.0", features = ["rt-tokio"] }
+aws-smithy-http-tower = "0.45.0"
 aws-types = "0.15.0"
-aws-config = "0.12.0"
+aws-config = "0.15.0"
 tower = "0.4.13"
 http = "0.2.8"
 # --
@@ -24,8 +24,8 @@ http = "0.2.8"
 rustyline = "9.1.2"
 dirs = "4.0.0"
 structopt = "0.3.26"
-ion-rs = "0.9.0"
-ion-c-sys = "0.4.13"
+ion-rs = { version = "0.12.0", features = ["ion_c"] }
+ion-c-sys = "0.4.15"
 chrono = "0.4.19"
 async-trait = "0.1.56"
 rustyline-derive = "0.6.0"

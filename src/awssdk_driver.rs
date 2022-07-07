@@ -14,7 +14,8 @@ use aws_sdk_qldbsession::{
     input::SendCommandInput,
     model::{EndSessionRequest, StartSessionRequest},
     output::SendCommandOutput,
-    Config, Endpoint, Region, types::SdkError,
+    types::SdkError,
+    Config, Endpoint, Region,
 };
 use aws_smithy_client::bounds::SmithyConnector;
 use aws_smithy_client::erase::DynConnector;
@@ -37,7 +38,7 @@ impl MapRequest for UserAgent {
         request.augment(|mut req, _conf| {
             req.headers_mut().append(
                 HeaderName::from_static("x-amz-qldb-driver-version"),
-                HeaderValue::from_static(amazon_qldb_driver::version())
+                HeaderValue::from_static(amazon_qldb_driver::version()),
             );
             req.headers_mut().append(
                 HeaderName::from_static("x-amz-qldb-shell-version"),

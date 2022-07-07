@@ -9,7 +9,7 @@ use ion_rs::value::{
     owned::OwnedElement,
     reader::{element_reader, ElementReader},
 };
-use ion_rs::IonType;
+use ion_rs::{Integer, IonType};
 use std::convert::TryFrom;
 use std::{collections::HashSet, convert::TryInto};
 
@@ -114,9 +114,9 @@ fn format_element_for_cell(elem: Option<&OwnedElement>) -> Result<String> {
     Ok(match elem.ion_type() {
         IonType::Null => "null".to_string(),
         IonType::Boolean => elem.as_bool().unwrap().to_string(),
-        IonType::Integer => match elem.as_any_int().unwrap() {
-            AnyInt::I64(i) => i.to_string(),
-            AnyInt::BigInt(i) => i.to_string(),
+        IonType::Integer => match elem.as_integer().unwrap() {
+            Integer::I64(i) => i.to_string(),
+            Integer::BigInt(i) => i.to_string(),
         },
         IonType::Float => elem.as_f64().unwrap().to_string(),
         IonType::Decimal => {
