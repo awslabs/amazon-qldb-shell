@@ -14,7 +14,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#148b2992a0d13029c2c349bc5386f058f9fde31b"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#4f9f6b6072ebea912a9e17611b3a0469b9cc8c96"
 dependencies = [
  "amazon-qldb-driver-core",
  "tokio",
@@ -23,7 +23,7 @@ dependencies = [
 [[package]]
 name = "amazon-qldb-driver-core"
 version = "0.1.0"
-source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#148b2992a0d13029c2c349bc5386f058f9fde31b"
+source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#4f9f6b6072ebea912a9e17611b3a0469b9cc8c96"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2176,10 +2176,11 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.19.2"
+version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51a52ed6686dd62c320f9b89299e9dfb46f730c7a48e635c19f21d116cb1439"
+checksum = "7a8325f63a7d4774dd041e363b2409ed1c5cbbd0f867795e661df066b2b0a581"
 dependencies = [
+ "autocfg",
  "bytes 1.1.0",
  "libc",
  "memchr",
