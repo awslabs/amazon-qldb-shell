@@ -157,7 +157,7 @@ fn create_config(env: &Environment) -> Builder {
 }
 
 fn create_editor(builder: Builder, env: Environment) -> Editor<QldbHelper> {
-    let mut editor = Editor::with_config(builder.build());
+    let mut editor = Editor::with_config(builder.build()).unwrap();
     editor.set_helper(Some(QldbHelper::new(env)));
     editor.bind_sequence(force_newline_event_seq(), Cmd::Newline);
     editor
