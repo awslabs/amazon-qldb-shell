@@ -27,7 +27,7 @@ source = "git+https://github.com/awslabs/amazon-qldb-driver-rust?branch=main#ebe
 dependencies = [
  "anyhow",
  "async-trait",
- "aws-sdk-qldbsession 0.17.0",
+ "aws-sdk-qldbsession",
  "aws-smithy-client 0.47.0",
  "aws-smithy-http 0.47.0",
  "aws-types 0.47.0",
@@ -54,7 +54,7 @@ dependencies = [
  "atty",
  "aws-config",
  "aws-http 0.15.0",
- "aws-sdk-qldbsession 0.15.0",
+ "aws-sdk-qldbsession",
  "aws-smithy-client 0.45.0",
  "aws-smithy-http 0.45.0",
  "aws-smithy-http-tower 0.47.0",
@@ -225,27 +225,6 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "tracing",
-]
-
-[[package]]
-name = "aws-sdk-qldbsession"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76f7ba30894c32baf81091253fd58135996230cf5a3384709e519e236415c422"
-dependencies = [
- "aws-endpoint 0.15.0",
- "aws-http 0.15.0",
- "aws-sig-auth 0.15.0",
- "aws-smithy-async 0.45.0",
- "aws-smithy-client 0.45.0",
- "aws-smithy-http 0.45.0",
- "aws-smithy-http-tower 0.45.0",
- "aws-smithy-json 0.45.0",
- "aws-smithy-types 0.45.0",
- "aws-types 0.15.0",
- "bytes 1.2.1",
- "http",
- "tower",
 ]
 
 [[package]]
