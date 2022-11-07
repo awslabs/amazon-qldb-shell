@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.2] - Unreleased
+## [2.0.2] - 2022-11-07
 
 - Added support for `credential_process` property in `~/.aws/config`.
 
