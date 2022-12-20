@@ -27,7 +27,7 @@ structopt = "0.3.26"
 ion-rs = { version = "0.13.0", features = ["ion_c"] }
 ion-c-sys = "0.4.15"
 chrono = "0.4.19"
-async-trait = "0.1.56"
+async-trait = "0.1.60"
 rustyline-derive = "0.7.0"
 itertools = "0.10.3"
 thiserror = "1.0.37"
