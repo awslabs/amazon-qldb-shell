@@ -19,6 +19,7 @@ use aws_sdk_qldbsession::{
 };
 use aws_smithy_client::bounds::SmithyConnector;
 use aws_smithy_client::erase::DynConnector;
+use aws_smithy_client::http_connector::ConnectorSettings;
 use aws_smithy_client::Client;
 use aws_smithy_http::{middleware::MapRequest, operation};
 use aws_smithy_http_tower::map_request::MapRequestLayer;
@@ -46,6 +47,10 @@ impl MapRequest for UserAgent {
             );
             Ok(req)
         })
+    }
+
+    fn name(&self) -> &'static str {
+        "user-agent"
     }
 }
 
@@ -169,7 +174,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
         _,
     > = aws_smithy_client::Builder::new();
     let client = builder
-        .rustls()
+        .rustls_connector(ConnectorSettings::default())
         .map_middleware(|middleware| {
             ServiceBuilder::new()
                 .layer(MapRequestLayer::for_mapper(UserAgent))
@@ -201,7 +206,7 @@ async fn build_client(env: &Environment) -> Result<QldbSessionSdk<DynConnector>>
             //     POST // HTTP/1.1
             let clean = endpoint.trim_matches(|c| c == '/');
             let endpoint = Uri::from_str(clean)?;
-            let resolver = Endpoint::immutable(endpoint);
+            let resolver = Endpoint::immutable_uri(endpoint)?;
             conf.endpoint_resolver(resolver)
         }
         _ => conf,

@@ -1,4 +1,4 @@
-use amazon_qldb_driver::aws_sdk_qldbsession::error::{SendCommandError, SendCommandErrorKind};
+use amazon_qldb_driver::aws_sdk_qldbsession::error::SendCommandErrorKind;
 use amazon_qldb_driver::aws_sdk_qldbsession::types::SdkError;
 use amazon_qldb_driver::{QldbDriver, QldbError, QldbSession, StatementResults};
 use anyhow::Result;
@@ -142,11 +142,8 @@ where
             Some(Ok(r)) => r,
             Some(Err(e)) => {
                 // Some errors end the transaction, some are recoverable.
-                if let QldbError::SdkError(SdkError::ServiceError {
-                    err: SendCommandError { kind, .. },
-                    ..
-                }) = &e
-                {
+                if let QldbError::SdkError(SdkError::ServiceError(service_error)) = &e {
+                    let kind = &service_error.err().kind;
                     let broken = match kind {
                         SendCommandErrorKind::InvalidSessionException(_) => true,
                         _ => false,
