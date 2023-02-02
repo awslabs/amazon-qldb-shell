@@ -22,7 +22,7 @@ use crate::{results, runner::TickFlow};
 // UI artifacts (e.g. if a transaction continues, then fails).
 pub(crate) struct ShellTransaction {
     input: Sender<TransactionRequest>,
-    results: Receiver<Result<StatementResults, QldbError>>,
+    results: Receiver<(Result<StatementResults, QldbError>, String)>,
     handle: Option<JoinHandle<Result<()>>>,
 }
 
@@ -62,7 +62,7 @@ where
                     match input.await {
                         Some(TransactionRequest::ExecuteStatement(partiql)) => {
                             let results = tx.execute_statement(partiql).await;
-                            if let Err(_) = output.send(results).await {
+                            if let Err(_) = output.send((results, tx.id.to_owned())).await {
                                 panic!("results ch should never be closed");
                             }
                         }
@@ -138,9 +138,9 @@ where
         tx.input
             .send(TransactionRequest::ExecuteStatement(line.to_string()))
             .await?;
-        let results = match tx.results.recv().await {
-            Some(Ok(r)) => r,
-            Some(Err(e)) => {
+        let (results, transaction_id) = match tx.results.recv().await {
+            Some((Ok(r), transaction_id)) => (r, transaction_id),
+            Some((Err(e), _transaction_id)) => {
                 // Some errors end the transaction, some are recoverable.
                 if let QldbError::SdkError(SdkError::ServiceError {
                     err: SendCommandError { kind, .. },
@@ -181,12 +181,13 @@ where
             let server_time = stats.timing_information.processing_time_milliseconds;
             let total_time = Instant::now().duration_since(start).as_millis();
             self.deps.ui.println(&format!(
-                "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms)",
+                "{} {} in bag (read-ios: {}, server-time: {}ms, total-time: {}ms, transaction-id: {})",
                 results.len(),
                 noun,
                 stats.io_usage.read_i_os,
                 server_time,
-                total_time
+                total_time,
+                transaction_id,
             ));
         }
 
