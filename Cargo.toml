@@ -41,7 +41,7 @@ tracing-bunyan-formatter = "0.3.3"
 comfy-table = "6.1.0"
 smallvec = "1.9.0"
 atty = "0.2.14"
-url = "2.3.1"
+url = "2.4.0"
 futures = "0.3.24"
 
 [dev-dependencies]
