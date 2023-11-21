@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "amazon_qldb_shell"
-version = "2.0.1"
+version = "2.0.2"
 dependencies = [
  "amazon-qldb-driver",
  "anyhow",
@@ -68,7 +68,7 @@ dependencies = [
  "aws-sdk-qldbsession",
  "aws-smithy-client",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.60.0",
  "aws-types",
  "chrono",
  "comfy-table",
@@ -164,7 +164,7 @@ dependencies = [
  "aws-smithy-async",
  "aws-smithy-client",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.49.0",
  "aws-smithy-json",
  "aws-smithy-types",
  "aws-types",
@@ -224,7 +224,7 @@ dependencies = [
  "aws-smithy-async",
  "aws-smithy-client",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.49.0",
  "aws-smithy-json",
  "aws-smithy-types",
  "aws-types",
@@ -245,7 +245,7 @@ dependencies = [
  "aws-smithy-async",
  "aws-smithy-client",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.49.0",
  "aws-smithy-json",
  "aws-smithy-types",
  "aws-types",
@@ -267,7 +267,7 @@ dependencies = [
  "aws-smithy-async",
  "aws-smithy-client",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.49.0",
  "aws-smithy-query",
  "aws-smithy-types",
  "aws-smithy-xml",
@@ -328,7 +328,7 @@ checksum = "ec39585f8274fa543ad5c63cc09cbd435666be16b2cf99e4e07be5cf798bc050"
 dependencies = [
  "aws-smithy-async",
  "aws-smithy-http",
- "aws-smithy-http-tower",
+ "aws-smithy-http-tower 0.49.0",
  "aws-smithy-types",
  "bytes 1.2.1",
  "fastrand",
@@ -378,6 +378,12 @@ dependencies = [
  "tower",
  "tracing",
 ]
+
+[[package]]
+name = "aws-smithy-http-tower"
+version = "0.60.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42f1034c86a7af4ca77633df665d747ccd8177dda513219a511dcbe88a580bcc"
 
 [[package]]
 name = "aws-smithy-json"
