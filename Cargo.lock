@@ -45,7 +45,7 @@ dependencies = [
  "bb8",
  "bytes 1.2.1",
  "futures",
- "http",
+ "http 0.2.11",
  "ion-c-sys",
  "ion-rs 0.14.0",
  "rand 0.8.5",
@@ -57,7 +57,7 @@ dependencies = [
 
 [[package]]
 name = "amazon_qldb_shell"
-version = "2.0.1"
+version = "2.0.2"
 dependencies = [
  "amazon-qldb-driver",
  "anyhow",
@@ -74,7 +74,7 @@ dependencies = [
  "comfy-table",
  "dirs",
  "futures",
- "http",
+ "http 1.0.0",
  "ion-c-sys",
  "ion-rs 0.13.0",
  "itertools",
@@ -170,7 +170,7 @@ dependencies = [
  "aws-types",
  "bytes 1.2.1",
  "hex",
- "http",
+ "http 0.2.11",
  "hyper",
  "ring",
  "time 0.3.13",
@@ -189,7 +189,7 @@ dependencies = [
  "aws-smithy-http",
  "aws-smithy-types",
  "aws-types",
- "http",
+ "http 0.2.11",
  "regex",
  "tracing",
 ]
@@ -204,7 +204,7 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "http-body",
  "lazy_static",
  "percent-encoding",
@@ -229,7 +229,7 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "tower",
 ]
 
@@ -250,7 +250,7 @@ dependencies = [
  "aws-smithy-types",
  "aws-types",
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "tokio-stream",
  "tower",
 ]
@@ -273,7 +273,7 @@ dependencies = [
  "aws-smithy-xml",
  "aws-types",
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "tower",
 ]
 
@@ -286,7 +286,7 @@ dependencies = [
  "aws-sigv4",
  "aws-smithy-http",
  "aws-types",
- "http",
+ "http 0.2.11",
  "tracing",
 ]
 
@@ -299,7 +299,7 @@ dependencies = [
  "aws-smithy-http",
  "form_urlencoded",
  "hex",
- "http",
+ "http 0.2.11",
  "once_cell",
  "percent-encoding",
  "regex",
@@ -332,7 +332,7 @@ dependencies = [
  "aws-smithy-types",
  "bytes 1.2.1",
  "fastrand",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "hyper-rustls",
@@ -353,7 +353,7 @@ dependencies = [
  "bytes 1.2.1",
  "bytes-utils",
  "futures-core",
- "http",
+ "http 0.2.11",
  "http-body",
  "hyper",
  "once_cell",
@@ -372,7 +372,7 @@ checksum = "deecb478dc3cc40203e0e97ac0fb92947e0719754bbafd0026bdc49318e2fd03"
 dependencies = [
  "aws-smithy-http",
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "http-body",
  "pin-project-lite",
  "tower",
@@ -429,7 +429,7 @@ dependencies = [
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-types",
- "http",
+ "http 0.2.11",
  "rustc_version",
  "tracing",
  "zeroize",
@@ -1050,7 +1050,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap",
  "slab",
  "tokio",
@@ -1108,9 +1108,20 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "http"
-version = "0.2.8"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75f43d41e26995c17e71ee126451dd3941010b0514a81a9d11f3b341debc2399"
+checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
+dependencies = [
+ "bytes 1.2.1",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
 dependencies = [
  "bytes 1.2.1",
  "fnv",
@@ -1124,7 +1135,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes 1.2.1",
- "http",
+ "http 0.2.11",
  "pin-project-lite",
 ]
 
@@ -1157,7 +1168,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
+ "http 0.2.11",
  "http-body",
  "httparse",
  "httpdate",
